@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[77270,["/_next/static/chunks/777f409d2aa9a4ed.js","/_next/static/chunks/a9a8997c2aef83b2.js"],"ViewportBoundary"]
+3:I[77270,["/_next/static/chunks/777f409d2aa9a4ed.js","/_next/static/chunks/a9a8997c2aef83b2.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"buildId":"reU0SnViP5MHnQn3Laq-p","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Donepage — Your landing page, done"}],["$","meta","1",{"name":"description","content":"Answer a few questions and Donepage builds a polished, SEO-ready landing page you can publish instantly."}],["$","meta","2",{"name":"robots","content":"index, follow"}]]}]}]}],null]}],"loading":null,"isPartial":false}

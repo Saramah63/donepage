@@ -1,0 +1,20 @@
+{
+  "node": {
+    "60df5b6c0209d61f26939e6afb9a84a2e87b3e9fe5": {
+      "workers": {
+        "app/generator/page": {
+          "moduleId": 50238,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Donepage/app/generator/page.tsx"
+        }
+      },
+      "layer": {
+        "app/generator/page": "rsc"
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "Donepage/app/generator/page.tsx"
+    }
+  },
+  "edge": {}
+}
