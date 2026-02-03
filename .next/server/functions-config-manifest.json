@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "functions": {
-    "/api/activate": {},
-    "/api/checkout": {},
-    "/api/plan": {},
-    "/api/stripe/webhook": {}
-  }
-}
