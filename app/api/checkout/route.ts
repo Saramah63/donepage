@@ -57,10 +57,17 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message ?? "Checkout failed" },
-      { status: 500 },
-    );
-  }
+  } catch (e: any) {
+  console.error("CHECKOUT_ERROR", {
+    message: e?.message,
+    type: e?.type,
+    code: e?.code,
+    statusCode: e?.statusCode,
+  });
+
+  return NextResponse.json(
+    { error: "Checkout failed. Please try again." },
+    { status: 500 }
+  );
+}
 }

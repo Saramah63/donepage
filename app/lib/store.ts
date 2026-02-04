@@ -20,7 +20,6 @@ export type PublishedPage = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __DONEPAGE_STORE__: Map<string, PublishedPage> | undefined;
 }
 

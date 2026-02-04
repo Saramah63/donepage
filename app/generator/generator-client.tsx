@@ -3,10 +3,21 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Questionnaire, type QuestionnaireAnswers } from "@/app/components/questionnaire";
+import { toast } from "sonner";
+import {
+  Questionnaire,
+  type QuestionnaireAnswers,
+} from "@/app/components/questionnaire";
 
 type Props = {
-  onSave: (slug: string, answers: QuestionnaireAnswers) => Promise<{ ok: boolean; slug: string }>;
+  onSave: (
+    slug: string,
+    answers: QuestionnaireAnswers
+  ) => Promise<{ ok: boolean; slug: string }>;
+
+  // ✅ برای مدل B
+  editSlug?: string | null;
+  initialAnswers?: QuestionnaireAnswers | null;
 };
 
 function slugify(input: string) {
@@ -31,49 +42,99 @@ function makeSlug(answers: QuestionnaireAnswers) {
   return s ? `${s}-${suffix}` : `landing-${suffix}`;
 }
 
-export default function GeneratorClient({ onSave }: Props) {
+type StoredLandingLocal = {
+  answers?: QuestionnaireAnswers;
+  createdAt?: number;
+  updatedAt?: number;
+};
+
+function safeParseJSON<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+export default function GeneratorClient({
+  onSave,
+  editSlug = null,
+  initialAnswers = null,
+}: Props) {
   const router = useRouter();
-  const [answers, setAnswers] = React.useState<QuestionnaireAnswers | null>(null);
+  const [answers, setAnswers] = React.useState<QuestionnaireAnswers | null>(
+    initialAnswers
+  );
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [hydrated, setHydrated] = React.useState(false);
+
+  // ✅ اگر editSlug هست ولی سرور داده نداد، از localStorage همان slug را هم چک کن
+  React.useEffect(() => {
+    setHydrated(true);
+
+    if (!editSlug) return;
+    if (initialAnswers) return; // سرور داده داده
+    if (answers) return; // قبلاً پیدا شده
+
+    const key = `landing:${editSlug}`;
+    const parsed = safeParseJSON<StoredLandingLocal>(localStorage.getItem(key));
+    if (parsed?.answers) {
+      setAnswers(parsed.answers);
+      return;
+    }
+  }, [editSlug, initialAnswers, answers]);
 
   async function handleGenerate(finalAnswers: QuestionnaireAnswers) {
     setLoading(true);
-    setError(null);
 
     try {
-      const slug = makeSlug(finalAnswers);
+      const slugToUse = editSlug || makeSlug(finalAnswers);
 
-      // 1) Save server-side (KV/memory)
-      await onSave(slug, finalAnswers);
+      // 1) Save server-side (KV/memory) — createdAt on server is preserved
+      await onSave(slugToUse, finalAnswers);
 
-      // 2) Client fallback cache (same key prefix as server)
+      // 2) Client fallback cache (preserve createdAt if exists)
+      const key = `landing:${slugToUse}`;
+      const existing = safeParseJSON<StoredLandingLocal>(localStorage.getItem(key));
       const now = Date.now();
+
       localStorage.setItem(
-        `landing:${slug}`,
-        JSON.stringify({ answers: finalAnswers, createdAt: now, updatedAt: now })
+        key,
+        JSON.stringify({
+          answers: finalAnswers,
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+        })
       );
 
-      // 3) Navigate to generated page
-      router.push(`/${slug}`);
+      // 3) Navigate back to the landing page
+      if (editSlug) toast.success("Updated successfully");
+      else toast.success("Generated successfully");
+
+      router.push(`/${slugToUse}`);
     } catch (e: any) {
-      setError(e?.message ?? "Generate failed");
+      toast.error(e?.message ?? (editSlug ? "Update failed" : "Generate failed"));
     } finally {
       setLoading(false);
     }
   }
 
+  // UI اصلی Questionnaire دست نخورده — فقط حالت edit بهتر UX می‌گیرد
+  if (!hydrated && editSlug && !answers) {
+    return <div className="sr-only">Loading</div>;
+  }
+
   return (
     <>
-      {/* UI unchanged — Questionnaire خودِ فرم/استپ‌هاست */}
       <Questionnaire
+        // ✅ فرم را با initialAnswers پر کن
         initialAnswers={answers ?? undefined}
         onChange={(a) => setAnswers(a)}
         onGenerate={(a) => handleGenerate(a)}
       />
 
-      {/* بدون تغییر UI اصلی: فقط اگر خواستی خطا را ببینی */}
-      {error ? <div className="sr-only">{error}</div> : null}
+      {/* بدون تغییر UI اصلی */}
       {loading ? <div className="sr-only">Loading</div> : null}
     </>
   );

@@ -12,18 +12,23 @@ export type QuestionnaireAnswers = {
 
   primaryOffer?: string;
   aboutText?: string;
+
+  // trust quick stats
   ratingValue?: string; // e.g. "5.0"
   clientsCount?: string; // e.g. "100+"
   yearsExp?: string; // e.g. "10+"
 
+  // contact
   contactEmail?: string;
   contactPhone?: string;
   bookingLink?: string;
   whatsApp?: string;
 
+  // optional testimonial
   testimonialText?: string;
   testimonialName?: string;
 
+  // core positioning
   serviceType:
     | "consulting"
     | "coaching"
@@ -51,6 +56,25 @@ export type QuestionnaireAnswers = {
     | "guarantee"
     | "portfolio";
   includeAbout: "yes" | "no";
+
+  // ✅ Advanced (optional)
+  // High-leverage messaging
+  problemStatement?: string; // 1 line: "What problem do you solve?"
+  outcomeStatement?: string; // 1 line: "What outcome do you deliver?"
+  proofLine?: string; // 1 line: "Proof / credibility snippet"
+  niche?: string; // optional: industry / niche
+
+  // Process (3-step)
+  processStep1?: string;
+  processStep2?: string;
+  processStep3?: string;
+
+  // About image
+  aboutImageUrl?: string; // optional: user-provided image URL
+
+  // Optional: CTA labels (if you want customizable button text later)
+  ctaPrimaryLabel?: string; // e.g. "Book a Call"
+  ctaSecondaryLabel?: string; // e.g. "Email Us"
 };
 
 type Option = {
@@ -66,7 +90,7 @@ type Step = {
   options: Option[];
 };
 
-const STEPS: Step[] = [
+const BASE_STEPS: Step[] = [
   {
     key: "businessName",
     title: "What is your business name?",
@@ -194,6 +218,81 @@ const STEPS: Step[] = [
       { value: "no", title: "No, Skip About Section", desc: "Keep the page focused on services only" },
     ],
   },
+  {
+    key: "aboutText",
+    title: "Write a short About section (optional)",
+    subtitle: "A few sentences about who you are and how you help",
+    options: [],
+  },
+  {
+    key: "aboutImageUrl",
+    title: "Add an About image (optional)",
+    subtitle: "Paste a direct image URL (jpg/png/webp). Leave empty to skip.",
+    options: [],
+  },
+  {
+    key: "contactEmail",
+    title: "Contact email",
+    subtitle: "Shown in the Contact section + used for mailto link",
+    options: [],
+  },
+  {
+    key: "whatsApp",
+    title: "WhatsApp number (optional)",
+    subtitle: "Use international format, e.g. +358401234567",
+    options: [],
+  },
+  {
+    key: "bookingLink",
+    title: "Booking link (optional)",
+    subtitle: "Calendly / TidyCal / Google Calendar booking URL",
+    options: [],
+  },
+];
+
+const ADVANCED_STEPS: Step[] = [
+  {
+    key: "problemStatement",
+    title: "What problem do you solve?",
+    subtitle: "One sentence. Be specific about the pain you remove.",
+    options: [],
+  },
+  {
+    key: "outcomeStatement",
+    title: "What outcome do you deliver?",
+    subtitle: "One sentence. Describe the end-result clients actually want.",
+    options: [],
+  },
+  {
+    key: "proofLine",
+    title: "Add one credibility / proof line",
+    subtitle: 'Example: "4.9/5 rating • 120+ clients • ICF-trained" (one line)',
+    options: [],
+  },
+  {
+    key: "niche",
+    title: "Your niche / industry (optional)",
+    subtitle: 'Example: "SaaS founders", "Real estate", "Wellness coaches"',
+    options: [],
+  },
+  {
+    key: "processStep1",
+    title: "Your process — Step 1",
+    subtitle: 'Example: "Audit + clarify goals"',
+    options: [],
+  },
+  {
+    key: "processStep2",
+    title: "Your process — Step 2",
+    subtitle: 'Example: "Build plan + execute"',
+    options: [],
+  },
+  {
+    key: "processStep3",
+    title: "Your process — Step 3",
+    subtitle: 'Example: "Deliver + optimize"',
+    options: [],
+  },
 ];
 
 type Props = {
@@ -201,25 +300,47 @@ type Props = {
   onChange?: (answers: QuestionnaireAnswers) => void;
   onGenerate?: (answers: QuestionnaireAnswers) => void;
 
-  // backward compatibility اگر جایی از onComplete استفاده می‌کنی
+  // backward compatibility
   onComplete?: (answers: QuestionnaireAnswers) => void;
 };
 
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
 export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete }: Props) {
+  const [advanced, setAdvanced] = React.useState(false);
+
+  const STEPS = React.useMemo(() => {
+    // Advanced = add steps, without touching base flow UX
+    return advanced ? [...BASE_STEPS, ...ADVANCED_STEPS] : BASE_STEPS;
+  }, [advanced]);
+
   const total = STEPS.length;
 
   const [stepIndex, setStepIndex] = React.useState(0);
   const [answers, setAnswers] = React.useState<Partial<QuestionnaireAnswers>>(initialAnswers ?? {});
 
+  // If user toggles Advanced OFF while on advanced steps, clamp index
+  React.useEffect(() => {
+    setStepIndex((s) => clamp(s, 0, total - 1));
+  }, [total]);
+
   const step = STEPS[stepIndex];
   const currentValue = answers[step.key] as string | undefined;
 
   const progress = Math.round(((stepIndex + 1) / total) * 100);
-
   const isInputStep = step.options.length === 0;
 
   const canGoNext = isInputStep
-    ? Boolean((currentValue ?? "").toString().trim())
+    ? Boolean(
+        (currentValue ?? "").toString().trim() ||
+          step.key === "niche" ||
+          step.key === "aboutImageUrl" ||
+          step.key === "whatsApp" ||
+          step.key === "bookingLink" ||
+          step.key === "aboutText"
+      )
     : Boolean(currentValue);
 
   const update = (patch: Partial<QuestionnaireAnswers>) => {
@@ -241,18 +362,17 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   const goNext = async () => {
     if (!canGoNext) return;
 
-    // مراحل میانی
     if (stepIndex < total - 1) {
       setStepIndex((s) => Math.min(total - 1, s + 1));
       return;
     }
 
-    // ✅ مرحله آخر: فقط خروجی بده، routing/save را parent انجام می‌دهد
     const final = answers as QuestionnaireAnswers;
-
     onGenerate?.(final);
     onComplete?.(final);
   };
+
+  const headerQuestionCount = advanced ? "Answer quick questions to get your personalized landing page" : "Answer 9 quick questions to get your personalized landing page";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40">
@@ -271,7 +391,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
           </div>
 
           <h1 className="mt-5 text-center text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Answer 9 quick questions to get your personalized landing page
+            {headerQuestionCount}
           </h1>
 
           <div className="mt-6 flex items-center justify-between text-sm text-gray-600">
@@ -291,6 +411,34 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
 
         <Card className="mx-auto mt-8 w-full max-w-3xl border border-gray-200 bg-white/85 shadow-xl shadow-blue-500/5 backdrop-blur-xl">
           <CardContent className="p-6 sm:p-8">
+            {/* ✅ Advanced Toggle (minimal, no redesign) */}
+            <div className="mb-5 flex items-center justify-between rounded-2xl border border-gray-200 bg-white/70 px-4 py-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900">Advanced mode</div>
+                <div className="text-xs text-gray-600">
+                  Turn on for better copy (problem, outcome, proof, process).
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAdvanced((v) => !v)}
+                className={[
+                  "relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full border transition-colors",
+                  advanced ? "border-blue-600 bg-blue-600" : "border-gray-300 bg-gray-200",
+                ].join(" ")}
+                aria-pressed={advanced}
+                aria-label="Toggle advanced mode"
+              >
+                <span
+                  className={[
+                    "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
+                    advanced ? "translate-x-6" : "translate-x-1",
+                  ].join(" ")}
+                />
+              </button>
+            </div>
+
             <div className="space-y-2">
               <div className="text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
                 {step.title}
@@ -323,7 +471,25 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                                 ? "Phone (optional)"
                                 : step.key === "bookingLink"
                                   ? "Booking link (Calendly / TidyCal / Google Calendar URL)"
-                                  : ""
+                                  : step.key === "whatsApp"
+                                    ? "WhatsApp number (e.g. +358401234567)"
+                                    : step.key === "problemStatement"
+                                      ? "Problem you solve (one sentence)"
+                                      : step.key === "outcomeStatement"
+                                        ? "Outcome you deliver (one sentence)"
+                                        : step.key === "proofLine"
+                                          ? "Proof line (one line)"
+                                          : step.key === "niche"
+                                            ? "Niche / industry (optional)"
+                                            : step.key === "processStep1"
+                                              ? "Step 1"
+                                              : step.key === "processStep2"
+                                                ? "Step 2"
+                                                : step.key === "processStep3"
+                                                  ? "Step 3"
+                                                  : step.key === "aboutImageUrl"
+                                                    ? "https://... (optional image URL)"
+                                                    : ""
                     }
                     value={(currentValue as string) ?? ""}
                     onChange={(e) => setValue(e.target.value)}
