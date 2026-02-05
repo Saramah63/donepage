@@ -1,12 +1,12 @@
 import authMiddleware from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-export default function middleware(req: Request) {
+export default function middleware(req: NextRequest) {
   const host = new URL(req.url).host.toLowerCase();
   if (host.endsWith(".vercel.app")) {
     return NextResponse.next();
   }
-  return authMiddleware(req);
+  return authMiddleware(req as any);
 }
 
 export const config = {
