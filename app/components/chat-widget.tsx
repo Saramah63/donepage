@@ -25,12 +25,62 @@ export function ChatWidget() {
     },
   ]);
 
+  const faqs = [
+    {
+      q: "How do I publish my page?",
+      a: "Click Publish, choose a slug, select a plan, then publish. You can review before paying.",
+    },
+    {
+      q: "How do custom domains work?",
+      a: "Connect your domain in Publish, then add a CNAME or A record at your DNS provider. Use the domain status check after updating DNS.",
+    },
+    {
+      q: "How do I upload images or videos?",
+      a: "Use the upload button in the About or Portfolio steps. It supports images and short videos (max 25MB).",
+    },
+    {
+      q: "Why is email sign‑in not showing?",
+      a: "Email sign‑in requires DATABASE_URL, RESEND_API_KEY, and EMAIL_FROM to be set.",
+    },
+    {
+      q: "Why does Google/GitHub sign‑in fail?",
+      a: "Check NEXTAUTH_URL and ensure the OAuth callback URLs match your exact domain.",
+    },
+    {
+      q: "Can I edit after publishing?",
+      a: "Yes. Use your private edit link or open /generator?edit=your-slug to update and republish.",
+    },
+  ];
+
   const handleSend = () => {
     const subject = encodeURIComponent("Donepage Inquiry");
     const body = encodeURIComponent(
       `From: ${email || "no email provided"}\n\n${message}`
     );
     window.location.href = `mailto:hello@donepage.co?subject=${subject}&body=${body}`;
+  };
+
+  const autoReply = (text: string) => {
+    const t = text.toLowerCase();
+    if (t.includes("price") || t.includes("pricing") || t.includes("plan")) {
+      return "Pricing is shown in the Publish flow. Choose a plan, then publish. Business/Pro enable custom domains.";
+    }
+    if (t.includes("domain") || t.includes("custom domain")) {
+      return "Connect your domain in Publish, then add a CNAME or A record at your DNS provider. Use the domain status check after updating DNS.";
+    }
+    if (t.includes("publish") || t.includes("live") || t.includes("deploy")) {
+      return "Click Publish, pick a slug, choose a plan, then publish. You can review the page before paying.";
+    }
+    if (t.includes("email") || t.includes("login") || t.includes("sign in")) {
+      return "Email sign‑in requires DATABASE_URL, RESEND_API_KEY, and EMAIL_FROM. Google/GitHub need correct OAuth callbacks.";
+    }
+    if (t.includes("upload") || t.includes("image") || t.includes("video")) {
+      return "Use the upload button in the About or Portfolio steps. It supports images and short videos (max 25MB).";
+    }
+    if (t.includes("edit") || t.includes("update")) {
+      return "Use your private edit link or open /generator?edit=your-slug to update and republish.";
+    }
+    return "I can help with pricing, domains, publishing, uploads, or login. If you need more, use live chat.";
   };
 
   const sendToAI = async () => {
@@ -46,13 +96,11 @@ export function ChatWidget() {
     setMessages(nextHistory);
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, history: messages }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Chat failed");
+      const reply = autoReply(userMsg);
+      const shouldOfferLive =
+        reply.toLowerCase().includes("use live chat") ||
+        reply.toLowerCase().includes("i can help");
+      const data = { text: reply, offerLive: shouldOfferLive };
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: data.text || "Sorry — I couldn’t answer that." },
@@ -96,6 +144,18 @@ export function ChatWidget() {
           <div className="space-y-4 text-sm text-gray-700">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
               Ask anything — I’ll answer automatically.
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-3">
+              <div className="mb-2 text-xs font-semibold text-gray-600">Common questions</div>
+              <div className="space-y-3 text-sm">
+                {faqs.map((f) => (
+                  <div key={f.q} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                    <div className="font-semibold text-gray-800">{f.q}</div>
+                    <div className="mt-1 text-gray-600">{f.a}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="max-h-64 space-y-3 overflow-auto rounded-xl border border-gray-200 bg-white p-3">
@@ -158,13 +218,17 @@ export function ChatWidget() {
               </Button>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => openCrisp()}
-              className="w-full"
-            >
-              Chat live
-            </Button>
+            {messages.length > 1 &&
+            messages[messages.length - 1]?.role === "assistant" &&
+            messages[messages.length - 1]?.content.includes("live chat") ? (
+              <Button
+                variant="outline"
+                onClick={() => openCrisp()}
+                className="w-full"
+              >
+                Chat live
+              </Button>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
