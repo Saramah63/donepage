@@ -167,6 +167,42 @@ function applyAnswerOverrides(base: ReturnType<typeof generateBaseContent>, answ
   return base;
 }
 
+function parsePortfolioRaw(raw?: string) {
+  const lines = (raw ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const items = lines
+    .map((line) => {
+      const parts = line.split("|").map((p) => p.trim());
+      const [title, description, metric] = parts;
+      if (!title || !description || !metric) return null;
+      return { title, description, metric };
+    })
+    .filter(Boolean) as { title: string; description: string; metric: string }[];
+
+  return items;
+}
+
+function parsePortfolioJson(raw?: string) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((p) => ({
+        title: String(p.title ?? "").trim(),
+        description: String(p.description ?? "").trim(),
+        metric: String(p.metric ?? "").trim(),
+        imageUrl: p.imageUrl ? String(p.imageUrl).trim() : undefined,
+      }))
+      .filter((p) => p.title && p.description && p.metric);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Advanced content generator:
  * - keeps the same shape as generateBaseContent (content.ts)
@@ -209,6 +245,14 @@ export function generateContentAdvanced(answers: QuestionnaireAnswers) {
 
   // Pricing: keep your default (no UI change)
   base.pricing = base.pricing ?? defaultPricing();
+
+  // Portfolio overrides (optional)
+  const customPortfolioJson = parsePortfolioJson(answers.portfolioItemsJson);
+  const customPortfolioRaw = parsePortfolioRaw(answers.portfolioItemsRaw);
+  const customPortfolio = customPortfolioJson.length > 0 ? customPortfolioJson : customPortfolioRaw;
+  if (customPortfolio.length > 0) {
+    base.portfolio.items = customPortfolio as any;
+  }
 
   // Steps (optional section; add now so you can render later without changing generator again)
   const steps = buildSteps(answers);

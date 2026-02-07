@@ -75,6 +75,10 @@ export type QuestionnaireAnswers = {
   // Optional: CTA labels (if you want customizable button text later)
   ctaPrimaryLabel?: string; // e.g. "Book a Call"
   ctaSecondaryLabel?: string; // e.g. "Email Us"
+
+  // Optional: portfolio overrides
+  portfolioItemsRaw?: string; // deprecated fallback
+  portfolioItemsJson?: string; // JSON stringified items with optional images
 };
 
 type Option = {
@@ -227,7 +231,7 @@ const BASE_STEPS: Step[] = [
   {
     key: "aboutImageUrl",
     title: "Add an About image (optional)",
-    subtitle: "Paste a direct image URL (jpg/png/webp). Leave empty to skip.",
+    subtitle: "Upload a photo/video or paste a direct URL. Leave empty to skip.",
     options: [],
   },
   {
@@ -293,6 +297,18 @@ const ADVANCED_STEPS: Step[] = [
     subtitle: 'Example: "Deliver + optimize"',
     options: [],
   },
+  {
+    key: "portfolioItemsRaw",
+    title: "Portfolio highlights (optional)",
+    subtitle: "One per line: Title | Description | Metric (e.g. 40% growth)",
+    options: [],
+  },
+  {
+    key: "portfolioItemsJson",
+    title: "Portfolio items (optional)",
+    subtitle: "Add real projects, metrics, and optional images/videos.",
+    options: [],
+  },
 ];
 
 type Props = {
@@ -310,6 +326,11 @@ function clamp(n: number, min: number, max: number) {
 
 export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete }: Props) {
   const [advanced, setAdvanced] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [portfolioItems, setPortfolioItems] = React.useState<
+    { title: string; description: string; metric: string; imageUrl?: string }[]
+  >([]);
 
   const STEPS = React.useMemo(() => {
     // Advanced = add steps, without touching base flow UX
@@ -339,7 +360,9 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
           step.key === "aboutImageUrl" ||
           step.key === "whatsApp" ||
           step.key === "bookingLink" ||
-          step.key === "aboutText"
+          step.key === "aboutText" ||
+          step.key === "portfolioItemsRaw" ||
+          step.key === "portfolioItemsJson"
       )
     : Boolean(currentValue);
 
@@ -371,6 +394,77 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     onGenerate?.(final);
     onComplete?.(final);
   };
+
+  const uploadMedia = async (file: File) => {
+    if (!file) return;
+    setUploadError(null);
+
+    const allowed = file.type.startsWith("image/") || file.type.startsWith("video/");
+    if (!allowed) {
+      setUploadError("Please upload an image or video file.");
+      return;
+    }
+
+    const maxBytes = 25 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setUploadError("File is too large. Please upload under 25MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Upload failed");
+
+      return data.url as string;
+    } catch (e: any) {
+      setUploadError(e?.message ?? "Upload failed");
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const syncPortfolioJson = (
+    next: { title: string; description: string; metric: string; imageUrl?: string }[]
+  ) => {
+    setPortfolioItems(next);
+    try {
+      const clean = next.filter((i) => i.title || i.description || i.metric || i.imageUrl);
+      setValue(JSON.stringify(clean));
+    } catch {
+      // ignore
+    }
+  };
+
+  React.useEffect(() => {
+    if (step.key !== "portfolioItemsJson") return;
+    const raw = (answers.portfolioItemsJson as string) || "";
+    if (!raw) {
+      if (portfolioItems.length === 0) return;
+      setPortfolioItems([]);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setPortfolioItems(
+          parsed.map((p) => ({
+            title: String(p.title ?? ""),
+            description: String(p.description ?? ""),
+            metric: String(p.metric ?? ""),
+            imageUrl: p.imageUrl ? String(p.imageUrl) : undefined,
+          }))
+        );
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, [step.key, answers.portfolioItemsJson]);
 
   const headerQuestionCount = advanced ? "Answer quick questions to get your personalized landing page" : "Answer 9 quick questions to get your personalized landing page";
 
@@ -456,6 +550,209 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     onChange={(e) => setValue(e.target.value)}
                     className="w-full min-h-[140px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
                   />
+                ) : step.key === "aboutImageUrl" ? (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-dashed border-gray-300 bg-white/70 p-4">
+                      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">
+                            Upload a photo or short video
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            JPG/PNG/WebP or MP4/WebM. Max 25MB.
+                          </div>
+                        </div>
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50">
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            className="sr-only"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) {
+                                uploadMedia(f).then((url) => {
+                                  if (url) setValue(url);
+                                });
+                              }
+                              e.currentTarget.value = "";
+                            }}
+                          />
+                          {uploading ? "Uploading…" : "Upload File"}
+                        </label>
+                      </div>
+
+                      {uploadError ? (
+                        <div className="mt-3 text-xs text-red-600">{uploadError}</div>
+                      ) : null}
+
+                      {currentValue ? (
+                        <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                          {/\.(mp4|webm|mov)(\?.*)?$/i.test(String(currentValue)) ? (
+                            <video
+                              src={String(currentValue)}
+                              className="h-40 w-full object-cover"
+                              controls
+                            />
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={String(currentValue)}
+                              alt="Uploaded preview"
+                              className="h-40 w-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          )}
+                          <div className="flex items-center justify-between gap-2 border-t border-gray-200 px-3 py-2 text-xs text-gray-600">
+                            <span className="truncate">{String(currentValue)}</span>
+                            <button
+                              type="button"
+                              onClick={() => setValue("")}
+                              className="text-red-600 hover:underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <input
+                      placeholder="Or paste a direct URL (optional)"
+                      value={(currentValue as string) ?? ""}
+                      onChange={(e) => setValue(e.target.value)}
+                      className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                    />
+                  </div>
+                ) : step.key === "portfolioItemsRaw" ? (
+                  <textarea
+                    placeholder={`Brand Refresh | Repositioned SaaS branding | 200% recognition increase\nE-commerce UX | Conversion-focused redesign | 45% conversion increase\nMobile App UI | Fintech interface redesign | 4.8 star rating`}
+                    value={(currentValue as string) ?? ""}
+                    onChange={(e) => setValue(e.target.value)}
+                    className="w-full min-h-[160px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                ) : step.key === "portfolioItemsJson" ? (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600">
+                      Add up to 4 portfolio items. You can upload an image/video for each.
+                    </div>
+
+                    {portfolioItems.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-600">
+                        No items yet. Click “Add item” to start.
+                      </div>
+                    ) : null}
+
+                    {portfolioItems.map((item, idx) => (
+                      <div key={idx} className="rounded-2xl border border-gray-200 bg-white p-4">
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <input
+                            placeholder="Title"
+                            value={item.title}
+                            onChange={(e) => {
+                              const next = [...portfolioItems];
+                              next[idx] = { ...next[idx], title: e.target.value };
+                              syncPortfolioJson(next);
+                            }}
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                          />
+                          <input
+                            placeholder="Metric (e.g. 45% conversion increase)"
+                            value={item.metric}
+                            onChange={(e) => {
+                              const next = [...portfolioItems];
+                              next[idx] = { ...next[idx], metric: e.target.value };
+                              syncPortfolioJson(next);
+                            }}
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                          />
+                          <div className="flex items-center gap-2">
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-900 hover:bg-gray-50">
+                              <input
+                                type="file"
+                                accept="image/*,video/*"
+                                className="sr-only"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) {
+                                    uploadMedia(f).then((url) => {
+                                      if (!url) return;
+                                      const next = [...portfolioItems];
+                                      next[idx] = { ...next[idx], imageUrl: url };
+                                      syncPortfolioJson(next);
+                                    });
+                                  }
+                                  e.currentTarget.value = "";
+                                }}
+                              />
+                              {uploading ? "Uploading…" : "Upload Media"}
+                            </label>
+                            {item.imageUrl ? (
+                              <button
+                                type="button"
+                                className="text-xs text-red-600 hover:underline"
+                                onClick={() => {
+                                  const next = [...portfolioItems];
+                                  next[idx] = { ...next[idx], imageUrl: "" };
+                                  syncPortfolioJson(next);
+                                }}
+                              >
+                                Remove
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                        <textarea
+                          placeholder="Description"
+                          value={item.description}
+                          onChange={(e) => {
+                            const next = [...portfolioItems];
+                            next[idx] = { ...next[idx], description: e.target.value };
+                            syncPortfolioJson(next);
+                          }}
+                          className="mt-3 w-full min-h-[90px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                        />
+
+                        {item.imageUrl ? (
+                          <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                            {/\.(mp4|webm|mov)(\?.*)?$/i.test(item.imageUrl) ? (
+                              <video src={item.imageUrl} className="h-40 w-full object-cover" controls />
+                            ) : (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={item.imageUrl} className="h-40 w-full object-cover" alt="Portfolio media" />
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          if (portfolioItems.length >= 4) return;
+                          const next = [
+                            ...portfolioItems,
+                            { title: "", description: "", metric: "", imageUrl: "" },
+                          ];
+                          syncPortfolioJson(next);
+                        }}
+                      >
+                        Add item
+                      </Button>
+                      {portfolioItems.length > 0 ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => syncPortfolioJson([])}
+                        >
+                          Clear all
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
                 ) : (
                   <input
                     placeholder={
@@ -487,9 +784,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                                                 ? "Step 2"
                                                 : step.key === "processStep3"
                                                   ? "Step 3"
-                                                  : step.key === "aboutImageUrl"
-                                                    ? "https://... (optional image URL)"
-                                                    : ""
+                                                  : ""
                     }
                     value={(currentValue as string) ?? ""}
                     onChange={(e) => setValue(e.target.value)}

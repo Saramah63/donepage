@@ -2,12 +2,13 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Questionnaire,
   type QuestionnaireAnswers,
 } from "@/app/components/questionnaire";
+import { setPlan } from "@/app/lib/plan-store";
 
 type Props = {
   onSave: (
@@ -63,11 +64,13 @@ export default function GeneratorClient({
   initialAnswers = null,
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [answers, setAnswers] = React.useState<QuestionnaireAnswers | null>(
     initialAnswers
   );
   const [loading, setLoading] = React.useState(false);
   const [hydrated, setHydrated] = React.useState(false);
+  const [handledPayment, setHandledPayment] = React.useState(false);
 
   // ✅ اگر editSlug هست ولی سرور داده نداد، از localStorage همان slug را هم چک کن
   React.useEffect(() => {
@@ -84,6 +87,37 @@ export default function GeneratorClient({
       return;
     }
   }, [editSlug, initialAnswers, answers]);
+
+  React.useEffect(() => {
+    if (handledPayment) return;
+
+    const paid = searchParams.get("paid");
+    const sessionId = searchParams.get("session_id");
+
+    if (paid !== "1" || !sessionId) return;
+
+    setHandledPayment(true);
+
+    (async () => {
+      try {
+        const res = await fetch("/api/stripe/webhook", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "Payment verification failed");
+
+        if (data?.plan) setPlan(data.plan);
+        toast.success("Payment confirmed. You can publish now.");
+
+        const next = editSlug ? `/generator?edit=${editSlug}` : "/generator";
+        router.replace(next);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Payment verification failed");
+      }
+    })();
+  }, [handledPayment, searchParams, editSlug, router]);
 
   async function handleGenerate(finalAnswers: QuestionnaireAnswers) {
     setLoading(true);

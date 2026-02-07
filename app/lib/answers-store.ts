@@ -1,6 +1,5 @@
 // app/lib/answers-store.ts
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
-import { kv } from "@vercel/kv";
 import crypto from "crypto";
 
 export type LandingStatus = "draft" | "published";
@@ -53,17 +52,40 @@ function memStore() {
   return global.__donepageMemoryStore;
 }
 
+type KvModule = typeof import("@vercel/kv");
+let kvClient: KvModule["kv"] | null = null;
+let warnedNoKV = false;
+
+async function getKvClient() {
+  if (!hasKV()) {
+    if (!warnedNoKV) {
+      console.warn(
+        "KV is not configured. Falling back to in-memory store. Set KV_REST_API_URL and KV_REST_API_TOKEN."
+      );
+      warnedNoKV = true;
+    }
+    return null;
+  }
+  if (!kvClient) {
+    const mod = await import("@vercel/kv");
+    kvClient = mod.kv;
+  }
+  return kvClient;
+}
+
 /** KV wrapper (supports local in-memory fallback) */
 async function getKV<T>(key: string): Promise<T | null> {
-  if (hasKV()) return (await kv.get<T>(key)) ?? null;
+  const client = await getKvClient();
+  if (client) return (await client.get<T>(key)) ?? null;
   const store = memStore();
   return (store.get(key) as T) ?? null;
 }
 
 async function setKV<T>(key: string, value: T, opts?: { ex?: number }) {
-  if (hasKV()) {
+  const client = await getKvClient();
+  if (client) {
     // @vercel/kv supports { ex } TTL
-    await (kv.set as any)(key, value, opts ?? undefined);
+    await (client.set as any)(key, value, opts ?? undefined);
     return;
   }
   const store = memStore();
@@ -71,8 +93,9 @@ async function setKV<T>(key: string, value: T, opts?: { ex?: number }) {
 }
 
 async function delKV(key: string) {
-  if (hasKV()) {
-    await kv.del(key);
+  const client = await getKvClient();
+  if (client) {
+    await client.del(key);
     return;
   }
   const store = memStore();

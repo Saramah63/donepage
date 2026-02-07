@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   const secret = process.env.PLAN_TOKEN_SECRET;
   if (!secret) {
     // No secret => can't verify => default safely
-    return NextResponse.json({ plan: "starter" });
+    return NextResponse.json({ plan: "starter", paid: false });
   }
 
   const cookieHeader = req.headers.get("cookie") || "";
@@ -45,5 +45,5 @@ export async function GET(req: Request) {
   const token = cookie ? decodeURIComponent(cookie.split("=")[1] || "") : "";
   const plan = token ? verify(token, secret) : null;
 
-  return NextResponse.json({ plan: plan ?? "starter" });
+  return NextResponse.json({ plan: plan ?? "starter", paid: Boolean(plan) });
 }

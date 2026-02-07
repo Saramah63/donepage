@@ -62,41 +62,43 @@ export default function SlugClient({
   return (
     <div>
       {/* Minimal banner for clarity */}
-      <div className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2">
-          <div className="text-xs font-medium text-gray-700">{badge}</div>
+      {view.mode !== "published" ? (
+        <div className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2">
+            <div className="text-xs font-medium text-gray-700">{badge}</div>
 
-          <div className="flex items-center gap-2">
-            {view.mode !== "published" ? (
+            <div className="flex items-center gap-2">
+              {view.mode !== "published" ? (
+                <button
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  onClick={() => router.push(`/${slug}`)}
+                >
+                  View Published
+                </button>
+              ) : (
+                <button
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  onClick={() => router.push(`/${slug}?preview=draft`)}
+                >
+                  View Draft
+                </button>
+              )}
+
               <button
                 className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                onClick={() => router.push(`/${slug}`)}
+                onClick={() => router.push(`/generator?edit=${slug}`)}
               >
-                View Published
+                Edit Draft
               </button>
-            ) : (
-              <button
-                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                onClick={() => router.push(`/${slug}?preview=draft`)}
-              >
-                View Draft
-              </button>
-            )}
-
-            <button
-              className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-              onClick={() => router.push(`/generator?edit=${slug}`)}
-            >
-              Edit Draft
-            </button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <LandingPagePreview
         answers={answers}
         onEdit={() => router.push(`/generator?edit=${slug}`)}
-        mode="preview"
+        mode={view.mode === "published" ? "export" : "preview"}
       />
     </div>
   );

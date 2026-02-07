@@ -2,6 +2,7 @@ import { Sparkles, CheckCircle, ArrowRight, Zap, Globe, Download } from "lucide-
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
+import { ChatWidget } from "@/app/components/chat-widget";
 
 export const metadata = {
   title: "Donepage — Your landing page, done",
@@ -32,6 +33,31 @@ export default function HomePage() {
 
         {/* Hero */}
         <div className="mx-auto mt-10 max-w-3xl text-center">
+          <div className="mx-auto mb-6 flex w-fit items-center gap-3 rounded-full border border-blue-200/60 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md">
+            <div className="relative h-10 w-10">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 blur-[6px] opacity-60" />
+              <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-white">
+                <svg
+                  viewBox="0 0 48 48"
+                  className="h-7 w-7 animate-[spin_6s_linear_infinite] text-blue-600"
+                  fill="none"
+                >
+                  <circle cx="24" cy="24" r="16" stroke="currentColor" strokeWidth="3" />
+                  <path
+                    d="M24 8v8l6 6"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="text-left">
+              <div className="text-xs font-semibold text-blue-700">Auto-generated</div>
+              <div className="text-sm font-semibold text-gray-900">Landing Page Engine</div>
+            </div>
+          </div>
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
             Your landing page,{" "}
             <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
@@ -120,11 +146,46 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Contact */}
+        <div className="mx-auto mt-16 w-full max-w-5xl">
+          <Card className="border border-gray-200 bg-white/85 shadow-xl shadow-blue-500/5 backdrop-blur-xl">
+            <CardContent className="py-10">
+              <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-center">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">Contact Donepage</h2>
+                  <p className="mt-3 text-gray-600">
+                    Have questions about pricing, custom domains, or the generator?
+                    Reach us any time.
+                  </p>
+                  <div className="mt-4 text-sm text-gray-700">
+                    Email: <span className="font-semibold">hello@donepage.co</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Button asChild size="lg">
+                    <a href="mailto:hello@donepage.co">Email Us</a>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
+                    asChild
+                  >
+                    <a href="#how-it-works">See how it works</a>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Footer */}
         <div className="mt-16 text-center text-sm text-gray-500">
           © 2026 Donepage. Built for speed, clarity, and conversion.
         </div>
       </div>
+
+      <ChatWidget />
     </div>
   );
 }
