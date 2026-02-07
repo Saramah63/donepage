@@ -220,6 +220,10 @@ body {
   transform-origin: 50% 50%;
 }
 
+.spin-reverse {
+  animation-direction: reverse;
+}
+
 .ring-shift {
   animation: hueShift 5s linear infinite;
 }

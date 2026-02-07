@@ -55,7 +55,7 @@ export default function HomePage() {
                   <g className="engine-spin">
                     <circle cx="32" cy="10" r="3.6" fill="currentColor" />
                   </g>
-                  <g className="orbit-reverse">
+                  <g className="engine-spin-fast spin-reverse">
                     <circle cx="20" cy="32" r="3.3" fill="currentColor" />
                   </g>
                 </svg>
