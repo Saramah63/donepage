@@ -39,17 +39,20 @@ export default function HomePage() {
           <div className="mx-auto mb-8 flex w-fit items-center gap-4 rounded-full border border-blue-200/60 bg-white/70 px-5 py-3 shadow-sm backdrop-blur-md gold-shimmer parallax-slow gold-shadow">
             <div className="relative h-16 w-16">
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 blur-[10px] opacity-60" />
-              <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-white pulse-gold">
-                <svg
-                  viewBox="0 0 64 64"
-                  className="h-10 w-10 text-blue-600"
-                  fill="none"
-                >
-                  <circle cx="32" cy="32" r="20" stroke="currentColor" strokeWidth="3" />
-                  <circle cx="32" cy="32" r="12" stroke="currentColor" strokeWidth="2" className="orbit" />
+              <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-white pulse-gold engine-glow">
+                <svg viewBox="0 0 64 64" className="h-11 w-11 text-blue-600" fill="none">
+                  <defs>
+                    <linearGradient id="engineGradient" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#0ea5e9" />
+                      <stop offset="50%" stopColor="#d6b44a" />
+                      <stop offset="100%" stopColor="#0f172a" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="32" cy="32" r="22" stroke="url(#engineGradient)" strokeWidth="2.5" className="engine-spin" />
+                  <circle cx="32" cy="32" r="14" stroke="currentColor" strokeWidth="2" className="engine-spin-fast" />
                   <circle cx="32" cy="32" r="6" stroke="currentColor" strokeWidth="2" className="orbit-reverse" />
                   <path
-                    d="M32 14v10l7 7"
+                    d="M32 12v10l7 7"
                     stroke="currentColor"
                     strokeWidth="3"
                     strokeLinecap="round"
