@@ -211,14 +211,15 @@ body {
 }
 
 .engine-spin {
-  animation: orbit 10s linear infinite;
+  animation: orbit 8s linear infinite;
   transform-origin: 50% 50%;
 }
 
 .engine-spin-fast {
-  animation: orbit 6s linear infinite;
+  animation: orbit 4s linear infinite;
   transform-origin: 50% 50%;
 }
+
 
 .engine-glow {
   box-shadow:
@@ -304,6 +305,7 @@ body {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
 
 * {
   -webkit-tap-highlight-color: transparent;
