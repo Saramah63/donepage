@@ -27,28 +27,36 @@ export function ChatWidget() {
 
   const faqs = [
     {
-      q: "How do I publish my page?",
-      a: "Click Publish, choose a slug, select a plan, then publish. You can review before paying.",
+      q: "How does Donepage generate my landing page?",
+      a: "Answer the guided questions and Donepage instantly builds a full landing page with copy, layout, and sections based on your inputs.",
+    },
+    {
+      q: "What is the full process from start to publish?",
+      a: "1) Answer questions, 2) Preview and edit, 3) Save draft, 4) Choose a plan, 5) Publish and share.",
+    },
+    {
+      q: "Can I edit after publishing?",
+      a: "Yes. Use your private edit link or open /generator?edit=your-slug to update and republish.",
+    },
+    {
+      q: "How does pricing work?",
+      a: "You review your page first, then choose a plan when you publish. Business/Pro unlock custom domains.",
+    },
+    {
+      q: "What plans are available?",
+      a: "Starter, Business, and Pro. Business/Pro include custom domains and advanced features.",
     },
     {
       q: "How do custom domains work?",
       a: "Connect your domain in Publish, then add a CNAME or A record at your DNS provider. Use the domain status check after updating DNS.",
     },
     {
-      q: "How do I upload images or videos?",
+      q: "Do I get a free Donepage subdomain?",
+      a: "Yes. You can publish to yourslug.donepage.co instantly, then upgrade to a custom domain any time.",
+    },
+    {
+      q: "How do I add images or videos?",
       a: "Use the upload button in the About or Portfolio steps. It supports images and short videos (max 25MB).",
-    },
-    {
-      q: "Why is email sign‑in not showing?",
-      a: "Email sign‑in requires DATABASE_URL, RESEND_API_KEY, and EMAIL_FROM to be set.",
-    },
-    {
-      q: "Why does Google/GitHub sign‑in fail?",
-      a: "Check NEXTAUTH_URL and ensure the OAuth callback URLs match your exact domain.",
-    },
-    {
-      q: "Can I edit after publishing?",
-      a: "Yes. Use your private edit link or open /generator?edit=your-slug to update and republish.",
     },
   ];
 
