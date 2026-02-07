@@ -19,7 +19,7 @@ export function ChatWidget() {
     { role: "user" | "assistant"; content: string }[]
   >([
     {
-      role: "assistant",
+      role: "assistant" as const,
       content:
         "Hi! Ask me anything about Donepage, pricing, domains, or publishing.",
     },
@@ -39,7 +39,10 @@ export function ChatWidget() {
     setMessage("");
     setSending(true);
 
-    const nextHistory = [...messages, { role: "user", content: userMsg }];
+    const nextHistory = [
+      ...messages,
+      { role: "user" as const, content: userMsg },
+    ];
     setMessages(nextHistory);
 
     try {
