@@ -2,6 +2,17 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
 import Script from "next/script";
+import { Manrope, Playfair_Display } from "next/font/google";
+
+const bodyFont = Manrope({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display",
+});
 
 export const metadata: Metadata = {
   title: "Donepage — Your landing page, done",
@@ -17,7 +28,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body
+        suppressHydrationWarning
+        className={[
+          "min-h-screen bg-background text-foreground antialiased",
+          bodyFont.variable,
+          displayFont.variable,
+        ].join(" ")}
+      >
         <Providers>{children}</Providers>
         {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID ? (
           <Script id="crisp-chat" strategy="afterInteractive">

@@ -23,17 +23,36 @@ const emailEnabled =
   Boolean(process.env.EMAIL_FROM) &&
   Boolean(prisma);
 
+const googleEnabled =
+  Boolean(process.env.GOOGLE_CLIENT_ID) &&
+  Boolean(process.env.GOOGLE_CLIENT_SECRET);
+
+const githubEnabled =
+  Boolean(process.env.GITHUB_ID) &&
+  Boolean(process.env.GITHUB_SECRET);
+
 export const authOptions: NextAuthOptions = {
+  pages: {
+    signIn: "/auth/signin",
+  },
   adapter: prisma ? PrismaAdapter(prisma) : undefined,
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    GitHub({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
-    }),
+    ...(googleEnabled
+      ? [
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          }),
+        ]
+      : []),
+    ...(githubEnabled
+      ? [
+          GitHub({
+            clientId: process.env.GITHUB_ID!,
+            clientSecret: process.env.GITHUB_SECRET!,
+          }),
+        ]
+      : []),
     ...(emailEnabled
       ? [
           Email({

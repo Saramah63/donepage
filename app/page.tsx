@@ -14,6 +14,9 @@ export const metadata = {
 export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40">
+      <div className="mesh-hero" aria-hidden="true" />
+      <div className="hero-spotlight" aria-hidden="true" />
+      <div className="noise-film" aria-hidden="true" />
       <div
         className="pointer-events-none absolute inset-0 bg-grid-gray-100 [mask-image:linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,255,255,0.45),rgba(255,255,255,0.85))]"
         aria-hidden="true"
@@ -21,7 +24,7 @@ export default function HomePage() {
       <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col px-4 pb-20 pt-14 sm:pt-20">
+      <div className="relative mx-auto flex max-w-6xl flex-col px-4 pb-24 pt-16 sm:pt-24">
         {/* Top pill */}
         <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-sm">
@@ -32,19 +35,21 @@ export default function HomePage() {
         </div>
 
         {/* Hero */}
-        <div className="mx-auto mt-10 max-w-3xl text-center">
-          <div className="mx-auto mb-6 flex w-fit items-center gap-3 rounded-full border border-blue-200/60 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md">
-            <div className="relative h-10 w-10">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 blur-[6px] opacity-60" />
-              <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-white">
+        <div className="mx-auto mt-12 max-w-4xl text-center">
+          <div className="mx-auto mb-8 flex w-fit items-center gap-4 rounded-full border border-blue-200/60 bg-white/70 px-5 py-3 shadow-sm backdrop-blur-md gold-shimmer parallax-slow gold-shadow">
+            <div className="relative h-16 w-16">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 blur-[10px] opacity-60" />
+              <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-white pulse-gold">
                 <svg
-                  viewBox="0 0 48 48"
-                  className="h-7 w-7 animate-[spin_6s_linear_infinite] text-blue-600"
+                  viewBox="0 0 64 64"
+                  className="h-10 w-10 text-blue-600"
                   fill="none"
                 >
-                  <circle cx="24" cy="24" r="16" stroke="currentColor" strokeWidth="3" />
+                  <circle cx="32" cy="32" r="20" stroke="currentColor" strokeWidth="3" />
+                  <circle cx="32" cy="32" r="12" stroke="currentColor" strokeWidth="2" className="orbit" />
+                  <circle cx="32" cy="32" r="6" stroke="currentColor" strokeWidth="2" className="orbit-reverse" />
                   <path
-                    d="M24 8v8l6 6"
+                    d="M32 14v10l7 7"
                     stroke="currentColor"
                     strokeWidth="3"
                     strokeLinecap="round"
@@ -58,14 +63,12 @@ export default function HomePage() {
               <div className="text-sm font-semibold text-gray-900">Landing Page Engine</div>
             </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl parallax-slow">
             Your landing page,{" "}
-            <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              done
-            </span>
-            .
+            <span className="luxury-gradient-text">done</span>.
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-600 sm:text-xl">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-gray-600 sm:text-xl parallax-slow">
             Answer a few questions and Donepage generates a polished, SEO-ready landing page
             you can publish instantly.
           </p>
