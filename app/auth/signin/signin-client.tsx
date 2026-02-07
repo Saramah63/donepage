@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 
 type Provider = { id: string; name: string };
@@ -9,6 +10,8 @@ type Provider = { id: string; name: string };
 export default function SignInClient() {
   const [providers, setProviders] = React.useState<Provider[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   React.useEffect(() => {
     let mounted = true;
@@ -32,6 +35,20 @@ export default function SignInClient() {
     };
   }, []);
 
+  React.useEffect(() => {
+    const err = searchParams.get("error");
+    if (!err) return;
+    if (err === "OAuthSignin" || err === "OAuthCallback") {
+      setErrorMsg("OAuth sign-in failed. Check your redirect URL configuration.");
+      return;
+    }
+    if (err === "EmailSignin") {
+      setErrorMsg("Email sign-in failed. Please verify your email settings.");
+      return;
+    }
+    setErrorMsg("Sign-in failed. Please try again.");
+  }, [searchParams]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 px-4 py-16">
       <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-200 bg-white/90 p-8 shadow-xl">
@@ -39,6 +56,12 @@ export default function SignInClient() {
         <p className="mt-2 text-sm text-gray-600">
           Choose a sign‑in method below.
         </p>
+
+        {errorMsg ? (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {errorMsg}
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="mt-6 text-sm text-gray-500">Loading providers…</div>

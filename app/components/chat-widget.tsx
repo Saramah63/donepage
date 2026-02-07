@@ -14,26 +14,16 @@ export function ChatWidget() {
   const [open, setOpen] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [message, setMessage] = React.useState("");
-  const [activeAnswer, setActiveAnswer] = React.useState<string | null>(null);
-
-  const faqs = [
+  const [sending, setSending] = React.useState(false);
+  const [messages, setMessages] = React.useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([
     {
-      q: "How do I publish my page?",
-      a: "Open your page preview, click Publish, choose a plan, then publish. You can review before paying.",
+      role: "assistant",
+      content:
+        "Hi! Ask me anything about Donepage, pricing, domains, or publishing.",
     },
-    {
-      q: "How do custom domains work?",
-      a: "Connect your domain in Publish. Then add a CNAME (or A record) at your DNS provider. We’ll verify it.",
-    },
-    {
-      q: "How do I upload images or videos?",
-      a: "In the generator, use the upload button in the About or Portfolio steps. We host it for you automatically.",
-    },
-    {
-      q: "Can I edit my page after publishing?",
-      a: "Yes. Use your private edit link or open the generator with your slug to update and republish.",
-    },
-  ];
+  ]);
 
   const handleSend = () => {
     const subject = encodeURIComponent("Donepage Inquiry");
@@ -41,6 +31,37 @@ export function ChatWidget() {
       `From: ${email || "no email provided"}\n\n${message}`
     );
     window.location.href = `mailto:hello@donepage.co?subject=${subject}&body=${body}`;
+  };
+
+  const sendToAI = async () => {
+    if (!message.trim() || sending) return;
+    const userMsg = message.trim();
+    setMessage("");
+    setSending(true);
+
+    const nextHistory = [...messages, { role: "user", content: userMsg }];
+    setMessages(nextHistory);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg, history: messages }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Chat failed");
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.text || "Sorry — I couldn’t answer that." },
+      ]);
+    } catch (e: any) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: e?.message ?? "Chat failed." },
+      ]);
+    } finally {
+      setSending(false);
+    }
   };
 
   const openCrisp = () => {
@@ -71,26 +92,29 @@ export function ChatWidget() {
 
           <div className="space-y-4 text-sm text-gray-700">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-              Instant answers for common questions. You can also chat live.
+              Ask anything — I’ll answer automatically.
             </div>
 
-            <div className="grid gap-2">
-              {faqs.map((f) => (
-                <button
-                  key={f.q}
-                  onClick={() => setActiveAnswer(f.a)}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm hover:border-blue-300 hover:bg-blue-50/50"
+            <div className="max-h-64 space-y-3 overflow-auto rounded-xl border border-gray-200 bg-white p-3">
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={[
+                    "rounded-lg px-3 py-2 text-sm",
+                    m.role === "assistant"
+                      ? "bg-blue-50 text-blue-900"
+                      : "bg-gray-100 text-gray-800",
+                  ].join(" ")}
                 >
-                  {f.q}
-                </button>
+                  {m.content}
+                </div>
               ))}
+              {sending ? (
+                <div className="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                  Thinking…
+                </div>
+              ) : null}
             </div>
-
-            {activeAnswer ? (
-              <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-3 text-sm text-blue-900">
-                {activeAnswer}
-              </div>
-            ) : null}
 
             <div className="space-y-2">
               <label className="text-xs font-semibold text-gray-700">Your email (optional)</label>
@@ -115,6 +139,21 @@ export function ChatWidget() {
             <Button onClick={handleSend} className="w-full">
               Send Message
             </Button>
+
+            <div className="flex gap-2">
+              <input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Ask a question…"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") sendToAI();
+                }}
+              />
+              <Button onClick={sendToAI} disabled={sending}>
+                Ask
+              </Button>
+            </div>
 
             <Button
               variant="outline"

@@ -64,6 +64,11 @@ export default function HomePage() {
             </div>
           </div>
 
+          <div className="mx-auto mb-6 flex w-fit items-center gap-3 rounded-2xl border border-gray-200 bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-lg shadow-blue-500/10 parallax-slow">
+            <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            Live preview updates as you type
+          </div>
+
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl parallax-slow">
             Your landing page,{" "}
             <span className="luxury-gradient-text">done</span>.
