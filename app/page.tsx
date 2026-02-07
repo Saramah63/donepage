@@ -48,25 +48,15 @@ export default function HomePage() {
                       <stop offset="100%" stopColor="#0f172a" />
                     </linearGradient>
                   </defs>
-                  <circle cx="32" cy="32" r="20" stroke="url(#engineGradient)" strokeWidth="2.5" className="engine-spin" />
-                  <circle cx="32" cy="32" r="9" stroke="currentColor" strokeWidth="1.6" className="orbit-reverse" />
+                  <circle cx="32" cy="32" r="20" stroke="url(#engineGradient)" strokeWidth="2.5" className="engine-spin ring-shift" />
+                  <circle cx="32" cy="32" r="9" stroke="currentColor" strokeWidth="1.6" className="orbit-reverse ring-shift-alt" />
 
-                  {/* Minimal puzzle pieces orbiting */}
+                  {/* Two orbiting nodes */}
                   <g className="engine-spin">
-                    <path
-                      d="M20 16h8v6a2.5 2.5 0 1 0 5 0v-6h6v8h-3a2.5 2.5 0 1 0 0 5h3v5H20z"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      fill="none"
-                    />
+                    <circle cx="32" cy="10" r="3.6" fill="currentColor" />
                   </g>
-                  <g className="engine-spin-fast">
-                    <path
-                      d="M40 40h7v-5a2.5 2.5 0 1 0-5 0v5h-6v-7h3a2.5 2.5 0 1 0 0-5h-3v-5h4z"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      fill="none"
-                    />
+                  <g className="orbit-reverse">
+                    <circle cx="20" cy="32" r="3.3" fill="currentColor" />
                   </g>
                 </svg>
               </div>

@@ -220,6 +220,14 @@ body {
   transform-origin: 50% 50%;
 }
 
+.ring-shift {
+  animation: hueShift 5s linear infinite;
+}
+
+.ring-shift-alt {
+  animation: hueShift 7s linear infinite reverse;
+}
+
 
 .engine-glow {
   box-shadow:
@@ -304,6 +312,12 @@ body {
 @keyframes orbit {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes hueShift {
+  0% { filter: hue-rotate(0deg); }
+  50% { filter: hue-rotate(25deg); }
+  100% { filter: hue-rotate(0deg); }
 }
 
 
