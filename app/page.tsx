@@ -48,24 +48,24 @@ export default function HomePage() {
                       <stop offset="100%" stopColor="#0f172a" />
                     </linearGradient>
                   </defs>
-                  <circle cx="32" cy="32" r="22" stroke="url(#engineGradient)" strokeWidth="2.5" className="engine-spin" />
-                  <circle cx="32" cy="32" r="14" stroke="currentColor" strokeWidth="2" className="engine-spin-fast" />
-                  <circle cx="32" cy="32" r="6" stroke="currentColor" strokeWidth="2" className="orbit-reverse" />
-                  <g className="engine-spin-fast">
+                  <circle cx="32" cy="32" r="20" stroke="url(#engineGradient)" strokeWidth="2.5" className="engine-spin" />
+                  <circle cx="32" cy="32" r="9" stroke="currentColor" strokeWidth="1.6" className="orbit-reverse" />
+
+                  {/* Minimal puzzle pieces orbiting */}
+                  <g className="engine-spin">
                     <path
-                      d="M20 20h8v6a3 3 0 1 0 6 0v-6h6v8h-4a3 3 0 1 0 0 6h4v6H20v-8h4a3 3 0 1 0 0-6h-4z"
+                      d="M20 16h8v6a2.5 2.5 0 1 0 5 0v-6h6v8h-3a2.5 2.5 0 1 0 0 5h3v5H20z"
                       stroke="currentColor"
-                      strokeWidth="1.8"
+                      strokeWidth="1.6"
                       fill="none"
                     />
                   </g>
-                  <g className="engine-spin">
+                  <g className="engine-spin-fast">
                     <path
-                      d="M44 16h6v6a2.5 2.5 0 1 0 5 0v-6h6v6h-2a2.5 2.5 0 1 0 0 5h2v6h-6v-2a2.5 2.5 0 1 0-5 0v2h-6z"
+                      d="M40 40h7v-5a2.5 2.5 0 1 0-5 0v5h-6v-7h3a2.5 2.5 0 1 0 0-5h-3v-5h4z"
                       stroke="currentColor"
-                      strokeWidth="1.5"
+                      strokeWidth="1.4"
                       fill="none"
-                      transform="translate(-20 -6)"
                     />
                   </g>
                 </svg>
