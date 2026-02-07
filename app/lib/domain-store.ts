@@ -66,10 +66,10 @@ function normalizeDomain(input: string) {
   return (input || "")
     .trim()
     .toLowerCase()
-    .replace(/^https?:\\/\\//, "")
-    .replace(/\\/.*/, "")
-    .replace(/:\\d+$/, "")
-    .replace(/\\.$/, "");
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*/, "")
+    .replace(/:\d+$/, "")
+    .replace(/\.$/, "");
 }
 
 export function sanitizeDomain(input: string) {

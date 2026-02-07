@@ -68,21 +68,12 @@ export default function SlugClient({
             <div className="text-xs font-medium text-gray-700">{badge}</div>
 
             <div className="flex items-center gap-2">
-              {view.mode !== "published" ? (
-                <button
-                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                  onClick={() => router.push(`/${slug}`)}
-                >
-                  View Published
-                </button>
-              ) : (
-                <button
-                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                  onClick={() => router.push(`/${slug}?preview=draft`)}
-                >
-                  View Draft
-                </button>
-              )}
+              <button
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => router.push(`/${slug}`)}
+              >
+                View Published
+              </button>
 
               <button
                 className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"

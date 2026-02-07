@@ -50,6 +50,17 @@ export function LandingPagePreview({
   const bookingHref = content.contact?.call?.href || emailHref || "";
   const waHref = content.contact?.chat?.href || emailHref || "";
   const hero = content.meta;
+  const offerings = content.services.offerings as Array<{
+    name: string;
+    description: string;
+    features: string[];
+  }>;
+  const portfolioItems = content.portfolio.items as Array<{
+    title: string;
+    description: string;
+    metric: string;
+    imageUrl?: string;
+  }>;
 
   const isVideoUrl = (url: string) => /\.(mp4|webm|mov)(\?.*)?$/i.test(url);
 
@@ -193,7 +204,7 @@ export function LandingPagePreview({
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-2">
-              {content.services.offerings.map((offer) => (
+              {offerings.map((offer) => (
                 <Card
                   key={offer.name}
                   className="border-gray-200 bg-white/90 shadow-lg shadow-cyan-500/5"
@@ -256,7 +267,7 @@ export function LandingPagePreview({
               <p className="mt-3 text-gray-600">{content.portfolio.subtitle}</p>
             </div>
             <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {content.portfolio.items.map((item) => (
+              {portfolioItems.map((item) => (
                 <Card
                   key={item.title}
                   className="border-gray-200 bg-white/90 shadow-lg shadow-blue-500/5"
