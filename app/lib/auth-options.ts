@@ -32,6 +32,9 @@ const githubEnabled =
   Boolean(process.env.GITHUB_SECRET);
 
 export const authOptions: NextAuthOptions = {
+  debug: process.env.NODE_ENV !== "production",
+  trustHost: process.env.NODE_ENV !== "production",
+  useSecureCookies: process.env.NODE_ENV === "production",
   pages: {
     signIn: "/auth/signin",
   },
