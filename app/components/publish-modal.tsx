@@ -536,6 +536,9 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                 <div className="mt-1">
                   Choose a plan before publishing. You can review your page first.
                 </div>
+                <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-[11px] text-gray-600">
+                  پرداخت این بخش برای انتشار در Donepage است. پرداخت پروژه‌های مشتریان شما جداست.
+                </div>
                 <Button
                   variant="outline"
                   className="mt-3 w-full"
