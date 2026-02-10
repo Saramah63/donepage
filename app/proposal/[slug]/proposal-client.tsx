@@ -27,8 +27,11 @@ export default function ProposalClient({
 }) {
   const [selectedTier, setSelectedTier] = React.useState<string | null>(null);
 
+  const resolvedTier =
+    selectedTier ?? proposal.investment ?? proposal.investmentOptions?.[0] ?? null;
+
   const effectiveLink =
-    (selectedTier && proposal.paymentLinks?.[selectedTier]) || proposal.paymentLink || "";
+    (resolvedTier && proposal.paymentLinks?.[resolvedTier]) || proposal.paymentLink || "";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 px-4 py-16">
