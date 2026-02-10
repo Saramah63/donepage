@@ -24,9 +24,17 @@ export default function PreviewClient({
             Preview: <span className="font-semibold">/{slug}</span> · Version{" "}
             <span className="font-semibold">v{version}</span>
           </div>
-          <Button size="sm" variant="outline" asChild>
-            <Link href={`/proposal/${slug}`}>View Proposal</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <Link href={`/preview/${slug}?mode=draft`}>Preview Draft</Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link href={`/preview/${slug}?mode=published`}>Preview Published</Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link href={`/proposal/${slug}`}>View Proposal</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
