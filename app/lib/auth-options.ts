@@ -69,7 +69,7 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
   ],
-  session: { strategy: "jwt" },
+  session: { strategy: prisma ? "database" : "jwt" },
   callbacks: {
     async redirect({ url, baseUrl }) {
       try {
