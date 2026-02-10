@@ -27,8 +27,10 @@ export default async function ProposalEditPage({
   const { token = "" } = await searchParams;
   const slug = sanitizeSlug(rawSlug);
 
-  const ok = await resolveEditToken(slug, token);
-  if (!ok.ok) return notFound();
+  if (process.env.NODE_ENV === "production") {
+    const ok = await resolveEditToken(slug, token);
+    if (!ok.ok) return notFound();
+  }
 
   return <ProposalEditor slug={slug} token={token} />;
 }

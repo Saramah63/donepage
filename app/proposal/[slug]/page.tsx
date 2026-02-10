@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getProposal, defaultProposal } from "@/app/lib/proposal-store";
 import { getAnswersBySlug } from "@/app/lib/answers-store";
 import ProposalClient from "./proposal-client";
+import { headers } from "next/headers";
 
 function sanitizeSlug(input: string) {
   return (input || "")
@@ -28,9 +29,18 @@ export default async function ProposalPage({
   const stored = await getAnswersBySlug(slug);
   if (!stored) return notFound();
 
+  const hdrs = await headers();
+  const host =
+    hdrs.get("x-forwarded-host") ||
+    hdrs.get("host") ||
+    (process.env.VERCEL_URL ?? "");
+  const proto = hdrs.get("x-forwarded-proto") || "http";
+  const requestBase = host ? `${proto}://${host}` : "http://localhost:3000";
+
   const base =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_APP_URL
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : requestBase;
 
   const previewLink = `${base.replace(/\/$/, "")}/preview/${slug}?mode=draft`;
   const proposalLink = `${base.replace(/\/$/, "")}/proposal/${slug}`;
