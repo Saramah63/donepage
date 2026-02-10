@@ -169,6 +169,14 @@ export default function EditClient({
             </Button>
 
             <Button
+              variant="outline"
+              onClick={() => window.open(`/proposal/${slug}/edit?token=${encodeURIComponent(token)}`, "_blank")}
+              className="border-gray-300 bg-white hover:bg-gray-50"
+            >
+              Create Proposal
+            </Button>
+
+            <Button
               onClick={() => saveDraft("Manual draft save")}
               disabled={savingDraft}
               className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700"
