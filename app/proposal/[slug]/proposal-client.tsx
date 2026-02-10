@@ -135,7 +135,7 @@ export default function ProposalClient({
                 Accept the proposal and start immediately. First update within 3 business days.
               </p>
               <div className="mt-3 rounded-xl border border-blue-200 bg-white/80 px-3 py-2 text-[12px] text-blue-900/80">
-                This payment is for your services, not a Donepage subscription. Clear, direct, and fully trackable.
+                This payment is for premium delivery of your project — separate from any Donepage subscription.
               </div>
               {effectiveLink ? (
                 <a
