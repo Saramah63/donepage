@@ -21,11 +21,14 @@ type ProposalData = {
 export default function ProposalClient({
   proposal,
   previewLink,
+  slug,
 }: {
   proposal: ProposalData;
   previewLink: string;
+  slug: string;
 }) {
   const [selectedTier, setSelectedTier] = React.useState<string | null>(null);
+  const [checkingOut, setCheckingOut] = React.useState(false);
 
   const resolvedTier =
     selectedTier ?? proposal.investment ?? proposal.investmentOptions?.[0] ?? null;
@@ -49,6 +52,38 @@ export default function ProposalClient({
     (normalizedTier && normalizedLinks[normalizedTier]) ||
     proposal.paymentLink ||
     (Object.values(proposal.paymentLinks ?? {})[0] ?? "");
+
+  const handleCheckout = async () => {
+    if (checkingOut) return;
+    setCheckingOut(true);
+    try {
+      const res = await fetch("/api/proposal/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          tier: resolvedTier,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.url) {
+        window.location.href = data.url as string;
+        return;
+      }
+      // Fallback to manual payment link if Stripe checkout is not configured
+      if (effectiveLink) {
+        window.open(effectiveLink, "_blank");
+        return;
+      }
+    } catch {
+      if (effectiveLink) {
+        window.open(effectiveLink, "_blank");
+        return;
+      }
+    } finally {
+      setCheckingOut(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 px-4 py-16">
@@ -158,14 +193,13 @@ export default function ProposalClient({
                 This payment is for premium delivery of your project — separate from any Donepage subscription.
               </div>
               {effectiveLink ? (
-                <a
-                  href={effectiveLink}
+                <button
+                  onClick={handleCheckout}
                   className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-3 text-sm font-semibold text-white"
-                  target="_blank"
-                  rel="noreferrer"
+                  disabled={checkingOut}
                 >
-                  {proposal.ctaLabel}
-                </a>
+                  {checkingOut ? "Redirecting…" : proposal.ctaLabel}
+                </button>
               ) : (
                 <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                   Payment link not set yet.

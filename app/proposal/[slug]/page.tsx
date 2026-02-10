@@ -47,5 +47,5 @@ export default async function ProposalPage({
 
   const proposal = (await getProposal(slug)) ?? defaultProposal(stored.answers ?? stored, previewLink, proposalLink);
 
-  return <ProposalClient proposal={proposal} previewLink={previewLink} />;
+  return <ProposalClient proposal={proposal} previewLink={previewLink} slug={slug} />;
 }
