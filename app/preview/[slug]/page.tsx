@@ -35,9 +35,6 @@ export default async function PreviewPage({
   if (token) {
     const ok = await resolveEditToken(slug, token);
     if (!ok.ok) return notFound();
-  } else if (process.env.NODE_ENV === "production") {
-    // Allow draft previews without token (public share). Published preview remains public anyway.
-    if (mode !== "draft") return notFound();
   }
 
   const st = await listVersions(slug);
