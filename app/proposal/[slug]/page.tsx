@@ -77,6 +77,11 @@ export default async function ProposalPage({
             <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900">
               {proposal.investment}
             </div>
+            {proposal.investmentOptions?.length ? (
+              <div className="mt-3 text-xs text-gray-500">
+                Suggested tiers: {proposal.investmentOptions.join(" · ")}
+              </div>
+            ) : null}
           </div>
         </section>
 

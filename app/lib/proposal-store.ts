@@ -8,6 +8,7 @@ export type ProposalData = {
   deliverables: string[];
   timeline: string;
   investment: string;
+  investmentOptions: string[];
   ctaLabel: string;
   paymentLink: string;
   messagePreview: string;
@@ -103,7 +104,8 @@ export function defaultProposal(answers: QuestionnaireAnswers, previewLink: stri
   ];
 
   const timeline = "10–14 business days";
-  const investment = "$5,000 (one‑time)";
+  const investmentOptions = ["$3,000 (one‑time)", "$5,000 (one‑time)", "$7,000 (one‑time)"];
+  const investment = investmentOptions[2];
   const ctaLabel = "Accept & Start Project";
   const paymentLink = "";
 
@@ -118,6 +120,7 @@ export function defaultProposal(answers: QuestionnaireAnswers, previewLink: stri
     deliverables,
     timeline,
     investment,
+    investmentOptions,
     ctaLabel,
     paymentLink,
     messagePreview,

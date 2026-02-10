@@ -11,6 +11,7 @@ type ProposalData = {
   deliverables: string[];
   timeline: string;
   investment: string;
+  investmentOptions: string[];
   ctaLabel: string;
   paymentLink: string;
   messagePreview: string;
@@ -162,6 +163,19 @@ export default function ProposalEditor({ slug, token }: { slug: string; token: s
                 value={proposal.investment}
                 onChange={(e) => update({ investment: e.target.value })}
               />
+              <div className="mt-3 text-xs font-semibold text-gray-600">Suggested tiers</div>
+              <div className="mt-2 grid gap-2">
+                {proposal.investmentOptions?.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => update({ investment: opt })}
+                    className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs text-gray-700 hover:border-blue-300 hover:bg-blue-50/60"
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
