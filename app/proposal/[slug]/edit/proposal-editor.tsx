@@ -12,6 +12,7 @@ type ProposalData = {
   timeline: string;
   investment: string;
   investmentOptions: string[];
+  paymentLinks: Record<string, string>;
   ctaLabel: string;
   paymentLink: string;
   messagePreview: string;
@@ -27,6 +28,26 @@ function textToList(text: string) {
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function mapToText(map: Record<string, string> | undefined) {
+  if (!map) return "";
+  return Object.entries(map)
+    .map(([tier, link]) => `${tier} | ${link}`)
+    .join("\n");
+}
+
+function textToMap(text: string) {
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const out: Record<string, string> = {};
+  for (const line of lines) {
+    const [tier, link] = line.split("|").map((s) => s.trim());
+    if (tier && link) out[tier] = link;
+  }
+  return out;
 }
 
 export default function ProposalEditor({ slug, token }: { slug: string; token: string }) {
@@ -194,6 +215,15 @@ export default function ProposalEditor({ slug, token }: { slug: string; token: s
                 className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm"
                 value={proposal.paymentLink}
                 onChange={(e) => update({ paymentLink: e.target.value })}
+              />
+              <div className="mt-3 text-xs font-semibold text-gray-600">
+                Tier payment links (one per line)
+              </div>
+              <textarea
+                className="mt-2 w-full min-h-[120px] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm"
+                value={mapToText(proposal.paymentLinks)}
+                onChange={(e) => update({ paymentLinks: textToMap(e.target.value) })}
+                placeholder="$3,000 (one‑time) | https://stripe.com/...\n$5,000 (one‑time) | https://stripe.com/...\n$7,000 (one‑time) | https://stripe.com/..."
               />
             </div>
           </div>

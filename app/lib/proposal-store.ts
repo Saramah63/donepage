@@ -9,6 +9,7 @@ export type ProposalData = {
   timeline: string;
   investment: string;
   investmentOptions: string[];
+  paymentLinks: Record<string, string>;
   ctaLabel: string;
   paymentLink: string;
   messagePreview: string;
@@ -108,6 +109,7 @@ export function defaultProposal(answers: QuestionnaireAnswers, previewLink: stri
   const investment = investmentOptions[2];
   const ctaLabel = "Accept & Start Project";
   const paymentLink = "";
+  const paymentLinks: Record<string, string> = {};
 
   const messagePreview = `I generated a landing page draft based on your inputs.\nYou can review it here:\n${previewLink}`;
 
@@ -121,6 +123,7 @@ export function defaultProposal(answers: QuestionnaireAnswers, previewLink: stri
     timeline,
     investment,
     investmentOptions,
+    paymentLinks,
     ctaLabel,
     paymentLink,
     messagePreview,
