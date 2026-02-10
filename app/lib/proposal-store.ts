@@ -10,6 +10,9 @@ export type ProposalData = {
   investment: string;
   investmentOptions: string[];
   paymentLinks: Record<string, string>;
+  template: string;
+  clientLogos: string[];
+  guarantee: string;
   ctaLabel: string;
   paymentLink: string;
   messagePreview: string;
@@ -107,6 +110,9 @@ export function defaultProposal(answers: QuestionnaireAnswers, previewLink: stri
   const timeline = "10–14 business days";
   const investmentOptions = ["$3,000 (one‑time)", "$5,000 (one‑time)", "$7,000 (one‑time)"];
   const investment = investmentOptions[2];
+  const template = "B2B";
+  const clientLogos = ["AURORA", "NOVA", "ATLAS", "LUMEN", "VANTA", "ORBIT"];
+  const guarantee = "If you’re not satisfied, we’ll revise the deliverables until it meets the agreed scope.";
   const ctaLabel = "Accept & Start Project";
   const paymentLink = "";
   const paymentLinks: Record<string, string> = {};
@@ -124,6 +130,9 @@ export function defaultProposal(answers: QuestionnaireAnswers, previewLink: stri
     investment,
     investmentOptions,
     paymentLinks,
+    template,
+    clientLogos,
+    guarantee,
     ctaLabel,
     paymentLink,
     messagePreview,

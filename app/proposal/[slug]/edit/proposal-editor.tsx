@@ -13,6 +13,9 @@ type ProposalData = {
   investment: string;
   investmentOptions: string[];
   paymentLinks: Record<string, string>;
+  template: string;
+  clientLogos: string[];
+  guarantee: string;
   ctaLabel: string;
   paymentLink: string;
   messagePreview: string;
@@ -26,6 +29,17 @@ function listToText(list: string[]) {
 function textToList(text: string) {
   return text
     .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function listToComma(list: string[] | undefined) {
+  return (list ?? []).join(", ");
+}
+
+function commaToList(text: string) {
+  return text
+    .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
 }
@@ -140,6 +154,38 @@ export default function ProposalEditor({ slug, token }: { slug: string; token: s
             />
           </div>
 
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold text-gray-600">Template</label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {["Agency", "SaaS", "Consulting", "E‑commerce", "Coaching", "B2B"].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => update({ template: t })}
+                    className={[
+                      "rounded-xl border px-3 py-2 text-left text-xs",
+                      proposal.template === t
+                        ? "border-blue-300 bg-blue-50/60 text-blue-900"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/60",
+                    ].join(" ")}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600">Client logos (comma‑separated)</label>
+              <input
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm"
+                value={listToComma(proposal.clientLogos)}
+                onChange={(e) => update({ clientLogos: commaToList(e.target.value) })}
+                placeholder="AURORA, NOVA, ATLAS, LUMEN"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-gray-600">Context</label>
             <textarea
@@ -226,6 +272,15 @@ export default function ProposalEditor({ slug, token }: { slug: string; token: s
                 placeholder="$3,000 (one‑time) | https://stripe.com/...\n$5,000 (one‑time) | https://stripe.com/...\n$7,000 (one‑time) | https://stripe.com/..."
               />
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Guarantee / Risk‑free</label>
+            <textarea
+              className="mt-2 w-full min-h-[90px] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm"
+              value={proposal.guarantee}
+              onChange={(e) => update({ guarantee: e.target.value })}
+            />
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">

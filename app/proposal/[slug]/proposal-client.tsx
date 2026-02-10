@@ -11,6 +11,9 @@ type ProposalData = {
   investment: string;
   investmentOptions: string[];
   paymentLinks: Record<string, string>;
+  template: string;
+  clientLogos: string[];
+  guarantee: string;
   ctaLabel: string;
   paymentLink: string;
 };
@@ -38,7 +41,7 @@ export default function ProposalClient({
               A clear, conversion‑focused plan to turn your draft into a revenue‑ready landing page.
             </p>
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-              Featured
+              Featured · {proposal.template}
             </div>
           </div>
           <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-xs text-gray-600">
@@ -49,12 +52,16 @@ export default function ProposalClient({
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-5">
           <div className="text-xs font-semibold text-gray-600">Client logo</div>
           <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-10 rounded-xl border border-gray-200 bg-gray-50"
-              />
-            ))}
+            {(proposal.clientLogos?.length ? proposal.clientLogos : ["AURORA", "NOVA", "ATLAS", "LUMEN", "VANTA", "ORBIT"]).map(
+              (name, i) => (
+                <div
+                  key={`${name}-${i}`}
+                  className="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-[10px] font-semibold tracking-wide text-gray-500"
+                >
+                  {name}
+                </div>
+              )
+            )}
           </div>
         </div>
 
@@ -142,6 +149,13 @@ export default function ProposalClient({
                 </div>
               )}
             </div>
+
+            {proposal.guarantee ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-xs text-amber-900">
+                <div className="text-xs font-semibold">Guarantee</div>
+                <div className="mt-2">{proposal.guarantee}</div>
+              </div>
+            ) : null}
 
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
               <div className="text-xs font-semibold text-gray-600">Preview link</div>
