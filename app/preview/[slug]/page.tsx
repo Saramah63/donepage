@@ -27,15 +27,20 @@ export default async function PreviewPage({
   const sp = await searchParams;
   const slug = sanitizeSlug(rawSlug);
 
-  const token = sp.token || "";
-  const ok = await resolveEditToken(slug, token);
-  if (!ok.ok) return notFound();
-
-  const st = await listVersions(slug);
-
   const mode = sp.mode || "draft";
   const parsedV = sp.v ? Number(sp.v) : null;
   const explicitV = Number.isFinite(parsedV) && (parsedV as number) > 0 ? (parsedV as number) : null;
+
+  const token = sp.token || "";
+  if (token) {
+    const ok = await resolveEditToken(slug, token);
+    if (!ok.ok) return notFound();
+  } else if (process.env.NODE_ENV === "production") {
+    // Allow draft previews without token (public share). Published preview remains public anyway.
+    if (mode !== "draft") return notFound();
+  }
+
+  const st = await listVersions(slug);
 
   const targetV =
     explicitV ||
