@@ -90,6 +90,7 @@ export default function SlugClient({
         answers={answers}
         onEdit={() => router.push(`/generator?edit=${slug}`)}
         mode={view.mode === "published" ? "export" : "preview"}
+        proposalUrl={`/proposal/${slug}`}
       />
     </div>
   );

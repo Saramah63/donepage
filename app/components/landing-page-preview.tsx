@@ -18,6 +18,7 @@ import {
   CheckCircle,
   ShieldCheck,
 } from "lucide-react";
+import Link from "next/link";
 
 import type { QuestionnaireAnswers } from "./questionnaire";
 import { PublishModal } from "./publish-modal";
@@ -29,12 +30,14 @@ interface LandingPagePreviewProps {
   answers: QuestionnaireAnswers;
   onEdit: () => void;
   mode?: "preview" | "export";
+  proposalUrl?: string;
 }
 
 export function LandingPagePreview({
   answers,
   onEdit,
   mode = "preview",
+  proposalUrl,
 }: LandingPagePreviewProps) {
   const [isPublishModalOpen, setPublishModalOpen] = React.useState(false);
   const [isPricingModalOpen, setPricingModalOpen] = React.useState(false);
@@ -120,6 +123,14 @@ export function LandingPagePreview({
               <Button size="sm" variant="outline" onClick={onEdit}>
                 <Edit className="mr-2 h-4 w-4" /> Edit
               </Button>
+
+              {proposalUrl ? (
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={proposalUrl}>
+                    <ShieldCheck className="mr-2 h-4 w-4" /> Proposal
+                  </Link>
+                </Button>
+              ) : null}
 
               <Button size="sm" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" /> Export
