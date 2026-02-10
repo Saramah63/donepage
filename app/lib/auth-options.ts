@@ -69,7 +69,8 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
   ],
-  session: { strategy: prisma ? "database" : "jwt" },
+  // Use JWT sessions so NextAuth middleware can read auth state.
+  session: { strategy: "jwt" },
   callbacks: {
     async redirect({ url, baseUrl }) {
       try {
