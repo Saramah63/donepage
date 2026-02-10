@@ -367,12 +367,12 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     : Boolean(currentValue);
 
   const update = (patch: Partial<QuestionnaireAnswers>) => {
-    setAnswers((prev) => {
-      const next = { ...prev, ...patch };
-      onChange?.(next as QuestionnaireAnswers);
-      return next;
-    });
+    setAnswers((prev) => ({ ...prev, ...patch }));
   };
+
+  React.useEffect(() => {
+    onChange?.(answers as QuestionnaireAnswers);
+  }, [answers, onChange]);
 
   const setValue = (value: string) => {
     update({ [step.key]: value as any });
