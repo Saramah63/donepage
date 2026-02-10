@@ -42,6 +42,8 @@ export const authOptions: NextAuthOptions = {
           Google({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            // Allow Google to link to an existing account with the same email
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
@@ -50,6 +52,8 @@ export const authOptions: NextAuthOptions = {
           GitHub({
             clientId: process.env.GITHUB_ID!,
             clientSecret: process.env.GITHUB_SECRET!,
+            // Allow GitHub to link to an existing account with the same email
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
