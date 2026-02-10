@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 
 type ProposalData = {
   title: string;
@@ -75,11 +76,13 @@ export default function ProposalClient({
         window.open(effectiveLink, "_blank");
         return;
       }
+      toast.error(data?.error ?? "Checkout is not configured yet.");
     } catch {
       if (effectiveLink) {
         window.open(effectiveLink, "_blank");
         return;
       }
+      toast.error("Checkout is not configured yet.");
     } finally {
       setCheckingOut(false);
     }
@@ -192,19 +195,13 @@ export default function ProposalClient({
               <div className="mt-3 rounded-xl border border-blue-200 bg-white/80 px-3 py-2 text-[12px] text-blue-900/80">
                 This payment is for premium delivery of your project — separate from any Donepage subscription.
               </div>
-              {effectiveLink ? (
-                <button
-                  onClick={handleCheckout}
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-3 text-sm font-semibold text-white"
-                  disabled={checkingOut}
-                >
-                  {checkingOut ? "Redirecting…" : proposal.ctaLabel}
-                </button>
-              ) : (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  Payment link not set yet.
-                </div>
-              )}
+              <button
+                onClick={handleCheckout}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-3 text-sm font-semibold text-white"
+                disabled={checkingOut}
+              >
+                {checkingOut ? "Redirecting…" : proposal.ctaLabel}
+              </button>
             </div>
 
             {proposal.guarantee ? (
