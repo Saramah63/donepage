@@ -78,8 +78,19 @@ export default async function ProposalPage({
               {proposal.investment}
             </div>
             {proposal.investmentOptions?.length ? (
-              <div className="mt-3 text-xs text-gray-500">
-                Suggested tiers: {proposal.investmentOptions.join(" · ")}
+              <div className="mt-4 grid gap-2">
+                {proposal.investmentOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-xs text-gray-700 hover:border-blue-300 hover:bg-blue-50/60"
+                  >
+                    {opt}
+                  </button>
+                ))}
+                <div className="text-[11px] text-gray-500">
+                  Choose a tier, then use the payment button below.
+                </div>
               </div>
             ) : null}
           </div>
