@@ -65,15 +65,7 @@ export function ChatWidget() {
     },
   ];
 
-  const handleSend = () => {
-    const subject = encodeURIComponent("Donepage Inquiry");
-    const body = encodeURIComponent(
-      `From: ${email || "no email provided"}\n\n${message}`
-    );
-    window.location.href = `mailto:hello@donepage.co?subject=${subject}&body=${body}`;
-  };
-
-  const handleFallbackEmail = async () => {
+  const handleSend = async () => {
     if (!message.trim()) {
       toast.error("Please enter a message first.");
       return;
@@ -244,11 +236,7 @@ export function ChatWidget() {
             </div>
 
             <Button onClick={handleSend} className="w-full">
-              Send Message
-            </Button>
-
-            <Button variant="outline" onClick={handleFallbackEmail} className="w-full">
-              Send to inbox (fallback)
+              Send to inbox
             </Button>
 
             <div className="flex gap-2">
