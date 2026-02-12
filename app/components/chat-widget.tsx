@@ -21,30 +21,30 @@ export function ChatWidget() {
     {
       role: "assistant" as const,
       content:
-        "Hi! Ask me about proposals, pricing, publishing, domains, uploads, or sign‑in.",
+        "Hi! Ask me about proposals, enterprise pricing, publishing, domains, uploads, or sign‑in.",
     },
   ]);
 
   const faqs = [
     {
       q: "How do I create a proposal for my client?",
-      a: "Open your landing preview and click Proposal. Choose your tier, add Stripe checkout, and send a polished proposal link your client can approve instantly.",
+      a: "Open your landing preview and click Proposal. Select a tier, enable Stripe checkout, and share a premium proposal link your client can approve instantly.",
     },
     {
       q: "How do payments work for proposals vs Donepage?",
-      a: "Proposal payments are your client service fees. Donepage plans are separate and only cover publishing the landing page.",
+      a: "Proposal payments cover your client engagement. Donepage plans are separate and only cover publishing the landing page.",
     },
     {
       q: "What is the full process from start to publish?",
-      a: "1) Answer questions, 2) Preview and refine, 3) Save draft, 4) Select a plan, 5) Publish and share a premium link.",
+      a: "1) Answer questions, 2) Preview and refine, 3) Save draft, 4) Select a plan, 5) Publish and share a luxury‑grade link.",
     },
     {
       q: "How do I add Stripe price IDs for proposal checkout?",
-      a: "Add STRIPE_PRICE_PROPOSAL_3K/5K/7K in your env, then the proposal button routes clients directly to Stripe Checkout.",
+      a: "Add STRIPE_PRICE_PROPOSAL_3K/5K/7K in your env, then the proposal CTA routes clients directly to Stripe Checkout.",
     },
     {
       q: "Can I edit after publishing?",
-      a: "Yes. Use your private edit link to refine, then republish when it’s perfect.",
+      a: "Yes. Use your private edit link to refine, then republish when it’s final.",
     },
     {
       q: "How do custom domains work?",
@@ -101,7 +101,7 @@ export function ChatWidget() {
     if (t.includes("preview") || t.includes("draft")) {
       return "Draft preview: /preview/{slug}?mode=draft. Published preview: /preview/{slug}?mode=published.";
     }
-    return "I can help with proposals, pricing, domains, publishing, uploads, or login. For anything else, use live chat.";
+    return "I can help with proposals, enterprise pricing, domains, publishing, uploads, or login. For anything else, use live chat.";
   };
 
   const sendToAI = async () => {
