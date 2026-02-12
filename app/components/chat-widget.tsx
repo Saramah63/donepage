@@ -160,6 +160,8 @@ export function ChatWidget() {
     return false;
   };
 
+  const showAdminInbox = process.env.NEXT_PUBLIC_SHOW_ADMIN_INBOX === "true";
+
   return (
     <>
       <button
@@ -254,16 +256,20 @@ export function ChatWidget() {
               </Button>
             </div>
 
-            <div className="text-xs text-gray-500">
-              Need the inbox? Open Crisp in a new tab.
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => window.open("https://app.crisp.chat", "_blank")}
-              className="w-full"
-            >
-              Open Crisp Inbox
-            </Button>
+            {showAdminInbox ? (
+              <>
+                <div className="text-xs text-gray-500">
+                  Need the inbox? Open Crisp in a new tab.
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open("https://app.crisp.chat", "_blank")}
+                  className="w-full"
+                >
+                  Open Crisp Inbox
+                </Button>
+              </>
+            ) : null}
 
             {messages.length > 1 &&
             messages[messages.length - 1]?.role === "assistant" &&
