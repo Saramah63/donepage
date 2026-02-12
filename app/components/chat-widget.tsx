@@ -157,12 +157,12 @@ export function ChatWidget() {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-h-[85vh] max-w-md overflow-hidden">
           <DialogHeader>
             <DialogTitle>Donepage Assistant</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 text-sm text-gray-700">
+          <div className="flex max-h-[calc(85vh-120px)] flex-col space-y-4 overflow-auto pr-1 text-sm text-gray-700">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
               Ask anything — I’ll answer automatically.
             </div>
