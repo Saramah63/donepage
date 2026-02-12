@@ -9,6 +9,9 @@ export type QuestionnaireAnswers = {
   businessName?: string;
   city?: string;
   country?: string;
+  countryOther?: string;
+  language?: string;
+  languageOther?: string;
 
   primaryOffer?: string;
   aboutText?: string;
@@ -56,6 +59,7 @@ export type QuestionnaireAnswers = {
     | "guarantee"
     | "portfolio";
   includeAbout: "yes" | "no";
+  customServices?: string;
 
   // ✅ Advanced (optional)
   // High-leverage messaging
@@ -120,6 +124,12 @@ const BASE_STEPS: Step[] = [
     ],
   },
   {
+    key: "language",
+    title: "What language should your page be in?",
+    subtitle: "We’ll default to the best match for your country — you can override it",
+    options: [],
+  },
+  {
     key: "serviceType",
     title: "What type of service do you provide?",
     subtitle: "Select the category that best matches your business",
@@ -133,6 +143,12 @@ const BASE_STEPS: Step[] = [
       { value: "legal", title: "Legal Services", desc: "Legal consulting or specialized legal services" },
       { value: "accounting", title: "Accounting & Finance", desc: "Bookkeeping, tax prep, or financial planning" },
     ],
+  },
+  {
+    key: "customServices",
+    title: "Any specific services to include?",
+    subtitle: "Add services that don’t fit the categories above (one per line)",
+    options: [],
   },
   {
     key: "targetAudience",
@@ -324,6 +340,94 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+function normalizeCountry(country?: string, countryOther?: string) {
+  if (country === "Other") return (countryOther ?? "").trim();
+  return (country ?? "").trim();
+}
+
+function getLanguageOptions(country?: string, countryOther?: string): Option[] {
+  const normalized = normalizeCountry(country, countryOther).toLowerCase();
+  const base: Option[] = [
+    { value: "English", title: "English", desc: "Global default" },
+    { value: "Arabic", title: "Arabic", desc: "العربية" },
+    { value: "Persian", title: "Persian (Farsi)", desc: "فارسی" },
+    { value: "Finnish", title: "Finnish", desc: "Suomi" },
+    { value: "Swedish", title: "Swedish", desc: "Svenska" },
+    { value: "German", title: "German", desc: "Deutsch" },
+    { value: "French", title: "French", desc: "Français" },
+    { value: "Spanish", title: "Spanish", desc: "Español" },
+    { value: "Other", title: "Other", desc: "Add your own language" },
+  ];
+
+  if (normalized.includes("finland")) {
+    return [
+      { value: "Finnish", title: "Finnish", desc: "Suomi" },
+      { value: "Swedish", title: "Swedish", desc: "Svenska" },
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+  if (normalized.includes("sweden")) {
+    return [
+      { value: "Swedish", title: "Swedish", desc: "Svenska" },
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+  if (normalized.includes("norway") || normalized.includes("denmark")) {
+    return [
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "Swedish", title: "Swedish", desc: "Svenska" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+  if (normalized.includes("germany")) {
+    return [
+      { value: "German", title: "German", desc: "Deutsch" },
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+  if (normalized.includes("netherlands")) {
+    return [
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "German", title: "German", desc: "Deutsch" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+  if (normalized.includes("uk") || normalized.includes("united") || normalized.includes("usa") || normalized.includes("canada") || normalized.includes("australia")) {
+    return [
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "French", title: "French", desc: "Français" },
+      { value: "Spanish", title: "Spanish", desc: "Español" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+  if (normalized.includes("iran")) {
+    return [
+      { value: "Persian", title: "Persian (Farsi)", desc: "فارسی" },
+      { value: "Arabic", title: "Arabic", desc: "العربية" },
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+  if (normalized.includes("uae") || normalized.includes("saudi") || normalized.includes("qatar") || normalized.includes("kuwait") || normalized.includes("oman") || normalized.includes("bahrain") || normalized.includes("arab")) {
+    return [
+      { value: "Arabic", title: "Arabic", desc: "العربية" },
+      { value: "English", title: "English", desc: "Global default" },
+      { value: "Other", title: "Other", desc: "Add your own language" },
+    ];
+  }
+
+  return base;
+}
+
+function getDefaultLanguage(country?: string, countryOther?: string) {
+  const options = getLanguageOptions(country, countryOther);
+  const first = options.find((o) => o.value !== "Other");
+  return first?.value ?? "English";
+}
+
 export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete }: Props) {
   const [advanced, setAdvanced] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
@@ -342,6 +446,22 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   const [stepIndex, setStepIndex] = React.useState(0);
   const [answers, setAnswers] = React.useState<Partial<QuestionnaireAnswers>>(initialAnswers ?? {});
 
+  // Auto-select language based on country when not set
+  React.useEffect(() => {
+    const hasCountry = Boolean(answers.country);
+    if (!hasCountry) return;
+
+    const options = getLanguageOptions(answers.country, answers.countryOther);
+    const isValid = options.some((o) => o.value === answers.language);
+
+    if (!answers.language || !isValid) {
+      setAnswers((prev) => ({
+        ...prev,
+        language: getDefaultLanguage(prev.country, prev.countryOther),
+      }));
+    }
+  }, [answers.country, answers.countryOther, answers.language]);
+
   // If user toggles Advanced OFF while on advanced steps, clamp index
   React.useEffect(() => {
     setStepIndex((s) => clamp(s, 0, total - 1));
@@ -353,6 +473,9 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   const progress = Math.round(((stepIndex + 1) / total) * 100);
   const isInputStep = step.options.length === 0;
 
+  const needsCountryOther = step.key === "country" && currentValue === "Other";
+  const needsLanguageOther = step.key === "language" && currentValue === "Other";
+
   const canGoNext = isInputStep
     ? Boolean(
         (currentValue ?? "").toString().trim() ||
@@ -362,9 +485,14 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
           step.key === "bookingLink" ||
           step.key === "aboutText" ||
           step.key === "portfolioItemsRaw" ||
-          step.key === "portfolioItemsJson"
+          step.key === "portfolioItemsJson" ||
+          step.key === "customServices"
       )
-    : Boolean(currentValue);
+    : Boolean(currentValue) &&
+      (!needsCountryOther ||
+        Boolean((answers.countryOther ?? "").toString().trim())) &&
+      (!needsLanguageOther ||
+        Boolean((answers.languageOther ?? "").toString().trim()));
 
   const update = (patch: Partial<QuestionnaireAnswers>) => {
     setAnswers((prev) => ({ ...prev, ...patch }));
@@ -632,6 +760,13 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     onChange={(e) => setValue(e.target.value)}
                     className="w-full min-h-[160px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
                   />
+                ) : step.key === "customServices" ? (
+                  <textarea
+                    placeholder={`Service name | Optional short description\nExample: Conversion Audit | Full-funnel review and optimization plan`}
+                    value={(currentValue as string) ?? ""}
+                    onChange={(e) => setValue(e.target.value)}
+                    className="w-full min-h-[140px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
                 ) : step.key === "portfolioItemsJson" ? (
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600">
@@ -794,7 +929,10 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
               </div>
             ) : (
               <div className="mt-6 space-y-3">
-                {step.options.map((opt) => {
+                {(step.key === "language"
+                  ? getLanguageOptions(answers.country, answers.countryOther)
+                  : step.options
+                ).map((opt) => {
                   const selected = currentValue === opt.value;
                   return (
                     <button
@@ -842,6 +980,24 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     </button>
                   );
                 })}
+
+                {step.key === "country" && currentValue === "Other" ? (
+                  <input
+                    placeholder="Enter your country"
+                    value={(answers.countryOther as string) ?? ""}
+                    onChange={(e) => update({ countryOther: e.target.value })}
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                ) : null}
+
+                {step.key === "language" && currentValue === "Other" ? (
+                  <input
+                    placeholder="Enter your language"
+                    value={(answers.languageOther as string) ?? ""}
+                    onChange={(e) => update({ languageOther: e.target.value })}
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                ) : null}
               </div>
             )}
 

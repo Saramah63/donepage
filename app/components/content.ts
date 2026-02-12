@@ -197,7 +197,10 @@ export function generateContent(answers: QuestionnaireAnswers) {
         },
   ];
 
-  const offerings = serviceOfferings(answers.serviceType);
+  const offerings = [
+    ...serviceOfferings(answers.serviceType),
+    ...parseCustomServices(answers.customServices),
+  ];
 
   const stats = [
     {
@@ -549,6 +552,32 @@ function portfolioByService(serviceType: QuestionnaireAnswers["serviceType"]) {
   } as const;
 
   return (base as any)[serviceType] ?? base.consulting;
+}
+
+function parseCustomServices(raw?: string) {
+  const lines = (raw ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return [];
+
+  return lines.map((line) => {
+    const parts = line.split("|").map((p) => p.trim());
+    const name = parts[0] || "Custom Service";
+    const description =
+      parts[1] || "Tailored service scoped to your exact needs and goals.";
+    return {
+      name,
+      description,
+      features: [
+        "Tailored scope and deliverables",
+        "Clear timeline and ownership",
+        "Premium execution standards",
+      ],
+      icon: "sparkles",
+    };
+  });
 }
 
 export function defaultPricing() {
