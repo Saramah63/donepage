@@ -28,23 +28,23 @@ export function ChatWidget() {
   const faqs = [
     {
       q: "How do I create a proposal for my client?",
-      a: "Open your landing preview and click Proposal. You can customize tiers, add Stripe payment links, and share the proposal URL with clients.",
+      a: "Open your landing preview and click Proposal. Choose your tier, add Stripe checkout, and send a polished proposal link your client can approve instantly.",
     },
     {
       q: "How do payments work for proposals vs Donepage?",
-      a: "Proposal payments are for your client services. Donepage plan payments are separate and only for publishing the landing page.",
+      a: "Proposal payments are your client service fees. Donepage plans are separate and only cover publishing the landing page.",
     },
     {
       q: "What is the full process from start to publish?",
-      a: "1) Answer questions, 2) Preview and edit, 3) Save draft, 4) Choose a plan, 5) Publish and share.",
+      a: "1) Answer questions, 2) Preview and refine, 3) Save draft, 4) Select a plan, 5) Publish and share a premium link.",
     },
     {
       q: "How do I add Stripe price IDs for proposal checkout?",
-      a: "Add STRIPE_PRICE_PROPOSAL_3K/5K/7K in your env, then click Start Project in the proposal to open Stripe Checkout.",
+      a: "Add STRIPE_PRICE_PROPOSAL_3K/5K/7K in your env, then the proposal button routes clients directly to Stripe Checkout.",
     },
     {
       q: "Can I edit after publishing?",
-      a: "Yes. Use your private edit link or open /generator?edit=your-slug to update and republish.",
+      a: "Yes. Use your private edit link to refine, then republish when it’s perfect.",
     },
     {
       q: "How do custom domains work?",
@@ -60,7 +60,7 @@ export function ChatWidget() {
     },
     {
       q: "Why don’t I see my preview or proposal in production?",
-      a: "Local drafts don’t exist on donepage.co. Generate the draft in production to get live preview and proposal links.",
+      a: "Local drafts are not visible on donepage.co. Generate in production to get live preview and proposal links.",
     },
   ];
 
@@ -75,19 +75,19 @@ export function ChatWidget() {
   const autoReply = (text: string) => {
     const t = text.toLowerCase();
     if (t.includes("proposal") || t.includes("client")) {
-      return "Open your landing preview and click Proposal. Add tiers and payment links (or Stripe price IDs) to start getting paid.";
+      return "Open your landing preview and click Proposal. Add tiers and Stripe checkout to get paid instantly.";
     }
     if (t.includes("stripe") || t.includes("price id") || t.includes("checkout")) {
-      return "Set STRIPE_PRICE_PROPOSAL_3K/5K/7K and STRIPE_SECRET_KEY in env. The Start Project button opens Stripe Checkout.";
+      return "Set STRIPE_PRICE_PROPOSAL_3K/5K/7K and STRIPE_SECRET_KEY. The Start Project button opens Stripe Checkout.";
     }
     if (t.includes("price") || t.includes("pricing") || t.includes("plan")) {
-      return "Pricing is shown in the Publish flow. Choose a plan, then publish. Business/Pro enable custom domains.";
+      return "Pricing appears in the Publish flow. Choose a plan, then publish. Business/Pro unlock custom domains.";
     }
     if (t.includes("domain") || t.includes("custom domain")) {
       return "Connect your domain in Publish, then add a CNAME or A record at your DNS provider. Use the domain status check after updating DNS.";
     }
     if (t.includes("publish") || t.includes("live") || t.includes("deploy")) {
-      return "Click Publish, pick a slug, choose a plan, then publish. You can review the page before paying.";
+      return "Click Publish, pick a slug, choose a plan, then publish. Review first, pay only when you’re ready.";
     }
     if (t.includes("email") || t.includes("login") || t.includes("sign in")) {
       return "Email sign‑in requires DATABASE_URL, RESEND_API_KEY, and EMAIL_FROM. Google/GitHub need correct OAuth callback URLs.";
@@ -96,12 +96,12 @@ export function ChatWidget() {
       return "Use the upload button in the About or Portfolio steps. It supports images and short videos (max 25MB).";
     }
     if (t.includes("edit") || t.includes("update")) {
-      return "Use your private edit link or open /generator?edit=your-slug to update and republish.";
+      return "Use your private edit link to refine and republish anytime.";
     }
     if (t.includes("preview") || t.includes("draft")) {
-      return "Draft previews are available at /preview/{slug}?mode=draft. Published previews use mode=published.";
+      return "Draft preview: /preview/{slug}?mode=draft. Published preview: /preview/{slug}?mode=published.";
     }
-    return "I can help with proposals, pricing, domains, publishing, uploads, or login. If you need more, use live chat.";
+    return "I can help with proposals, pricing, domains, publishing, uploads, or login. For anything else, use live chat.";
   };
 
   const sendToAI = async () => {
