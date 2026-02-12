@@ -9,6 +9,7 @@ import {
 } from "@/app/components/ui/dialog";
 import { Button } from "@/app/components/ui/button";
 import { MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 
 export function ChatWidget() {
   const [open, setOpen] = React.useState(false);
@@ -70,6 +71,28 @@ export function ChatWidget() {
       `From: ${email || "no email provided"}\n\n${message}`
     );
     window.location.href = `mailto:hello@donepage.co?subject=${subject}&body=${body}`;
+  };
+
+  const handleFallbackEmail = async () => {
+    if (!message.trim()) {
+      toast.error("Please enter a message first.");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, message }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Failed to send");
+      toast.success("Message sent to inbox.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Email send failed.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const autoReply = (text: string) => {
@@ -222,6 +245,10 @@ export function ChatWidget() {
 
             <Button onClick={handleSend} className="w-full">
               Send Message
+            </Button>
+
+            <Button variant="outline" onClick={handleFallbackEmail} className="w-full">
+              Send to inbox (fallback)
             </Button>
 
             <div className="flex gap-2">
