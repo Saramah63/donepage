@@ -254,6 +254,17 @@ export function ChatWidget() {
               </Button>
             </div>
 
+            <div className="text-xs text-gray-500">
+              Need the inbox? Open Crisp in a new tab.
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => window.open("https://app.crisp.chat", "_blank")}
+              className="w-full"
+            >
+              Open Crisp Inbox
+            </Button>
+
             {messages.length > 1 &&
             messages[messages.length - 1]?.role === "assistant" &&
             messages[messages.length - 1]?.content.includes("live chat") ? (
