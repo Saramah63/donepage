@@ -21,30 +21,30 @@ export function ChatWidget() {
     {
       role: "assistant" as const,
       content:
-        "Hi! Ask me anything about Donepage, pricing, domains, or publishing.",
+        "Hi! Ask me about proposals, pricing, publishing, domains, uploads, or sign‑in.",
     },
   ]);
 
   const faqs = [
     {
-      q: "How does Donepage generate my landing page?",
-      a: "Answer the guided questions and Donepage instantly builds a full landing page with copy, layout, and sections based on your inputs.",
+      q: "How do I create a proposal for my client?",
+      a: "Open your landing preview and click Proposal. You can customize tiers, add Stripe payment links, and share the proposal URL with clients.",
+    },
+    {
+      q: "How do payments work for proposals vs Donepage?",
+      a: "Proposal payments are for your client services. Donepage plan payments are separate and only for publishing the landing page.",
     },
     {
       q: "What is the full process from start to publish?",
       a: "1) Answer questions, 2) Preview and edit, 3) Save draft, 4) Choose a plan, 5) Publish and share.",
     },
     {
+      q: "How do I add Stripe price IDs for proposal checkout?",
+      a: "Add STRIPE_PRICE_PROPOSAL_3K/5K/7K in your env, then click Start Project in the proposal to open Stripe Checkout.",
+    },
+    {
       q: "Can I edit after publishing?",
       a: "Yes. Use your private edit link or open /generator?edit=your-slug to update and republish.",
-    },
-    {
-      q: "How does pricing work?",
-      a: "You review your page first, then choose a plan when you publish. Business/Pro unlock custom domains.",
-    },
-    {
-      q: "What plans are available?",
-      a: "Starter, Business, and Pro. Business/Pro include custom domains and advanced features.",
     },
     {
       q: "How do custom domains work?",
@@ -58,6 +58,10 @@ export function ChatWidget() {
       q: "How do I add images or videos?",
       a: "Use the upload button in the About or Portfolio steps. It supports images and short videos (max 25MB).",
     },
+    {
+      q: "Why don’t I see my preview or proposal in production?",
+      a: "Local drafts don’t exist on donepage.co. Generate the draft in production to get live preview and proposal links.",
+    },
   ];
 
   const handleSend = () => {
@@ -70,6 +74,12 @@ export function ChatWidget() {
 
   const autoReply = (text: string) => {
     const t = text.toLowerCase();
+    if (t.includes("proposal") || t.includes("client")) {
+      return "Open your landing preview and click Proposal. Add tiers and payment links (or Stripe price IDs) to start getting paid.";
+    }
+    if (t.includes("stripe") || t.includes("price id") || t.includes("checkout")) {
+      return "Set STRIPE_PRICE_PROPOSAL_3K/5K/7K and STRIPE_SECRET_KEY in env. The Start Project button opens Stripe Checkout.";
+    }
     if (t.includes("price") || t.includes("pricing") || t.includes("plan")) {
       return "Pricing is shown in the Publish flow. Choose a plan, then publish. Business/Pro enable custom domains.";
     }
@@ -80,7 +90,7 @@ export function ChatWidget() {
       return "Click Publish, pick a slug, choose a plan, then publish. You can review the page before paying.";
     }
     if (t.includes("email") || t.includes("login") || t.includes("sign in")) {
-      return "Email sign‑in requires DATABASE_URL, RESEND_API_KEY, and EMAIL_FROM. Google/GitHub need correct OAuth callbacks.";
+      return "Email sign‑in requires DATABASE_URL, RESEND_API_KEY, and EMAIL_FROM. Google/GitHub need correct OAuth callback URLs.";
     }
     if (t.includes("upload") || t.includes("image") || t.includes("video")) {
       return "Use the upload button in the About or Portfolio steps. It supports images and short videos (max 25MB).";
@@ -88,7 +98,10 @@ export function ChatWidget() {
     if (t.includes("edit") || t.includes("update")) {
       return "Use your private edit link or open /generator?edit=your-slug to update and republish.";
     }
-    return "I can help with pricing, domains, publishing, uploads, or login. If you need more, use live chat.";
+    if (t.includes("preview") || t.includes("draft")) {
+      return "Draft previews are available at /preview/{slug}?mode=draft. Published previews use mode=published.";
+    }
+    return "I can help with proposals, pricing, domains, publishing, uploads, or login. If you need more, use live chat.";
   };
 
   const sendToAI = async () => {
