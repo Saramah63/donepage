@@ -75,7 +75,7 @@ export function PricingModal({ open, onClose, lang = "en" }: PricingModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={(v) => (!v ? onClose() : null)}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-3xl text-center">
             {t({
@@ -95,7 +95,7 @@ export function PricingModal({ open, onClose, lang = "en" }: PricingModalProps) 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-6 mt-8 md:grid-cols-3">
+        <div className="grid gap-5 mt-8 md:grid-cols-3">
           {/* Starter */}
           <Card className="border-gray-200 hover:shadow-lg transition-all">
             <CardHeader>

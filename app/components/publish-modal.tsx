@@ -720,7 +720,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-center text-3xl">
             {t({
@@ -740,7 +740,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
           {/* Quick Publish */}
           <Card className="border-gray-200 transition-all hover:shadow-lg">
             <CardContent className="space-y-5 pt-8">
@@ -767,7 +767,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                 <div className="mb-2 text-sm text-gray-600">
                   {t({
                     en: "Choose your page slug",
@@ -827,7 +827,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
               </div>
 
               {editUrl ? (
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                   <div className="text-xs text-gray-600">
                     {t({
                       en: "Private edit link (keep secure):",
@@ -948,7 +948,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                 </Button>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-xs text-gray-600">
+              <div className="rounded-xl border border-gray-200 bg-white px-3 py-3 text-xs text-gray-600">
                 <div className="font-semibold text-gray-900">
                   {t({
                     en: "Pricing",
@@ -1044,7 +1044,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                 ))}
               </ul>
 
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                 <div className="text-xs text-gray-500">
                   {t({
                     en: "Free subdomain",
@@ -1069,7 +1069,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                 </Button>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-3">
                 <div className="text-sm font-semibold text-gray-900">
                   {t({
                     en: "Connect your own domain",
@@ -1163,7 +1163,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                 ) : null}
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-3">
                 <div className="text-sm font-semibold text-gray-900">
                   {t({
                     en: "Verify ownership (email)",
