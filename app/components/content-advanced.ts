@@ -1,6 +1,12 @@
 // app/components/content-advanced.ts
 import type { QuestionnaireAnswers } from "./questionnaire";
-import { generateContent as generateBaseContent, defaultPricing } from "./content";
+import {
+  generateContent as generateBaseContent,
+  defaultPricing,
+  getLang,
+  pickLang,
+  format,
+} from "./content";
 
 type PlanKey = "starter" | "business" | "pro";
 type BaseContent = ReturnType<typeof generateBaseContent>;
@@ -51,19 +57,41 @@ function buildBookingHref(answers: QuestionnaireAnswers) {
 }
 
 function painPoint(answers: QuestionnaireAnswers) {
+  const lang = getLang(answers);
   if (answers.primaryGoal === "credibility") {
-    return "Most prospects don’t doubt your skills — they doubt clarity. We remove ambiguity and build trust fast.";
+    return pickLang(lang, {
+      en: "Most prospects don’t doubt your skills — they doubt clarity. We remove ambiguity and build trust fast.",
+      fa: "بیشتر مخاطبان به مهارت شما شک ندارند—به شفافیت شک دارند. ابهام را حذف و سریع اعتماد می‌سازیم.",
+      ar: "معظم العملاء لا يشكون في مهارتك، بل في الوضوح. نزيل الغموض ونبني الثقة بسرعة.",
+      fi: "Useimmat eivät epäile osaamistasi — he epäilevät selkeyttä. Poistamme epävarmuuden ja rakennamme luottamuksen nopeasti.",
+    });
   }
   if (answers.businessStage === "starting") {
-    return "If your offer feels unclear, prospects hesitate. We clarify your message and turn attention into action.";
+    return pickLang(lang, {
+      en: "If your offer feels unclear, prospects hesitate. We clarify your message and turn attention into action.",
+      fa: "اگر پیشنهاد شما مبهم باشد، مخاطب مردد می‌شود. پیام شما را شفاف می‌کنیم تا توجه به اقدام تبدیل شود.",
+      ar: "إذا بدا عرضك غير واضح، يتردد العملاء. نوضح رسالتك ونحوّل الانتباه إلى إجراء.",
+      fi: "Jos tarjouksesi tuntuu epäselvältä, asiakkaat epäröivät. Selkeytämme viestin ja muutamme huomion toiminnaksi.",
+    });
   }
   if (answers.businessStage === "established") {
-    return "If growth has stalled, it’s usually positioning + funnel friction. We fix both — with a clean execution plan.";
+    return pickLang(lang, {
+      en: "If growth has stalled, it’s usually positioning + funnel friction. We fix both — with a clean execution plan.",
+      fa: "اگر رشد متوقف شده، معمولاً مشکل از جایگاه‌یابی و اصطکاک قیف است. هر دو را با اجرای دقیق اصلاح می‌کنیم.",
+      ar: "إذا تباطأ النمو فغالباً السبب هو التموضع واحتكاك القمع. نعالج الأمرين بخطة تنفيذ واضحة.",
+      fi: "Jos kasvu pysähtyy, syy on usein positiointi ja suppilon kitka. Korjaamme molemmat selkeällä toteutuksella.",
+    });
   }
-  return "When acquisition is manual, scale slows down. We systemize demand and reduce decision friction.";
+  return pickLang(lang, {
+    en: "When acquisition is manual, scale slows down. We systemize demand and reduce decision friction.",
+    fa: "وقتی جذب مشتری دستی است، مقیاس کند می‌شود. تقاضا را سیستم‌سازی و اصطکاک تصمیم را کاهش می‌دهیم.",
+    ar: "عندما يكون الاكتساب يدويًا، يتباطأ التوسع. ننظم الطلب ونقلل احتكاك القرار.",
+    fi: "Kun hankinta on manuaalista, skaala hidastuu. Järjestelmöimme kysynnän ja vähennämme päätöksenteon kitkaa.",
+  });
 }
 
 function proofLine(answers: QuestionnaireAnswers) {
+  const lang = getLang(answers);
   const exp =
     answers.experienceLevel === "veteran"
       ? "10+ years"
@@ -74,81 +102,228 @@ function proofLine(answers: QuestionnaireAnswers) {
       : "Modern approach";
   const trust =
     answers.trustFactor === "results"
-      ? "measurable outcomes"
+      ? pickLang(lang, {
+          en: "measurable outcomes",
+          fa: "نتایج قابل اندازه‌گیری",
+          ar: "نتائج قابلة للقياس",
+          fi: "mitattavat tulokset",
+        })
       : answers.trustFactor === "portfolio"
-      ? "verifiable work"
+      ? pickLang(lang, {
+          en: "verifiable work",
+          fa: "کار قابل‌اثبات",
+          ar: "عمل قابل للتحقق",
+          fi: "todennettavissa oleva työ",
+        })
       : answers.trustFactor === "certifications"
-      ? "credible standards"
+      ? pickLang(lang, {
+          en: "credible standards",
+          fa: "استانداردهای معتبر",
+          ar: "معايير موثوقة",
+          fi: "luotettavat standardit",
+        })
       : answers.trustFactor === "guarantee"
-      ? "risk-reduction"
-      : "reliable delivery";
-  return `${exp} • Built on ${trust} • Fast response time`;
+      ? pickLang(lang, {
+          en: "risk-reduction",
+          fa: "کاهش ریسک",
+          ar: "تقليل المخاطر",
+          fi: "riskin pienennys",
+        })
+      : pickLang(lang, {
+          en: "reliable delivery",
+          fa: "تحویل قابل اعتماد",
+          ar: "تسليم موثوق",
+          fi: "luotettava toimitus",
+        });
+  return format(
+    pickLang(lang, {
+      en: "{exp} • Built on {trust} • Fast response time",
+      fa: "{exp} • مبتنی بر {trust} • پاسخ‌گویی سریع",
+      ar: "{exp} • مبني على {trust} • استجابة سريعة",
+      fi: "{exp} • Perustuu {trust} • Nopea vaste",
+    }),
+    { exp, trust }
+  );
 }
 
 function ctaRefinement(answers: QuestionnaireAnswers) {
+  const lang = getLang(answers);
   // smarter CTA variant without changing layout
   if (answers.primaryGoal === "calls") {
     return {
-      headline: "Let’s Align on the Fastest Path to Results",
+      headline: pickLang(lang, {
+        en: "Let’s Align on the Fastest Path to Results",
+        fa: "بیایید سریع‌ترین مسیر به نتیجه را همسو کنیم",
+        ar: "لنحدّد أسرع مسار للنتائج",
+        fi: "Sovitaan nopein reitti tuloksiin",
+      }),
       subheadline:
         answers.experienceLevel === "new"
-          ? "Short call, clear plan, zero pressure. We’ll map your next steps and remove guesswork."
-          : "Short call, clear plan, high signal. We’ll identify leverage points and confirm the best next move.",
+          ? pickLang(lang, {
+              en: "Short call, clear plan, zero pressure. We’ll map your next steps and remove guesswork.",
+              fa: "تماس کوتاه، برنامه روشن، بدون فشار. گام‌های بعدی را مشخص می‌کنیم.",
+              ar: "مكالمة قصيرة وخطة واضحة دون ضغط. نحدد الخطوات التالية.",
+              fi: "Lyhyt puhelu, selkeä suunnitelma, ei painetta. Kartoitamme seuraavat askeleet.",
+            })
+          : pickLang(lang, {
+              en: "Short call, clear plan, high signal. We’ll identify leverage points and confirm the best next move.",
+              fa: "تماس کوتاه، برنامه روشن و دقیق. نقاط اهرمی و گام بعدی را مشخص می‌کنیم.",
+              ar: "مكالمة قصيرة وخطة واضحة. نحدد نقاط الرافعة ونؤكد الخطوة التالية.",
+              fi: "Lyhyt puhelu, selkeä suunnitelma. Tunnistamme vipupisteet ja seuraavan askeleen.",
+            }),
     };
   }
   if (answers.primaryGoal === "packages") {
     return {
-      headline: "Choose a Package That Matches Your Goal",
+      headline: pickLang(lang, {
+        en: "Choose a Package That Matches Your Goal",
+        fa: "پکیجی را انتخاب کنید که با هدف شما هماهنگ است",
+        ar: "اختر باقة تناسب هدفك",
+        fi: "Valitse tavoitteeseesi sopiva paketti",
+      }),
       subheadline:
         answers.pricingApproach === "custom"
-          ? "Tell us what you need — we’ll scope it cleanly and price it transparently."
-          : "Pick the plan, move forward fast, and keep execution predictable.",
+          ? pickLang(lang, {
+              en: "Tell us what you need — we’ll scope it cleanly and price it transparently.",
+              fa: "نیازتان را بگویید—شفاف محدوده و قیمت‌گذاری می‌کنیم.",
+              ar: "أخبرنا بما تحتاج — نحدد النطاق ونسعّر بوضوح.",
+              fi: "Kerro tarpeesi — määrittelemme laajuuden selkeästi ja hinnoittelemme avoimesti.",
+            })
+          : pickLang(lang, {
+              en: "Pick the plan, move forward fast, and keep execution predictable.",
+              fa: "پلن را انتخاب کنید، سریع جلو بروید و اجرای قابل پیش‌بینی داشته باشید.",
+              ar: "اختر الخطة وتقدّم بسرعة مع تنفيذ واضح.",
+              fi: "Valitse paketti, etene nopeasti ja pidä toteutus ennakoitavana.",
+            }),
     };
   }
   if (answers.primaryGoal === "leads") {
     return {
-      headline: "Get a Clear Plan — Before You Spend More Time or Money",
-      subheadline:
-        "We’ll review your situation and give you the best next step. If it’s not a fit, we’ll tell you upfront.",
+      headline: pickLang(lang, {
+        en: "Get a Clear Plan — Before You Spend More Time or Money",
+        fa: "برنامه روشن بگیرید—قبل از اتلاف زمان یا هزینه",
+        ar: "احصل على خطة واضحة قبل إنفاق المزيد من الوقت أو المال",
+        fi: "Saat selkeän suunnitelman ennen lisäaikaa tai ‑kustannuksia",
+      }),
+      subheadline: pickLang(lang, {
+        en: "We’ll review your situation and give you the best next step. If it’s not a fit, we’ll tell you upfront.",
+        fa: "وضعیت شما را بررسی می‌کنیم و بهترین گام بعدی را می‌دهیم. اگر مناسب نباشد، صریح می‌گوییم.",
+        ar: "نراجع وضعك ونقترح أفضل خطوة تالية. وإن لم يكن مناسبًا سنخبرك بصراحة.",
+        fi: "Arvioimme tilanteesi ja annamme parhaan seuraavan askeleen. Jos se ei sovi, kerromme suoraan.",
+      }),
     };
   }
   return {
-    headline: "Build Trust. Remove Friction. Convert Better.",
-    subheadline: "Clean message, clear proof, and a CTA that moves the right people.",
+    headline: pickLang(lang, {
+      en: "Build Trust. Remove Friction. Convert Better.",
+      fa: "اعتماد بسازید. اصطکاک را حذف کنید. بهتر تبدیل کنید.",
+      ar: "ابنِ الثقة. أزل الاحتكاك. حوّل بشكل أفضل.",
+      fi: "Rakenna luottamus. Poista kitka. Konvertoi paremmin.",
+    }),
+    subheadline: pickLang(lang, {
+      en: "Clean message, clear proof, and a CTA that moves the right people.",
+      fa: "پیام شفاف، اثبات روشن و CTA اثرگذار.",
+      ar: "رسالة واضحة، دليل واضح، ونداء يحرك الجمهور المناسب.",
+      fi: "Selkeä viesti, selkeä todiste ja CTA, joka liikuttaa oikeat ihmiset.",
+    }),
   };
 }
 
 function buildSteps(answers: QuestionnaireAnswers) {
+  const lang = getLang(answers);
   // numbered steps for “How it works” section — content only
   const goal =
     answers.primaryGoal === "calls"
-      ? "book calls"
+      ? pickLang(lang, {
+          en: "book calls",
+          fa: "رزرو تماس",
+          ar: "حجز مكالمات",
+          fi: "varaa puheluja",
+        })
       : answers.primaryGoal === "packages"
-      ? "sell packages"
+      ? pickLang(lang, {
+          en: "sell packages",
+          fa: "فروش پکیج‌ها",
+          ar: "بيع الباقات",
+          fi: "myydä paketteja",
+        })
       : answers.primaryGoal === "credibility"
-      ? "build trust"
-      : "capture leads";
+      ? pickLang(lang, {
+          en: "build trust",
+          fa: "ساخت اعتماد",
+          ar: "بناء الثقة",
+          fi: "rakenna luottamus",
+        })
+      : pickLang(lang, {
+          en: "capture leads",
+          fa: "جذب سرنخ‌ها",
+          ar: "جمع العملاء المحتملين",
+          fi: "kerää liidejä",
+        });
 
   return {
-    title: "How It Works",
-    subtitle: "A simple, predictable process — designed to ship fast and convert cleanly.",
+    title: pickLang(lang, {
+      en: "How It Works",
+      fa: "چگونه کار می‌کند",
+      ar: "كيف يعمل",
+      fi: "Miten se toimii",
+    }),
+    subtitle: pickLang(lang, {
+      en: "A simple, predictable process — designed to ship fast and convert cleanly.",
+      fa: "فرآیندی ساده و قابل پیش‌بینی — برای تحویل سریع و تبدیل بهتر.",
+      ar: "عملية بسيطة ومتوقعة — للتسليم السريع والتحويل الأفضل.",
+      fi: "Yksinkertainen ja ennakoitava prosessi — nopeaan toimitukseen ja konversioon.",
+    }),
     steps: [
       {
         no: 1,
-        title: "Share the essentials",
-        desc: "Answer the questions (offer, audience, positioning). We use it to generate a high-converting structure.",
+        title: pickLang(lang, {
+          en: "Share the essentials",
+          fa: "اطلاعات کلیدی را بدهید",
+          ar: "شارك الأساسيات",
+          fi: "Jaa olennaiset tiedot",
+        }),
+        desc: pickLang(lang, {
+          en: "Answer the questions (offer, audience, positioning). We use it to generate a high-converting structure.",
+          fa: "به سوال‌ها پاسخ دهید (پیشنهاد، مخاطب، جایگاه). بر این اساس ساختار پر‌تبدیل می‌سازیم.",
+          ar: "أجب عن الأسئلة (العرض، الجمهور، التموضع). نبني هيكلًا عالي التحويل.",
+          fi: "Vastaa kysymyksiin (tarjous, yleisö, positiointi). Rakennamme korkean konversion rakenteen.",
+        }),
       },
       {
         no: 2,
-        title: "Review and personalize",
+        title: pickLang(lang, {
+          en: "Review and personalize",
+          fa: "بازبینی و شخصی‌سازی",
+          ar: "راجع وخصص",
+          fi: "Tarkista ja personoi",
+        }),
         desc:
-          'Edit your “About”, links (email/WhatsApp/booking), and credibility signals. Keep it minimal or go deep.',
+          pickLang(lang, {
+            en: 'Edit your “About”, links (email/WhatsApp/booking), and credibility signals. Keep it minimal or go deep.',
+            fa: "بخش «درباره»، لینک‌ها و سیگنال‌های اعتبار را ویرایش کنید. ساده یا عمیق، انتخاب با شماست.",
+            ar: "حرر قسم «نبذة»، الروابط (البريد/واتساب/الحجز) وعوامل الثقة.",
+            fi: "Muokkaa “Tietoja”, linkit (sähköposti/WhatsApp/varaus) ja uskottavuus.",
+          }),
       },
       {
         no: 3,
-        title: `Publish and ${goal}`,
+        title: format(
+          pickLang(lang, {
+            en: "Publish and {goal}",
+            fa: "منتشر کنید و {goal}",
+            ar: "انشر و{goal}",
+            fi: "Julkaise ja {goal}",
+          }),
+          { goal }
+        ),
         desc:
-          "Publish with your preferred slug. Your page goes live and stays SEO-ready, mobile-first, and shareable.",
+          pickLang(lang, {
+            en: "Publish with your preferred slug. Your page goes live and stays SEO-ready, mobile-first, and shareable.",
+            fa: "با اسلاگ دلخواه منتشر کنید. صفحه شما آنلاین و آماده سئو و اشتراک‌گذاری می‌شود.",
+            ar: "انشر بالمسار المفضل. تصبح صفحتك مباشرة وجاهزة للسيو والمشاركة.",
+            fi: "Julkaise haluamallasi slugilla. Sivusi on live, SEO‑valmis ja jaettavissa.",
+          }),
       },
     ],
   };
@@ -209,6 +384,7 @@ function parsePortfolioJson(raw?: string) {
  * - injects smarter copy and adds steps + contact hrefs (wiring only)
  */
 export function generateContentAdvanced(answers: QuestionnaireAnswers) {
+  const lang = getLang(answers);
   const base = applyAnswerOverrides(generateBaseContent(answers), answers);
 
   // Upgrade hero/subheadline with pain point + proof line (still short)
@@ -224,27 +400,48 @@ export function generateContentAdvanced(answers: QuestionnaireAnswers) {
   const emailHref = buildEmailHref(answers);
   const waHref = buildWhatsAppHref(answers);
 
+  const disabledText = {
+    booking: pickLang(lang, {
+      en: "Booking link not set",
+      fa: "لینک رزرو تنظیم نشده",
+      ar: "رابط الحجز غير مضبوط",
+      fi: "Varauslinkkiä ei ole asetettu",
+    }),
+    email: pickLang(lang, {
+      en: "Email not set",
+      fa: "ایمیل تنظیم نشده",
+      ar: "البريد غير مضبوط",
+      fi: "Sähköpostia ei ole asetettu",
+    }),
+    whatsapp: pickLang(lang, {
+      en: "WhatsApp not set",
+      fa: "واتساپ تنظیم نشده",
+      ar: "واتساب غير مضبوط",
+      fi: "WhatsApp ei ole asetettu",
+    }),
+  };
+
   base.contact = {
     ...base.contact,
     call: {
       ...base.contact.call,
       href: bookingHref,
-      disabledText: "Booking link not set",
+      disabledText: disabledText.booking,
     },
     email: {
       ...base.contact.email,
       href: emailHref,
-      disabledText: "Email not set",
+      disabledText: disabledText.email,
     },
     chat: {
       ...base.contact.chat,
       href: waHref,
-      disabledText: "WhatsApp not set",
+      disabledText: disabledText.whatsapp,
     },
   } as any;
 
   // Pricing: keep your default (no UI change)
-  base.pricing = base.pricing ?? defaultPricing();
+  base.pricing = base.pricing ?? defaultPricing(lang);
 
   // Portfolio overrides (optional)
   const customPortfolioJson = parsePortfolioJson(answers.portfolioItemsJson);

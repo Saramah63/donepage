@@ -100,6 +100,12 @@ type Step = {
 
 const BASE_STEPS: Step[] = [
   {
+    key: "language",
+    title: "What language should your page be in?",
+    subtitle: "Choose your preferred language (you can set a country next)",
+    options: [],
+  },
+  {
     key: "businessName",
     title: "What is your business name?",
     subtitle: "This will appear on your landing page and in Google",
@@ -122,12 +128,6 @@ const BASE_STEPS: Step[] = [
       { value: "Australia", title: "Australia", desc: "AU" },
       { value: "Other", title: "Other", desc: "Select this if not listed" },
     ],
-  },
-  {
-    key: "language",
-    title: "What language should your page be in?",
-    subtitle: "We’ll default to the best match for your country — you can override it",
-    options: [],
   },
   {
     key: "serviceType",
@@ -346,7 +346,6 @@ function normalizeCountry(country?: string, countryOther?: string) {
 }
 
 function getLanguageOptions(country?: string, countryOther?: string): Option[] {
-  const normalized = normalizeCountry(country, countryOther).toLowerCase();
   const base: Option[] = [
     { value: "English", title: "English", desc: "Global default" },
     { value: "Arabic", title: "Arabic", desc: "العربية" },
@@ -358,6 +357,9 @@ function getLanguageOptions(country?: string, countryOther?: string): Option[] {
     { value: "Spanish", title: "Spanish", desc: "Español" },
     { value: "Other", title: "Other", desc: "Add your own language" },
   ];
+
+  const normalized = normalizeCountry(country, countryOther).toLowerCase();
+  if (!normalized) return base;
 
   if (normalized.includes("finland")) {
     return [
@@ -432,6 +434,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   const [advanced, setAdvanced] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [languageTouched, setLanguageTouched] = React.useState(false);
   const [portfolioItems, setPortfolioItems] = React.useState<
     { title: string; description: string; metric: string; imageUrl?: string }[]
   >([]);
@@ -446,10 +449,11 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   const [stepIndex, setStepIndex] = React.useState(0);
   const [answers, setAnswers] = React.useState<Partial<QuestionnaireAnswers>>(initialAnswers ?? {});
 
-  // Auto-select language based on country when not set
+  // Auto-select language based on country when user has not chosen a language
   React.useEffect(() => {
     const hasCountry = Boolean(answers.country);
     if (!hasCountry) return;
+    if (languageTouched) return;
 
     const options = getLanguageOptions(answers.country, answers.countryOther);
     const isValid = options.some((o) => o.value === answers.language);
@@ -503,6 +507,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   }, [answers, onChange]);
 
   const setValue = (value: string) => {
+    if (step.key === "language") setLanguageTouched(true);
     update({ [step.key]: value as any });
   };
 
