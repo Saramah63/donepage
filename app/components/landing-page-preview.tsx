@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import { generateContentAdvanced } from "@/app/components/content-advanced";
+import { getLang, pickLang } from "@/app/components/content";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
@@ -77,7 +78,14 @@ export function LandingPagePreview({
       const plan = data?.plan;
 
       if (plan !== "business" && plan !== "pro") {
-        toast.error("Upgrade plan to export HTML");
+        toast.error(
+          pickLang(lang, {
+            en: "Upgrade plan to export HTML",
+            fa: "برای خروجی HTML پلن را ارتقا دهید",
+            ar: "قم بترقية الخطة لتصدير HTML",
+            fi: "Päivitä paketti HTML‑vientiin",
+          })
+        );
         setPricingModalOpen(true);
         return;
       }
@@ -94,15 +102,30 @@ export function LandingPagePreview({
       a.click();
 
       URL.revokeObjectURL(url);
-      toast.success("Exported successfully");
+      toast.success(
+        pickLang(lang, {
+          en: "Exported successfully",
+          fa: "با موفقیت خروجی گرفته شد",
+          ar: "تم التصدير بنجاح",
+          fi: "Vienti onnistui",
+        })
+      );
     } catch {
-      toast.error("Export failed");
+      toast.error(
+        pickLang(lang, {
+          en: "Export failed",
+          fa: "خروجی‌گیری ناموفق بود",
+          ar: "فشل التصدير",
+          fi: "Vienti epäonnistui",
+        })
+      );
       setPricingModalOpen(true);
     }
   };
 
   const langRaw = (answers as any)?.language?.toLowerCase?.() ?? "";
   const isRTL = langRaw.includes("arabic") || langRaw.includes("persian") || langRaw.includes("farsi");
+  const lang = getLang(answers);
 
   return (
     <div
@@ -119,32 +142,48 @@ export function LandingPagePreview({
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
-                <div className="text-sm font-semibold">Landing Ready</div>
+                <div className="text-sm font-semibold">
+                  {pickLang(lang, {
+                    en: "Landing Ready",
+                    fa: "لندینگ آماده است",
+                    ar: "الصفحة جاهزة",
+                    fi: "Sivu valmis",
+                  })}
+                </div>
                 <div className="text-xs text-gray-500">
-                  SEO-ready · Conversion-focused
+                  {pickLang(lang, {
+                    en: "SEO-ready · Conversion-focused",
+                    fa: "آماده سئو · متمرکز بر تبدیل",
+                    ar: "جاهزة للسيو · تركيز على التحويل",
+                    fi: "SEO‑valmis · Konversiokeskeinen",
+                  })}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={onEdit}>
-                <Edit className="mr-2 h-4 w-4" /> Edit
+                <Edit className="mr-2 h-4 w-4" />
+                {pickLang(lang, { en: "Edit", fa: "ویرایش", ar: "تعديل", fi: "Muokkaa" })}
               </Button>
 
               {proposalUrl ? (
                 <Button size="sm" variant="outline" asChild>
                   <Link href={proposalUrl}>
-                    <ShieldCheck className="mr-2 h-4 w-4" /> Proposal
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    {pickLang(lang, { en: "Proposal", fa: "پروپوزال", ar: "عرض", fi: "Tarjous" })}
                   </Link>
                 </Button>
               ) : null}
 
               <Button size="sm" onClick={handleExport}>
-                <Download className="mr-2 h-4 w-4" /> Export
+                <Download className="mr-2 h-4 w-4" />
+                {pickLang(lang, { en: "Export", fa: "خروجی", ar: "تصدير", fi: "Vie" })}
               </Button>
 
               <Button size="sm" onClick={() => setPublishModalOpen(true)}>
-                <Globe className="mr-2 h-4 w-4" /> Publish
+                <Globe className="mr-2 h-4 w-4" />
+                {pickLang(lang, { en: "Publish", fa: "انتشار", ar: "نشر", fi: "Julkaise" })}
               </Button>
             </div>
           </div>

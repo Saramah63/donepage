@@ -94,12 +94,32 @@ function proofLine(answers: QuestionnaireAnswers) {
   const lang = getLang(answers);
   const exp =
     answers.experienceLevel === "veteran"
-      ? "10+ years"
+      ? pickLang(lang, {
+          en: "10+ years",
+          fa: "۱۰+ سال",
+          ar: "10+ سنوات",
+          fi: "10+ vuotta",
+        })
       : answers.experienceLevel === "expert"
-      ? "7+ years"
+      ? pickLang(lang, {
+          en: "7+ years",
+          fa: "۷+ سال",
+          ar: "7+ سنوات",
+          fi: "7+ vuotta",
+        })
       : answers.experienceLevel === "intermediate"
-      ? "3+ years"
-      : "Modern approach";
+      ? pickLang(lang, {
+          en: "3+ years",
+          fa: "۳+ سال",
+          ar: "3+ سنوات",
+          fi: "3+ vuotta",
+        })
+      : pickLang(lang, {
+          en: "Modern approach",
+          fa: "رویکرد مدرن",
+          ar: "نهج حديث",
+          fi: "Moderni lähestymistapa",
+        });
   const trust =
     answers.trustFactor === "results"
       ? pickLang(lang, {
