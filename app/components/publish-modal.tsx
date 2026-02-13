@@ -395,6 +395,18 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
           fi: "Julkaistu onnistuneesti. Sivu on nyt live.",
         })
       );
+
+      // Auto-provision subdomain for clients
+      try {
+        const autoDomain = `${safeSlug || "yourpage"}.donepage.co`;
+        await fetch("/api/domains/assign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: autoDomain, slug: safeSlug }),
+        });
+      } catch {
+        // non-blocking: subdomain can be connected manually if needed
+      }
     } catch (e: any) {
       toast.error(
         e?.message ??
