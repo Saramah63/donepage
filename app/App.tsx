@@ -66,8 +66,11 @@ export default function App() {
     return Boolean(answers?.serviceType && answers?.targetAudience && answers?.primaryGoal);
   }, [answers]);
 
+  const langRaw = (answers as any)?.language?.toLowerCase?.() ?? "";
+  const isRTL = langRaw.includes("arabic") || langRaw.includes("persian") || langRaw.includes("farsi");
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white" dir={isRTL ? "rtl" : "ltr"}>
       <Toaster richColors />
 
       {step === "form" && (

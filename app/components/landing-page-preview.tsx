@@ -101,8 +101,15 @@ export function LandingPagePreview({
     }
   };
 
+  const langRaw = (answers as any)?.language?.toLowerCase?.() ?? "";
+  const isRTL = langRaw.includes("arabic") || langRaw.includes("persian") || langRaw.includes("farsi");
+
   return (
-    <div id="landing-root" className="min-h-screen bg-white">
+    <div
+      id="landing-root"
+      className="min-h-screen bg-white"
+      dir={isRTL ? "rtl" : "ltr"}
+    >
       {/* ACTION BAR */}
       {mode === "preview" && (
         <div className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">

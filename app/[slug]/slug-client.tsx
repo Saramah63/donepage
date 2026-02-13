@@ -52,6 +52,9 @@ export default function SlugClient({
     );
   }
 
+  const langRaw = (answers as any)?.language?.toLowerCase?.() ?? "";
+  const isRTL = langRaw.includes("arabic") || langRaw.includes("persian") || langRaw.includes("farsi");
+
   const badge =
     view.mode === "published"
       ? `Published (v${view.version ?? "-"})`
@@ -60,7 +63,7 @@ export default function SlugClient({
       : `Version Preview (v${view.version ?? "-"})`;
 
   return (
-    <div>
+    <div dir={isRTL ? "rtl" : "ltr"}>
       {/* Minimal banner for clarity */}
       {view.mode !== "published" ? (
         <div className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">

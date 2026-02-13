@@ -15,8 +15,11 @@ export default function PreviewClient({
   version: number;
   answers: QuestionnaireAnswers;
 }) {
+  const langRaw = (answers as any)?.language?.toLowerCase?.() ?? "";
+  const isRTL = langRaw.includes("arabic") || langRaw.includes("persian") || langRaw.includes("farsi");
+
   return (
-    <div>
+    <div dir={isRTL ? "rtl" : "ltr"}>
       {/* no action bar => mode="export" */}
       <div className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 text-sm text-gray-700">
