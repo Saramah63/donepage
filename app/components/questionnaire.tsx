@@ -40,7 +40,9 @@ export type QuestionnaireAnswers = {
     | "marketing"
     | "creative"
     | "legal"
-    | "accounting";
+    | "accounting"
+    | "other";
+  serviceTypeOther?: string;
   targetAudience:
     | "individuals"
     | "freelancers"
@@ -142,6 +144,7 @@ const BASE_STEPS: Step[] = [
       { value: "creative", title: "Creative Services", desc: "Photography, videography, or content creation" },
       { value: "legal", title: "Legal Services", desc: "Legal consulting or specialized legal services" },
       { value: "accounting", title: "Accounting & Finance", desc: "Bookkeeping, tax prep, or financial planning" },
+      { value: "other", title: "Other", desc: "Custom or niche services" },
     ],
   },
   {
@@ -350,6 +353,10 @@ function toUiLang(raw?: string): UiLang {
   return "en";
 }
 
+function normalizeLangCode(raw?: string): UiLang {
+  return toUiLang(raw);
+}
+
 function pickUi<T>(lang: UiLang, map: Record<UiLang, T>): T {
   return map[lang] ?? map.en;
 }
@@ -358,9 +365,6 @@ function ui(lang: UiLang, text: string) {
   const map: Record<UiLang, Record<string, string>> = {
     en: {},
     fa: {
-      country: {
-        Other: { title: "سایر", desc: "اگر کشور شما در لیست نیست" },
-      },
       "Advanced mode": "حالت پیشرفته",
       "Ask anything — I’ll answer automatically.": "هر سوالی دارید بپرسید — خودکار پاسخ می‌دهم.",
       "Upload a photo or short video": "آپلود عکس یا ویدیوی کوتاه",
@@ -383,11 +387,9 @@ function ui(lang: UiLang, text: string) {
       "Upload Media": "آپلود مدیا",
       "Enter your country": "کشور خود را وارد کنید",
       "Enter your language": "زبان خود را وارد کنید",
+      "Enter your service": "خدمت/سرویس خود را وارد کنید",
     },
     ar: {
-      country: {
-        Other: { title: "أخرى", desc: "إذا لم يكن بلدك ضمن القائمة" },
-      },
       "Advanced mode": "وضع متقدم",
       "Upload a photo or short video": "ارفع صورة أو فيديو قصير",
       "JPG/PNG/WebP or MP4/WebM. Max 25MB.": "JPG/PNG/WebP أو MP4/WebM. الحد 25MB.",
@@ -409,11 +411,9 @@ function ui(lang: UiLang, text: string) {
       "Upload Media": "رفع الوسائط",
       "Enter your country": "أدخل بلدك",
       "Enter your language": "أدخل لغتك",
+      "Enter your service": "أدخل خدمتك",
     },
     fi: {
-      country: {
-        Other: { title: "Muu", desc: "Jos maasi ei ole listassa" },
-      },
       "Advanced mode": "Edistynyt tila",
       "Upload a photo or short video": "Lataa kuva tai lyhyt video",
       "JPG/PNG/WebP or MP4/WebM. Max 25MB.": "JPG/PNG/WebP tai MP4/WebM. Max 25MB.",
@@ -435,6 +435,7 @@ function ui(lang: UiLang, text: string) {
       "Upload Media": "Lataa media",
       "Enter your country": "Syötä maasi",
       "Enter your language": "Syötä kielesi",
+      "Enter your service": "Syötä palvelusi",
     },
   };
   return map[lang]?.[text] ?? text;
@@ -547,6 +548,7 @@ const OPTION_I18N: Record<UiLang, Partial<Record<keyof QuestionnaireAnswers, Rec
         creative: { title: "خدمات خلاق", desc: "عکاسی، ویدیو، تولید محتوا" },
         legal: { title: "خدمات حقوقی", desc: "مشاوره یا خدمات حقوقی تخصصی" },
         accounting: { title: "حسابداری و مالی", desc: "دفتر‌داری، مالیات، برنامه مالی" },
+        other: { title: "سایر", desc: "خدمات اختصاصی" },
       },
       targetAudience: {
         individuals: { title: "افراد و مصرف‌کنندگان", desc: "مشتریان شخصی" },
@@ -607,6 +609,7 @@ const OPTION_I18N: Record<UiLang, Partial<Record<keyof QuestionnaireAnswers, Rec
         creative: { title: "خدمات إبداعية", desc: "تصوير وفيديو ومحتوى" },
         legal: { title: "خدمات قانونية", desc: "استشارات قانونية متخصصة" },
         accounting: { title: "محاسبة ومالية", desc: "دفاتر وضرائب" },
+        other: { title: "أخرى", desc: "خدمات مخصصة" },
       },
       targetAudience: {
         individuals: { title: "أفراد ومستهلكون", desc: "عملاء أفراد" },
@@ -667,6 +670,7 @@ const OPTION_I18N: Record<UiLang, Partial<Record<keyof QuestionnaireAnswers, Rec
         creative: { title: "Luovat palvelut", desc: "Kuva, video, sisältö" },
         legal: { title: "Lakipalvelut", desc: "Lakineuvonta" },
         accounting: { title: "Talous", desc: "Kirjanpito ja verot" },
+        other: { title: "Muu", desc: "Räätälöidyt palvelut" },
       },
       targetAudience: {
         individuals: { title: "Yksityishenkilöt", desc: "Henkilöasiakkaat" },
@@ -887,8 +891,8 @@ function getLanguageOptions(country?: string, countryOther?: string, uiLang: UiL
       { value: "English", title: "English", desc: "Global default" },
       {
         value: "Other",
-        title: pickLang(uiLang, { en: "Other", fa: "سایر", ar: "أخرى", fi: "Muu" }),
-        desc: pickLang(uiLang, {
+        title: pickUi(uiLang, { en: "Other", fa: "سایر", ar: "أخرى", fi: "Muu" }),
+        desc: pickUi(uiLang, {
           en: "Add your own language",
           fa: "زبان دلخواه را وارد کنید",
           ar: "أدخل لغتك",
@@ -926,6 +930,21 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   const [stepIndex, setStepIndex] = React.useState(0);
   const [answers, setAnswers] = React.useState<Partial<QuestionnaireAnswers>>(initialAnswers ?? {});
 
+  React.useEffect(() => {
+    if (!initialAnswers) return;
+    setAnswers((prev) => {
+      const prevKeys = Object.keys(prev ?? {});
+      if (prevKeys.length === 0) return { ...initialAnswers };
+      if (!prev.language && initialAnswers.language) {
+        return { ...prev, language: initialAnswers.language };
+      }
+      return prev;
+    });
+    if (!languageTouched && initialAnswers.language) {
+      setLanguageTouched(true);
+    }
+  }, [initialAnswers, languageTouched]);
+
   // Auto-select language based on country when user has not chosen a language
   React.useEffect(() => {
     const hasCountry = Boolean(answers.country);
@@ -957,6 +976,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
 
   const needsCountryOther = step.key === "country" && currentValue === "Other";
   const needsLanguageOther = step.key === "language" && currentValue === "Other";
+  const needsServiceOther = step.key === "serviceType" && currentValue === "other";
 
   const canGoNext = isInputStep
     ? Boolean(
@@ -974,7 +994,9 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
       (!needsCountryOther ||
         Boolean((answers.countryOther ?? "").toString().trim())) &&
       (!needsLanguageOther ||
-        Boolean((answers.languageOther ?? "").toString().trim()));
+        Boolean((answers.languageOther ?? "").toString().trim())) &&
+      (!needsServiceOther ||
+        Boolean((answers.serviceTypeOther ?? "").toString().trim()));
 
   const update = (patch: Partial<QuestionnaireAnswers>) => {
     setAnswers((prev) => ({ ...prev, ...patch }));
@@ -986,6 +1008,11 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
 
   const setValue = (value: string) => {
     if (step.key === "language") setLanguageTouched(true);
+    if (step.key === "language" && typeof window !== "undefined") {
+      const code = normalizeLangCode(value);
+      window.localStorage.setItem("dp_lang", code);
+      window.dispatchEvent(new CustomEvent("dp:lang", { detail: code }));
+    }
     update({ [step.key]: value as any });
   };
 
@@ -1082,7 +1109,30 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     }
   }, [step.key, answers.portfolioItemsJson]);
 
-  const headerQuestionCount = advanced ? "Answer quick questions to get your personalized landing page" : "Answer 9 quick questions to get your personalized landing page";
+  const headerQuestionCountText = pickUi(uiLang, {
+    en: "Answer a few quick questions to get your personalized landing page",
+    fa: "به چند سؤال سریع پاسخ دهید تا لندینگ شخصی شما ساخته شود",
+    ar: "أجب عن بعض الأسئلة السريعة للحصول على صفحة مخصصة",
+    fi: "Vastaa muutamaan nopeaan kysymykseen saadaksesi henkilökohtaisen sivun",
+  });
+  const questionLabel = pickUi(uiLang, {
+    en: `Question ${stepIndex + 1} of ${total}`,
+    fa: `سؤال ${stepIndex + 1} از ${total}`,
+    ar: `السؤال ${stepIndex + 1} من ${total}`,
+    fi: `Kysymys ${stepIndex + 1} / ${total}`,
+  });
+  const landingTag = pickUi(uiLang, {
+    en: "Landing Page Generator",
+    fa: "سازنده لندینگ پیج",
+    ar: "منشئ صفحة هبوط",
+    fi: "Laskeutumissivun generaattori",
+  });
+  const advancedHelperText = pickUi(uiLang, {
+    en: "Turn on for better copy (problem, outcome, proof, process).",
+    fa: "برای متن بهتر روشن کنید (مشکل، نتیجه، اثبات، فرایند).",
+    ar: "فعّل للحصول على نص أفضل (مشكلة، نتيجة، إثبات، عملية).",
+    fi: "Ota käyttöön paremman tekstin vuoksi (ongelma, lopputulos, todiste, prosessi).",
+  });
 
   return (
     <div
@@ -1100,16 +1150,16 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
         <div className="mx-auto w-full max-w-3xl">
           <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md">
             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-600" />
-            <span className="text-sm font-semibold text-gray-900">Landing Page Generator</span>
+            <span className="text-sm font-semibold text-gray-900">{landingTag}</span>
           </div>
 
           <h1 className="mt-5 text-center text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            {headerQuestionCount}
+            {headerQuestionCountText}
           </h1>
 
           <div className="mt-6 flex items-center justify-between text-sm text-gray-600">
             <div className="font-medium">
-              Question {stepIndex + 1} of {total}
+              {questionLabel}
             </div>
             <div className="font-semibold text-gray-700">{progress}%</div>
           </div>
@@ -1129,7 +1179,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900">{ui(uiLang, "Advanced mode")}</div>
                 <div className="text-xs text-gray-600">
-                  Turn on for better copy (problem, outcome, proof, process).
+                  {advancedHelperText}
                 </div>
               </div>
 
@@ -1141,7 +1191,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                   advanced ? "border-blue-600 bg-blue-600" : "border-gray-300 bg-gray-200",
                 ].join(" ")}
                 aria-pressed={advanced}
-                aria-label="Toggle advanced mode"
+                aria-label={ui(uiLang, "Advanced mode")}
               >
                 <span
                   className={[
@@ -1594,6 +1644,15 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     placeholder={ui(uiLang, "Enter your language")}
                     value={(answers.languageOther as string) ?? ""}
                     onChange={(e) => update({ languageOther: e.target.value })}
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                ) : null}
+
+                {step.key === "serviceType" && currentValue === "other" ? (
+                  <input
+                    placeholder={ui(uiLang, "Enter your service")}
+                    value={(answers.serviceTypeOther as string) ?? ""}
+                    onChange={(e) => update({ serviceTypeOther: e.target.value })}
                     className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
                   />
                 ) : null}

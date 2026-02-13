@@ -20,6 +20,7 @@ type ProposalData = {
   paymentLink: string;
   messagePreview: string;
   messageProposal: string;
+  language?: string;
 };
 
 function listToText(list: string[]) {
@@ -269,7 +270,7 @@ export default function ProposalEditor({ slug, token }: { slug: string; token: s
                 className="mt-2 w-full min-h-[120px] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm"
                 value={mapToText(proposal.paymentLinks)}
                 onChange={(e) => update({ paymentLinks: textToMap(e.target.value) })}
-                placeholder="$3,000 (one‑time) | https://stripe.com/...\n$5,000 (one‑time) | https://stripe.com/...\n$7,000 (one‑time) | https://stripe.com/..."
+                placeholder="$3,000 (one‑time) | https://buy.stripe.com/fZu5kE1J85YCfaD1iy8Zq02\n$5,000 (one‑time) | https://buy.stripe.com/4gM4gA2Nccn02nRbXc8Zq03\n$7,000 (one‑time) | https://buy.stripe.com/6oUbJ2drQ3QubYrd1g8Zq04"
               />
             </div>
           </div>

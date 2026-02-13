@@ -44,7 +44,19 @@ export function format(template: string, vars: Record<string, string>) {
  * but seo.ts only exports generateSEO. Keeping labels here avoids
  * broken imports and keeps UI/content unchanged.
  */
-function serviceTypeLabel(serviceType: QuestionnaireAnswers["serviceType"], lang: Lang) {
+function serviceTypeLabel(
+  serviceType: QuestionnaireAnswers["serviceType"],
+  lang: Lang,
+  serviceTypeOther?: string
+) {
+  const otherLabel = serviceTypeOther?.trim()
+    ? serviceTypeOther.trim()
+    : pickLang(lang, {
+        en: "Custom Services",
+        fa: "خدمات سفارشی",
+        ar: "خدمات مخصصة",
+        fi: "Räätälöidyt palvelut",
+      });
   const map: Record<Lang, Record<string, string>> = {
     en: {
       consulting: "Business Consulting",
@@ -55,6 +67,7 @@ function serviceTypeLabel(serviceType: QuestionnaireAnswers["serviceType"], lang
       creative: "Creative Services",
       legal: "Legal Services",
       accounting: "Accounting & Finance",
+      other: otherLabel,
     },
     fa: {
       "Tailored scope and deliverables": "دامنه و تحویل‌های متناسب",
@@ -70,6 +83,7 @@ function serviceTypeLabel(serviceType: QuestionnaireAnswers["serviceType"], lang
       creative: "خدمات خلاق",
       legal: "خدمات حقوقی",
       accounting: "حسابداری و مالی",
+      other: otherLabel,
     },
     ar: {
       "Tailored scope and deliverables": "نطاق وتسليمات مخصصة",
@@ -85,6 +99,7 @@ function serviceTypeLabel(serviceType: QuestionnaireAnswers["serviceType"], lang
       creative: "خدمات إبداعية",
       legal: "الخدمات القانونية",
       accounting: "المحاسبة والمالية",
+      other: otherLabel,
     },
     fi: {
       "Tailored scope and deliverables": "Räätälöity laajuus ja toimitukset",
@@ -100,6 +115,7 @@ function serviceTypeLabel(serviceType: QuestionnaireAnswers["serviceType"], lang
       creative: "Luovat palvelut",
       legal: "Lakipalvelut",
       accounting: "Talous- ja kirjanpitopalvelut",
+      other: otherLabel,
     },
   };
   return (map[lang][serviceType as string] ?? map.en[serviceType as string]) || "Professional Services";
@@ -175,7 +191,7 @@ function diffLabel(diff: QuestionnaireAnswers["keyDifferentiator"], lang: Lang) 
 
 export function generateContent(answers: QuestionnaireAnswers) {
   const lang = getLang(answers);
-  const service = serviceTypeLabel(answers.serviceType, lang);
+  const service = serviceTypeLabel(answers.serviceType, lang, answers.serviceTypeOther);
   const audience = audienceLabelShort(answers.targetAudience, lang);
   const diff = diffLabel(answers.keyDifferentiator, lang);
 
@@ -932,6 +948,27 @@ function translateText(lang: Lang, text: string) {
   const map: Record<Lang, Record<string, string>> = {
     en: {},
     fa: {
+      "Custom Services": "خدمات سفارشی",
+      "Custom Engagement": "همکاری سفارشی",
+      "Tailored scope aligned to your exact goals and requirements":
+        "دامنه سفارشی مطابق اهداف و نیازهای دقیق شما",
+      "Specialized Support": "پشتیبانی تخصصی",
+      "Expert help for unique or niche needs": "کمک تخصصی برای نیازهای خاص یا نیچ",
+      "Discovery and audit": "کشف و ارزیابی",
+      "Custom roadmap": "نقشه راه سفارشی",
+      "Hands-on execution": "اجرای عملی",
+      "Ongoing optimization": "بهینه‌سازی مداوم",
+      "Flexible service design": "طراحی خدمات انعطاف‌پذیر",
+      "Dedicated ownership": "مسئولیت مشخص",
+      "Milestone-based delivery": "تحویل مرحله‌ای",
+      "Clear reporting": "گزارش‌دهی شفاف",
+      "Specialized Solution": "راهکار تخصصی",
+      "Built a niche-specific workflow": "ساخت فرایند مخصوص یک نیچ",
+      "Premium Support": "پشتیبانی پریمیوم",
+      "Ongoing optimization and reporting": "بهینه‌سازی و گزارش‌دهی مداوم",
+      "90‑day delivery": "تحویل ۹۰ روزه",
+      "40% faster execution": "۴۰٪ اجرای سریع‌تر",
+      "3x ROI": "۳ برابر بازگشت سرمایه",
       "Business Strategy": "استراتژی کسب‌وکار",
       "Process Improvement": "بهبود فرآیند",
       "1:1 Coaching": "کوچینگ ۱ به ۱",
@@ -1125,6 +1162,27 @@ function translateText(lang: Lang, text: string) {
       "$2M funding secured": "۲میلیون دلار جذب سرمایه",
     },
     ar: {
+      "Custom Services": "خدمات مخصصة",
+      "Custom Engagement": "تعاون مخصص",
+      "Tailored scope aligned to your exact goals and requirements":
+        "نطاق مخصص وفق أهدافك ومتطلباتك بدقة",
+      "Specialized Support": "دعم متخصص",
+      "Expert help for unique or niche needs": "مساعدة خبيرة لاحتياجات فريدة أو متخصصة",
+      "Discovery and audit": "اكتشاف وتدقيق",
+      "Custom roadmap": "خارطة طريق مخصصة",
+      "Hands-on execution": "تنفيذ عملي",
+      "Ongoing optimization": "تحسين مستمر",
+      "Flexible service design": "تصميم خدمة مرن",
+      "Dedicated ownership": "مسؤولية واضحة",
+      "Milestone-based delivery": "تسليم حسب المراحل",
+      "Clear reporting": "تقارير واضحة",
+      "Specialized Solution": "حل متخصص",
+      "Built a niche-specific workflow": "بناء سير عمل متخصص",
+      "Premium Support": "دعم فاخر",
+      "Ongoing optimization and reporting": "تحسين مستمر وتقارير",
+      "90‑day delivery": "تسليم خلال 90 يومًا",
+      "40% faster execution": "تنفيذ أسرع بنسبة 40%",
+      "3x ROI": "عائد 3x",
       "Business Strategy": "استراتيجية الأعمال",
       "Process Improvement": "تحسين العمليات",
       "1:1 Coaching": "إرشاد فردي",
@@ -1314,6 +1372,27 @@ function translateText(lang: Lang, text: string) {
       "$2M funding secured": "تأمين تمويل 2 مليون",
     },
     fi: {
+      "Custom Services": "Räätälöidyt palvelut",
+      "Custom Engagement": "Räätälöity yhteistyö",
+      "Tailored scope aligned to your exact goals and requirements":
+        "Räätälöity laajuus tavoitteidesi ja tarpeidesi mukaan",
+      "Specialized Support": "Erikoistunut tuki",
+      "Expert help for unique or niche needs": "Asiantuntija-apu erityistarpeisiin",
+      "Discovery and audit": "Kartoitus ja auditointi",
+      "Custom roadmap": "Räätälöity tiekartta",
+      "Hands-on execution": "Käytännön toteutus",
+      "Ongoing optimization": "Jatkuva optimointi",
+      "Flexible service design": "Joustava palvelumuotoilu",
+      "Dedicated ownership": "Selkeä omistajuus",
+      "Milestone-based delivery": "Välitavoitteisiin perustuva toimitus",
+      "Clear reporting": "Selkeä raportointi",
+      "Specialized Solution": "Erikoistunut ratkaisu",
+      "Built a niche-specific workflow": "Rakennettu niche-työnkulku",
+      "Premium Support": "Premium-tuki",
+      "Ongoing optimization and reporting": "Jatkuva optimointi ja raportointi",
+      "90‑day delivery": "90 päivän toimitus",
+      "40% faster execution": "40% nopeampi toteutus",
+      "3x ROI": "3x ROI",
       "Business Strategy": "Liiketoimintastrategia",
       "Process Improvement": "Prosessien parantaminen",
       "1:1 Coaching": "1:1‑valmennus",
@@ -1652,6 +1731,30 @@ function serviceOfferings(serviceType: QuestionnaireAnswers["serviceType"], lang
         icon: "target",
       },
     ],
+    other: [
+      {
+        name: "Custom Engagement",
+        description: "Tailored scope aligned to your exact goals and requirements",
+        features: [
+          "Discovery and audit",
+          "Custom roadmap",
+          "Hands-on execution",
+          "Ongoing optimization",
+        ],
+        icon: "sparkles",
+      },
+      {
+        name: "Specialized Support",
+        description: "Expert help for unique or niche needs",
+        features: [
+          "Flexible service design",
+          "Dedicated ownership",
+          "Milestone-based delivery",
+          "Clear reporting",
+        ],
+        icon: "target",
+      },
+    ],
   } as const;
 
   const list = ((base as any)[serviceType] ?? base.consulting) as Array<{
@@ -1723,6 +1826,23 @@ function portfolioByService(serviceType: QuestionnaireAnswers["serviceType"], la
       { title: "Tax Strategy", description: "Optimized tax position", metric: "$50k saved" },
       { title: "Financial Cleanup", description: "Organized 3 years of records", metric: "Audit-ready in 2 weeks" },
       { title: "CFO Support", description: "Part-time CFO for startup", metric: "$2M funding secured" },
+    ],
+    other: [
+      {
+        title: "Custom Engagement",
+        description: "Tailored scope aligned to unique goals",
+        metric: "90‑day delivery",
+      },
+      {
+        title: "Specialized Solution",
+        description: "Built a niche-specific workflow",
+        metric: "40% faster execution",
+      },
+      {
+        title: "Premium Support",
+        description: "Ongoing optimization and reporting",
+        metric: "3x ROI",
+      },
     ],
   } as const;
 

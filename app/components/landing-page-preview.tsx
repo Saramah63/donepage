@@ -42,6 +42,9 @@ export function LandingPagePreview({
 }: LandingPagePreviewProps) {
   const [isPublishModalOpen, setPublishModalOpen] = React.useState(false);
   const [isPricingModalOpen, setPricingModalOpen] = React.useState(false);
+  const [mediaPreview, setMediaPreview] = React.useState<
+    { src: string; title?: string; isVideo?: boolean } | null
+  >(null);
 
   /** 🔑 SINGLE SOURCE OF CONTENT */
   const content = React.useMemo(
@@ -133,6 +136,40 @@ export function LandingPagePreview({
       className="min-h-screen bg-white"
       dir={isRTL ? "rtl" : "ltr"}
     >
+      {mediaPreview ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+          <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setMediaPreview(null)}
+              className="absolute right-3 top-3 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              {pickLang(lang, { en: "Close", fa: "بستن", ar: "إغلاق", fi: "Sulje" })}
+            </button>
+            <div className="mt-6">
+              {mediaPreview.isVideo ? (
+                <video
+                  src={mediaPreview.src}
+                  className="w-full rounded-xl"
+                  controls
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={mediaPreview.src}
+                  alt={mediaPreview.title ?? "Preview"}
+                  className="w-full rounded-xl object-contain"
+                />
+              )}
+            </div>
+            {mediaPreview.title ? (
+              <div className="mt-3 text-sm font-semibold text-gray-800">
+                {mediaPreview.title}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       {/* ACTION BAR */}
       {mode === "preview" && (
         <div className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
@@ -332,20 +369,32 @@ export function LandingPagePreview({
                   <CardContent className="pt-6">
                     {"imageUrl" in item && (item as any).imageUrl ? (
                       <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                        {isVideoUrl((item as any).imageUrl) ? (
-                          <video
-                            src={(item as any).imageUrl}
-                            className="h-40 w-full object-cover"
-                            controls
-                          />
-                        ) : (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={(item as any).imageUrl}
-                            className="h-40 w-full object-cover"
-                            alt={item.title}
-                          />
-                        )}
+                        <button
+                          type="button"
+                          className="block w-full cursor-zoom-in"
+                          onClick={() =>
+                            setMediaPreview({
+                              src: (item as any).imageUrl,
+                              title: item.title,
+                              isVideo: isVideoUrl((item as any).imageUrl),
+                            })
+                          }
+                        >
+                          {isVideoUrl((item as any).imageUrl) ? (
+                            <video
+                              src={(item as any).imageUrl}
+                              className="h-40 w-full object-cover"
+                              muted
+                            />
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={(item as any).imageUrl}
+                              className="h-40 w-full object-cover"
+                              alt={item.title}
+                            />
+                          )}
+                        </button>
                       </div>
                     ) : null}
                     <div className="text-lg font-semibold text-gray-900">{item.title}</div>
@@ -373,9 +422,34 @@ export function LandingPagePreview({
                   {answers.aboutText?.trim() || content.about.story}
                 </p>
                 <div className="mt-6 grid gap-3 text-sm text-gray-700">
-                  <div>Mission: {content.about.mission}</div>
-                  <div>Team: {content.about.team}</div>
-                  <div>Experience: {content.about.experience} years</div>
+                  <div>
+                    {pickLang(lang, {
+                      en: "Mission",
+                      fa: "ماموریت",
+                      ar: "المهمة",
+                      fi: "Missio",
+                    })}
+                    : {content.about.mission}
+                  </div>
+                  <div>
+                    {pickLang(lang, {
+                      en: "Team",
+                      fa: "تیم",
+                      ar: "الفريق",
+                      fi: "Tiimi",
+                    })}
+                    : {content.about.team}
+                  </div>
+                  <div>
+                    {pickLang(lang, {
+                      en: "Experience",
+                      fa: "سابقه",
+                      ar: "الخبرة",
+                      fi: "Kokemus",
+                    })}
+                    : {content.about.experience}{" "}
+                    {pickLang(lang, { en: "years", fa: "سال", ar: "سنة", fi: "vuotta" })}
+                  </div>
                 </div>
               </div>
 
@@ -471,6 +545,7 @@ export function LandingPagePreview({
       <PricingModal
         open={isPricingModalOpen}
         onClose={() => setPricingModalOpen(false)}
+        lang={lang}
       />
     </div>
   );

@@ -58,6 +58,16 @@ function safeParseJSON<T>(raw: string | null): T | null {
   }
 }
 
+function normalizeLanguage(raw?: string | null): QuestionnaireAnswers["language"] | null {
+  if (!raw) return null;
+  const v = raw.toLowerCase();
+  if (v.startsWith("fa") || v.includes("persian") || v.includes("farsi")) return "Persian";
+  if (v.startsWith("ar") || v.includes("arabic")) return "Arabic";
+  if (v.startsWith("fi") || v.includes("finnish") || v.includes("suomi")) return "Finnish";
+  if (v.startsWith("en") || v.includes("english")) return "English";
+  return null;
+}
+
 export default function GeneratorClient({
   onSave,
   editSlug = null,
@@ -65,8 +75,8 @@ export default function GeneratorClient({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [answers, setAnswers] = React.useState<QuestionnaireAnswers | null>(
-    initialAnswers
+  const [answers, setAnswers] = React.useState<Partial<QuestionnaireAnswers> | null>(
+    initialAnswers ?? null
   );
   const [loading, setLoading] = React.useState(false);
   const [hydrated, setHydrated] = React.useState(false);
@@ -87,6 +97,19 @@ export default function GeneratorClient({
       return;
     }
   }, [editSlug, initialAnswers, answers]);
+
+  React.useEffect(() => {
+    if (initialAnswers) return;
+    if (answers) return;
+    if (typeof window === "undefined") return;
+
+    const qpLang = normalizeLanguage(searchParams.get("lang"));
+    const storedLang = normalizeLanguage(window.localStorage.getItem("dp_lang"));
+    const language = qpLang ?? storedLang;
+    if (!language) return;
+
+    setAnswers({ language });
+  }, [initialAnswers, answers, searchParams]);
 
   React.useEffect(() => {
     if (handledPayment) return;

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getProposal, defaultProposal } from "@/app/lib/proposal-store";
+import { getProposal, defaultProposal, getProposalLang } from "@/app/lib/proposal-store";
 import { getAnswersBySlug } from "@/app/lib/answers-store";
 import ProposalClient from "./proposal-client";
 import { headers } from "next/headers";
@@ -45,7 +45,46 @@ export default async function ProposalPage({
   const previewLink = `${base.replace(/\/$/, "")}/preview/${slug}?mode=draft`;
   const proposalLink = `${base.replace(/\/$/, "")}/proposal/${slug}`;
 
-  const proposal = (await getProposal(slug)) ?? defaultProposal(stored.answers ?? stored, previewLink, proposalLink);
+  const answers = stored.answers ?? stored;
+  const lang = getProposalLang(answers) as "en" | "fa" | "ar" | "fi";
 
-  return <ProposalClient proposal={proposal} previewLink={previewLink} slug={slug} />;
+  const baseEn = defaultProposal(answers, previewLink, proposalLink, "en");
+  const baseLocalized = defaultProposal(answers, previewLink, proposalLink, lang);
+
+  const mergeLocalized = (current: any) => {
+    if (!current) return baseLocalized;
+    if (lang === "en") return current;
+    if (current.language && current.language === lang) return current;
+
+    const next = { ...current };
+    const shouldReplace = (key: keyof typeof baseEn) =>
+      JSON.stringify(current[key]) === JSON.stringify(baseEn[key]);
+
+    (["title", "context", "scope", "deliverables", "timeline", "guarantee", "ctaLabel", "messagePreview", "messageProposal"] as const).forEach(
+      (k) => {
+        if (shouldReplace(k)) (next as any)[k] = (baseLocalized as any)[k];
+      }
+    );
+
+    if (!current.paymentLinks || Object.keys(current.paymentLinks).length === 0) {
+      if (shouldReplace("investment")) (next as any).investment = baseLocalized.investment;
+      if (shouldReplace("investmentOptions"))
+        (next as any).investmentOptions = baseLocalized.investmentOptions;
+    }
+
+    (next as any).language = lang;
+    return next;
+  };
+
+  const proposalRaw = await getProposal(slug);
+  const proposal = mergeLocalized(proposalRaw ?? baseLocalized);
+
+  return (
+    <ProposalClient
+      proposal={proposal}
+      previewLink={previewLink}
+      slug={slug}
+      lang={lang}
+    />
+  );
 }
