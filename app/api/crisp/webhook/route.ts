@@ -55,6 +55,7 @@ export async function POST(req: Request) {
       body?.data?.user?.email ||
       body?.data?.user?.phone ||
       "Visitor";
+    const fromEmail = body?.data?.user?.email || "";
     const messageText =
       body?.data?.content ||
       body?.data?.message ||
@@ -65,21 +66,33 @@ export async function POST(req: Request) {
     const text = [
       `Event: ${event}`,
       `Session: ${sessionId}`,
-      `From: ${fromName}`,
+      `From: ${fromName}${fromEmail ? ` <${fromEmail}>` : ""}`,
       "",
       "Message:",
       messageText || "(no content)",
-      "",
-      "Raw payload:",
-      JSON.stringify(body, null, 2),
     ].join("\n");
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111;">
+        <h2 style="margin:0 0 8px;">Crisp message received</h2>
+        <p style="margin:0 0 12px;color:#555;">Event: <strong>${event}</strong></p>
+        <div style="margin:0 0 12px;">
+          <div><strong>From:</strong> ${fromName}${fromEmail ? ` &lt;${fromEmail}&gt;` : ""}</div>
+          <div><strong>Session:</strong> ${sessionId}</div>
+        </div>
+        <div style="padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa;">
+          ${messageText ? messageText.replace(/\n/g, "<br/>") : "(no content)"}
+        </div>
+      </div>
+    `.trim();
 
     const info = await transport.sendMail({
       from,
       to,
       subject,
       text,
-      replyTo: body?.data?.user?.email || undefined,
+      html,
+      replyTo: fromEmail || undefined,
     });
 
     return NextResponse.json({ ok: true, messageId: info.messageId });
