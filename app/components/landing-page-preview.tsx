@@ -580,7 +580,7 @@ export function LandingPagePreview({
           </div>
           {publishHint ? (
             <div className="mx-auto max-w-7xl px-4 pb-3">
-              <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-900 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-medium text-[var(--accent)]">
                 {publishHint === "custom"
                   ? "Custom domain selected. Open Publish and enter your domain."
                   : "Donepage subdomain selected. Open Publish to use the suggested subdomain."}
@@ -600,7 +600,7 @@ export function LandingPagePreview({
         <section
           id="hero"
           className={[
-            "section-tone section-tone-hero relative flex items-center justify-center overflow-hidden px-4 bg-gradient-to-br from-stone-100 via-amber-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/25",
+            "section-tone section-tone-hero relative flex items-center justify-center overflow-hidden px-4 bg-[var(--bg)]",
             mode === "preview" ? "min-h-[calc(100vh-4rem)] py-12" : "min-h-screen py-12",
           ].join(" ")}
         >
@@ -642,11 +642,7 @@ export function LandingPagePreview({
               </p>
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:items-start">
-                <Button
-                  size="lg"
-                  asChild
-                  className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
-                >
+                <Button size="lg" asChild>
                   <a href={heroPrimaryHref}>
                     {editable ? (
                       <span
@@ -662,12 +658,7 @@ export function LandingPagePreview({
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </a>
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  asChild
-                  className="border-amber-300/80 bg-white/90 text-slate-800 hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-slate-800"
-                >
+                <Button size="lg" variant="outline" asChild>
                   <a href={heroSecondaryHref}>
                     {editable ? (
                       <span
@@ -718,7 +709,7 @@ export function LandingPagePreview({
               </div>
             </div>
 
-            <Card className="reveal-up mx-auto w-full max-w-xl border-amber-200 bg-white/90 shadow-xl shadow-amber-500/10 backdrop-blur dark:border-amber-700/70 dark:bg-slate-900/90">
+            <Card className="reveal-up mx-auto w-full max-w-xl border-[var(--border)] bg-[var(--bg)] shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {pickLang(lang, {
@@ -837,7 +828,7 @@ export function LandingPagePreview({
         )}
 
         {/* VALUE / BENEFITS */}
-        <section id="why-choose-us" className="section-tone section-tone-value px-4 py-20 bg-white dark:bg-slate-950">
+        <section id="why-choose-us" className="section-tone section-tone-value px-4 py-20 bg-[var(--surface)]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.value.title}</h2>
@@ -847,7 +838,7 @@ export function LandingPagePreview({
               {content.value.benefits.map((b, idx) => (
                 <Card
                   key={`${b.title}-${idx}`}
-                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                  className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
                 >
                   <CardContent className="pt-6">
                     <EditableText
@@ -872,7 +863,7 @@ export function LandingPagePreview({
         </section>
 
         {/* SERVICES */}
-        <section id="services" className="section-tone section-tone-services px-4 py-20 bg-gradient-to-br from-slate-50 to-cyan-50 dark:from-slate-900 dark:to-slate-950">
+        <section id="services" className="section-tone section-tone-services px-4 py-20 bg-[var(--bg)]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.services.title}</h2>
@@ -883,7 +874,7 @@ export function LandingPagePreview({
               {coreOfferings.map((offer, idx) => (
                 <Card
                   key={`${offer.name}-${idx}`}
-                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                  className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
                 >
                   <CardContent className="pt-6">
                     <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">{offer.name}</div>
@@ -925,7 +916,7 @@ export function LandingPagePreview({
                   {packageItems.map((pkg, idx) => (
                     <Card
                       key={`${pkg.name}-${idx}`}
-                      className="reveal-up card-lift border-amber-300/70 bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 shadow-lg shadow-amber-500/15 dark:border-amber-700/70 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/35"
+                    className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
                     >
                       <CardContent className="pt-6">
                         <div className="text-xl font-semibold text-slate-900 dark:text-amber-100">{pkg.name}</div>
@@ -964,7 +955,7 @@ export function LandingPagePreview({
 
         {/* PROCESS */}
         {content.steps?.steps?.length ? (
-          <section className="section-tone section-tone-process px-4 py-20 bg-white dark:bg-slate-950">
+          <section className="section-tone section-tone-process px-4 py-20 bg-[var(--surface)]">
             <div className="mx-auto max-w-6xl">
               <div className="max-w-2xl">
                 <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
@@ -999,7 +990,7 @@ export function LandingPagePreview({
         ) : null}
 
         {/* TRUST / STATS */}
-        <section className="section-tone section-tone-trust px-4 py-20 bg-white dark:bg-slate-950">
+        <section className="section-tone section-tone-trust px-4 py-20 bg-[var(--bg)]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.trust.title}</h2>
@@ -1009,7 +1000,7 @@ export function LandingPagePreview({
               {content.trust.stats.map((s, idx) => (
                 <div
                   key={`${s.label}-${idx}`}
-                  className="card-lift rounded-2xl border border-amber-200 bg-white p-6 text-center shadow-sm dark:border-amber-700/60 dark:bg-slate-900"
+                  className="card-lift rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-6 text-center shadow-sm"
                 >
                   <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{s.value}</div>
                   <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{s.label}</div>
@@ -1031,7 +1022,7 @@ export function LandingPagePreview({
         </section>
 
         {/* PORTFOLIO */}
-        <section id="portfolio" className="section-tone section-tone-portfolio px-4 py-20 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-slate-900 dark:to-slate-950">
+        <section id="portfolio" className="section-tone section-tone-portfolio px-4 py-20 bg-[var(--surface)]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.portfolio.title}</h2>
@@ -1041,7 +1032,7 @@ export function LandingPagePreview({
               {portfolioItems.map((item, idx) => (
                 <Card
                   key={`${item.title}-${idx}`}
-                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                  className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
                 >
                   <CardContent className="pt-6">
                     {"imageUrl" in item && (item as any).imageUrl ? (
@@ -1096,7 +1087,7 @@ export function LandingPagePreview({
                 {faqItems.map((item, idx) => (
                   <div
                     key={`${item.question}-${idx}`}
-                    className="rounded-2xl border border-amber-200 bg-white/90 p-5 shadow-sm dark:border-amber-700/60 dark:bg-slate-900/90"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-5 shadow-sm"
                   >
                     <EditableText
                       as="div"
@@ -1120,8 +1111,8 @@ export function LandingPagePreview({
         ) : null}
 
         {/* CTA */}
-        <section className="section-tone section-tone-cta px-4 py-20 bg-gradient-to-br from-amber-50 to-stone-100 dark:from-slate-900 dark:to-slate-950">
-          <div className="mx-auto max-w-5xl rounded-3xl border border-amber-200/70 bg-white/80 px-6 py-10 text-center shadow-xl shadow-amber-500/10 backdrop-blur dark:border-amber-700/60 dark:bg-slate-900/85">
+        <section className="section-tone section-tone-cta px-4 py-20 bg-[var(--bg)]">
+          <div className="mx-auto max-w-5xl rounded-3xl border border-[var(--border)] bg-[var(--bg)] px-6 py-10 text-center shadow-sm">
             <EditableText
               as="h2"
               value={content.cta.headline}
@@ -1177,7 +1168,7 @@ export function LandingPagePreview({
         </section>
 
         {/* CONTACT */}
-        <section id="contact" className="px-4 py-20 bg-gray-50 dark:bg-slate-900">
+        <section id="contact" className="px-4 py-20 bg-[var(--surface)]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <EditableText
