@@ -1,13 +1,17 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 
 type Plan = "launch" | "growth" | "hosting";
+
+const STRIPE_LINKS: Record<Plan, string> = {
+  launch: process.env.NEXT_PUBLIC_STRIPE_LINK_LAUNCH || "",
+  growth: process.env.NEXT_PUBLIC_STRIPE_LINK_GROWTH || "",
+  hosting: process.env.NEXT_PUBLIC_STRIPE_LINK_HOSTING || "",
+};
 
 function firePurchaseIntent(plan: Plan) {
   if (typeof window === "undefined") return;
@@ -15,28 +19,6 @@ function firePurchaseIntent(plan: Plan) {
 }
 
 export default function PricingPage() {
-  const [loadingPlan, setLoadingPlan] = React.useState<Plan | null>(null);
-
-  const startCheckout = async (plan: Plan) => {
-    try {
-      setLoadingPlan(plan);
-      firePurchaseIntent(plan);
-
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Checkout failed");
-      if (!data?.url) throw new Error("Missing checkout URL");
-      window.location.href = data.url;
-    } catch (err: any) {
-      toast.error(err?.message || "Checkout failed");
-      setLoadingPlan(null);
-    }
-  };
-
   return (
     <main className="donepage-surface-theme relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 px-4 py-12 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 sm:py-16">
       <div className="mx-auto max-w-6xl">
@@ -69,10 +51,14 @@ export default function PricingPage() {
               </ul>
               <Button
                 className="mt-6 h-11 w-full bg-blue-600 !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
-                onClick={() => startCheckout("launch")}
-                disabled={loadingPlan === "launch"}
+                asChild
               >
-                {loadingPlan === "launch" ? "Redirecting..." : "Start Launch"}
+                <a
+                  href={STRIPE_LINKS.launch}
+                  onClick={() => firePurchaseIntent("launch")}
+                >
+                  Start Launch
+                </a>
               </Button>
             </CardContent>
           </Card>
@@ -97,10 +83,14 @@ export default function PricingPage() {
               </ul>
               <Button
                 className="mt-6 h-11 w-full bg-blue-600 !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
-                onClick={() => startCheckout("growth")}
-                disabled={loadingPlan === "growth"}
+                asChild
               >
-                {loadingPlan === "growth" ? "Redirecting..." : "Start Growth"}
+                <a
+                  href={STRIPE_LINKS.growth}
+                  onClick={() => firePurchaseIntent("growth")}
+                >
+                  Start Growth
+                </a>
               </Button>
             </CardContent>
           </Card>
@@ -122,10 +112,14 @@ export default function PricingPage() {
               <Button
                 variant="outline"
                 className="mt-6 h-11 w-full"
-                onClick={() => startCheckout("hosting")}
-                disabled={loadingPlan === "hosting"}
+                asChild
               >
-                {loadingPlan === "hosting" ? "Redirecting..." : "Request Hosting"}
+                <a
+                  href={STRIPE_LINKS.hosting}
+                  onClick={() => firePurchaseIntent("hosting")}
+                >
+                  Request Hosting
+                </a>
               </Button>
             </CardContent>
           </Card>

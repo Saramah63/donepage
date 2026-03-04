@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     }
 
     const from = process.env.EMAIL_FROM;
-    const to = process.env.CONTACT_TO || "hello@donepage.co";
+    const to = process.env.CONTACT_TO || "saramah63@gmail.com";
 
     if (prisma) {
       await prisma.contactMessage

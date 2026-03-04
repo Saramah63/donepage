@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/app/components/theme-toggle";
 type Plan = "launch" | "growth" | "hosting" | "";
 
 type PageProps = {
-  searchParams?: { session_id?: string };
+  searchParams?: { session_id?: string; plan?: string };
 };
 
 function toPlanLabel(plan: string) {
@@ -27,7 +27,7 @@ async function fetchSession(sessionId: string) {
 export default async function SuccessPage({ searchParams }: PageProps) {
   const sessionId = (searchParams?.session_id || "").trim();
   const session = sessionId ? await fetchSession(sessionId) : null;
-  const plan = (session?.metadata?.plan || "") as Plan;
+  const plan = ((searchParams?.plan || session?.metadata?.plan || "") as string).toLowerCase() as Plan;
   const email = session?.customer_details?.email || session?.customer_email || "";
   const startHref = plan ? `/start?plan=${encodeURIComponent(plan)}` : "/start";
 
