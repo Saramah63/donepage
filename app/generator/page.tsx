@@ -1,7 +1,8 @@
 // app/generator/page.tsx
 import GeneratorClient from "./generator-client";
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
-import { saveDraftBySlug, getDraftBySlug } from "@/app/lib/answers-store";
+import { saveDraftBySlug, getDraftBySlug, setEditTokenForSlug } from "@/app/lib/answers-store";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,7 +20,9 @@ function sanitizeSlug(input: string) {
 async function saveLandingAction(slug: string, answers: QuestionnaireAnswers) {
   "use server";
   const saved = await saveDraftBySlug(slug, answers);
-  return { ok: true, slug: saved.slug };
+  const editToken = crypto.randomBytes(24).toString("hex");
+  await setEditTokenForSlug(saved.slug, editToken);
+  return { ok: true, slug: saved.slug, editToken };
 }
 
 export default async function GeneratorPage({

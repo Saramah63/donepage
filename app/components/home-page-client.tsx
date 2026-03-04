@@ -1,321 +1,236 @@
-// app/components/home-page-client.tsx
 "use client";
 
-import * as React from "react";
-import { Sparkles, CheckCircle, ArrowRight, Zap, Globe } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
-import { ChatWidget } from "@/app/components/chat-widget";
+import { ArrowRight, Check } from "lucide-react";
+import { ThemeToggle } from "@/app/components/theme-toggle";
 
-const COPY = {
-  en: {
-    topTag: "Landing page generator",
-    badgeTop: "Auto-generated",
-    badgeTitle: "Landing Page Engine",
-    livePreview: "Live preview updates as you type",
-    headlineA: "Your landing page,",
-    headlineB: "done",
-    subheadline:
-      "Answer a few questions and Donepage generates a polished, SEO-ready landing page you can publish instantly.",
-    ctaPrimary: "Generate my page",
-    ctaSecondary: "How it works",
-    pills: [
-      "Figma-level design feel",
-      "SEO-ready structure",
-      "Export & publish options",
-      "Fast to launch",
-    ],
-    howTitle: "How it works",
-    howCards: [
-      { title: "Answer questions", desc: "A short guided form collects the essentials." },
-      { title: "Get a full page", desc: "A complete, conversion-focused landing page is generated." },
-      { title: "Publish instantly", desc: "Publish to /slug (KV-backed) and share the link." },
-    ],
-    contactTitle: "Contact Donepage",
-    contactBody:
-      "Have questions about pricing, custom domains, or the generator? Reach us any time.",
-    emailUs: "Email Us",
-    seeHow: "See how it works",
-    footer: "© 2026 Donepage. Built for speed, clarity, and conversion.",
-    languageLabel: "Language",
+const packages = [
+  {
+    name: "Launch",
+    price: "€99",
+    features: ["1 landing page", "1 revision", "Delivered in 5 business days"],
+    cta: "Start Launch",
+    href: "/api/checkout?plan=launch",
+    popular: false,
   },
-  fa: {
-    topTag: "سازنده لندینگ پیج",
-    badgeTop: "خودکار",
-    badgeTitle: "موتور ساخت لندینگ",
-    livePreview: "پیش‌نمایش زنده هم‌زمان با تایپ",
-    headlineA: "لندینگ پیج شما،",
-    headlineB: "آماده",
-    subheadline:
-      "به چند سؤال پاسخ دهید تا Donepage یک لندینگ حرفه‌ای و آماده سئو بسازد.",
-    ctaPrimary: "ساخت صفحه من",
-    ctaSecondary: "چطور کار می‌کند",
-    pills: [
-      "حس طراحی سطح فیگما",
-      "ساختار آماده سئو",
-      "امکان خروجی و انتشار",
-      "راه‌اندازی سریع",
-    ],
-    howTitle: "چطور کار می‌کند",
-    howCards: [
-      { title: "پاسخ به سوالات", desc: "فرم کوتاه، اطلاعات اصلی را جمع می‌کند." },
-      { title: "دریافت صفحه کامل", desc: "یک لندینگ کامل و متمرکز بر تبدیل ساخته می‌شود." },
-      { title: "انتشار سریع", desc: "انتشار روی /slug و اشتراک لینک." },
-    ],
-    contactTitle: "ارتباط با Donepage",
-    contactBody:
-      "سوالی درباره قیمت، دامنه اختصاصی یا ابزار دارید؟ هر زمان در دسترسیم.",
-    emailUs: "ایمیل بزنید",
-    seeHow: "مشاهده روند",
-    footer: "© ۲۰۲۶ Donepage. سریع، شفاف و متمرکز بر تبدیل.",
-    languageLabel: "زبان",
+  {
+    name: "Growth",
+    price: "€249",
+    features: ["1 landing page", "3 revisions", "Domain connection", "Basic SEO", "Priority delivery"],
+    cta: "Start Growth",
+    href: "/api/checkout?plan=growth",
+    popular: true,
   },
-  ar: {
-    topTag: "منشئ صفحة هبوط",
-    badgeTop: "تلقائي",
-    badgeTitle: "محرك إنشاء الصفحات",
-    livePreview: "معاينة مباشرة أثناء الكتابة",
-    headlineA: "صفحتك المقصودة،",
-    headlineB: "جاهزة",
-    subheadline:
-      "أجب عن بعض الأسئلة وسينشئ Donepage صفحة جاهزة للسيو والنشر فورًا.",
-    ctaPrimary: "أنشئ صفحتي",
-    ctaSecondary: "كيف يعمل",
-    pills: [
-      "تصميم بمستوى فيغما",
-      "هيكل جاهز للسيو",
-      "تصدير ونشر",
-      "إطلاق سريع",
-    ],
-    howTitle: "كيف يعمل",
-    howCards: [
-      { title: "أجب عن الأسئلة", desc: "نموذج موجز يجمع الأساسيات." },
-      { title: "احصل على صفحة كاملة", desc: "صفحة كاملة مركزة على التحويل." },
-      { title: "انشر فورًا", desc: "انشر على /slug وشارك الرابط." },
-    ],
-    contactTitle: "تواصل مع Donepage",
-    contactBody:
-      "لديك أسئلة حول الأسعار أو النطاقات المخصصة؟ نحن هنا لمساعدتك.",
-    emailUs: "راسلنا",
-    seeHow: "شاهد كيف يعمل",
-    footer: "© 2026 Donepage. سرعة ووضوح وتحويل أعلى.",
-    languageLabel: "اللغة",
+  {
+    name: "Hosting & Support",
+    price: "€19/month",
+    features: ["Hosting on Vercel", "SSL & uptime", "Minor updates", "Email support"],
+    cta: "Request Hosting",
+    href: "/contact?reason=hosting",
+    popular: false,
   },
-  fi: {
-    topTag: "Laskeutumissivun generaattori",
-    badgeTop: "Automaattinen",
-    badgeTitle: "Landing Page Engine",
-    livePreview: "Esikatselu päivittyy reaaliajassa",
-    headlineA: "Laskeutumissivusi,",
-    headlineB: "valmis",
-    subheadline:
-      "Vastaa muutamaan kysymykseen ja Donepage luo valmiin, SEO‑optimoidun sivun.",
-    ctaPrimary: "Luo sivu",
-    ctaSecondary: "Miten se toimii",
-    pills: [
-      "Figma‑tasoinen design",
-      "SEO‑valmis rakenne",
-      "Vienti ja julkaisu",
-      "Nopea julkaisu",
-    ],
-    howTitle: "Miten se toimii",
-    howCards: [
-      { title: "Vastaa kysymyksiin", desc: "Lyhyt lomake kerää oleellisen." },
-      { title: "Saat valmiin sivun", desc: "Konversiokeskeinen laskeutumissivu luodaan." },
-      { title: "Julkaise heti", desc: "Julkaise /slug‑osoitteeseen ja jaa." },
-    ],
-    contactTitle: "Ota yhteyttä",
-    contactBody:
-      "Kysymyksiä hinnoittelusta tai domaineista? Olemme täällä.",
-    emailUs: "Lähetä viesti",
-    seeHow: "Katso miten",
-    footer: "© 2026 Donepage. Nopea, selkeä ja konvertoiva.",
-    languageLabel: "Kieli",
-  },
-};
+];
 
-const LANGS = [
-  { value: "en", label: "English" },
-  { value: "fa", label: "فارسی" },
-  { value: "ar", label: "العربية" },
-  { value: "fi", label: "Suomi" },
+const faq = [
+  {
+    q: "Do I need hosting?",
+    a: "Only if you want us to run and maintain your site for you. You can also host it yourself.",
+  },
+  {
+    q: "Can I use my own domain?",
+    a: "Yes. Domain connection is included in Growth, and available as an add-on for other setups.",
+  },
+  { q: "How long does it take?", a: "Launch is delivered in 5 business days. Growth is prioritized for faster turnaround." },
+  {
+    q: "What’s included in revisions?",
+    a: "Revisions include copy, section layout adjustments, and CTA refinements based on your brief.",
+  },
+  {
+    q: "Can I request changes later?",
+    a: "Yes. You can request updates any time, and ongoing requests are easiest with hosting support.",
+  },
+  {
+    q: "What if I need more pages?",
+    a: "Use the custom proposal route for multi-page work, integrations, or broader custom builds.",
+  },
 ];
 
 export default function HomePageClient() {
-  const [lang, setLang] = React.useState<keyof typeof COPY>("en");
-  const isRTL = lang === "fa" || lang === "ar";
-  const t = COPY[lang];
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("dp_lang");
-    if (stored && COPY[stored as keyof typeof COPY]) {
-      setLang(stored as keyof typeof COPY);
-      return;
-    }
-    const search = new URLSearchParams(window.location.search);
-    const q = search.get("lang");
-    if (q && COPY[q as keyof typeof COPY]) {
-      setLang(q as keyof typeof COPY);
-      window.localStorage.setItem("dp_lang", q);
-    }
-  }, []);
-
-  const setLanguage = (value: keyof typeof COPY) => {
-    setLang(value);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("dp_lang", value);
-      window.dispatchEvent(new CustomEvent("dp:lang", { detail: value }));
-    }
-  };
-
   return (
-    <div
-      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40"
-      dir={isRTL ? "rtl" : "ltr"}
-    >
+    <div id="top" className="donepage-surface-theme relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 text-gray-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-gray-100">
       <div className="mesh-hero" aria-hidden="true" />
       <div className="hero-spotlight" aria-hidden="true" />
       <div className="noise-film" aria-hidden="true" />
-      <div
-        className="pointer-events-none absolute inset-0 bg-grid-gray-100 [mask-image:linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,255,255,0.45),rgba(255,255,255,0.85))]"
-        aria-hidden="true"
-      />
       <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col px-4 pb-24 pt-16 sm:pt-24">
-        {/* Top pill */}
-        <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-sm">
-            <Sparkles className="h-4 w-4 text-white" />
-          </span>
-          <div className="text-sm font-semibold text-gray-900">Donepage</div>
-          <span className="text-xs text-gray-500">{t.topTag}</span>
+      <div className="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-gray-700 dark:bg-slate-900/85">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <header className="flex h-16 items-center justify-between">
+            <a href="#top" className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              Donepage
+            </a>
+            <nav className="flex items-center gap-2 sm:gap-3">
+              <a
+                href="#how"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-slate-800"
+              >
+                How it works
+              </a>
+              <a
+                href="#pricing"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-slate-800"
+              >
+                Pricing
+              </a>
+              <a
+                href="#contact"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-slate-800"
+              >
+                Contact
+              </a>
+              <ThemeToggle className="ml-1" />
+            </nav>
+          </header>
         </div>
+      </div>
 
-        <div className="mt-6 flex items-center justify-center">
-          <div className="flex items-center gap-3 rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm">
-            <span className="text-gray-500">{t.languageLabel}:</span>
-            <div className="flex items-center gap-2">
-              {LANGS.map((l) => (
-                <button
-                  key={l.value}
-                  type="button"
-                  onClick={() => setLanguage(l.value as keyof typeof COPY)}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs font-semibold transition",
-                    lang === l.value
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200",
-                  ].join(" ")}
-                >
-                  {l.label}
-                </button>
-              ))}
-            </div>
+      <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-24 sm:px-6 sm:pt-28">
+        <section className="reveal-up mt-4 rounded-3xl border border-gray-200 bg-white/90 px-6 py-10 shadow-xl shadow-blue-900/5 backdrop-blur sm:mt-6 sm:px-10 sm:py-14 dark:border-gray-700 dark:bg-slate-900/85">
+          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+            <span className="luxury-gradient-text">Launch your landing page in days — not weeks.</span>
+          </h1>
+          <p className="mt-4 max-w-2xl text-lg text-gray-700 dark:text-gray-200">
+            Answer a few questions. Get a conversion-ready page. No templates. No complexity.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button size="lg" asChild className="h-12 bg-blue-600 px-7 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
+              <Link href="/start" target="_blank" rel="noopener noreferrer" className="font-medium !text-white">
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="h-12 border-gray-300 bg-white/90 px-7 text-base !text-slate-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-slate-900 dark:!text-white dark:hover:bg-slate-800">
+              <a href="#pricing">See Pricing</a>
+            </Button>
           </div>
-        </div>
+        </section>
 
-        {/* Hero */}
-        <div className="mt-10 grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-white/80 px-4 py-2 text-xs font-semibold text-blue-700 shadow-sm">
-              <Zap className="h-4 w-4" />
-              {t.badgeTop}
-            </div>
-            <h1 className="mt-6 text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-              {t.headlineA} <span className="luxury-gradient-text">{t.headlineB}</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-gray-600">{t.subheadline}</p>
+        <section className="mt-16">
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Why landing pages fail</h2>
+          <ul className="mt-5 space-y-3 text-gray-800 dark:text-gray-100">
+            {["No clear message", "No structured offer", "No fast execution"].map((item) => (
+              <li
+                key={item}
+                className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white/90 px-4 py-3 dark:border-gray-700 dark:bg-slate-900/85"
+              >
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-700 dark:text-cyan-300" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" asChild>
-                <Link href={`/generator?lang=${lang}`}>
-                  {t.ctaPrimary}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="#how">{t.ctaSecondary}</Link>
-              </Button>
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              {t.pills.map((pill) => (
-                <span
-                  key={pill}
-                  className="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700"
-                >
-                  <CheckCircle className="mr-2 h-4 w-4 text-blue-600" />
-                  {pill}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <Card className="float-slow border border-gray-200 bg-white/85 shadow-2xl shadow-blue-500/10">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
-                <span>{t.badgeTitle}</span>
-                <span className="text-xs text-gray-500">{t.livePreview}</span>
-              </div>
-              <div className="mt-6 space-y-4">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                    <div className="h-2 w-32 rounded-full bg-gray-200" />
-                    <div className="mt-3 h-2 w-full rounded-full bg-gray-200" />
-                    <div className="mt-2 h-2 w-2/3 rounded-full bg-gray-200" />
+        <section id="how" className="mt-16 scroll-mt-32">
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">How it works</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {["Answer simple questions", "We structure & build your page", "You launch and collect leads"].map((step, index) => (
+              <Card key={step} className="card-lift reveal-up border-gray-200 bg-white/90 dark:border-gray-700 dark:bg-slate-900/85">
+                <CardContent className="p-5">
+                  <div className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white dark:bg-blue-500">
+                    {index + 1}
                   </div>
-                ))}
-                <div className="rounded-2xl border border-blue-200/70 bg-gradient-to-br from-blue-50 to-cyan-50 px-4 py-4">
-                  <div className="flex items-center gap-3 text-sm font-semibold text-blue-700">
-                    <Globe className="h-4 w-4" />
-                    {t.badgeTitle}
-                  </div>
-                  <div className="mt-2 text-xs text-blue-600">{t.livePreview}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* How it works */}
-        <div id="how" className="mt-24">
-          <h2 className="text-3xl font-semibold text-gray-900">{t.howTitle}</h2>
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {t.howCards.map((card, idx) => (
-              <Card key={card.title} className="border border-gray-200 bg-white/90 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-semibold text-white">
-                    {idx + 1}
-                  </div>
-                  <div className="mt-4 text-lg font-semibold text-gray-900">{card.title}</div>
-                  <p className="mt-2 text-sm text-gray-600">{card.desc}</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-gray-100">{step}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Contact */}
-        <div className="mt-24 rounded-3xl border border-gray-200 bg-white/90 p-8 shadow-xl">
-          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900">{t.contactTitle}</h3>
-              <p className="mt-3 max-w-2xl text-sm text-gray-600">{t.contactBody}</p>
-            </div>
-            <Button size="lg" asChild>
-              <Link href="mailto:hello@donepage.co">{t.emailUs}</Link>
+        <section id="pricing" className="mt-16 scroll-mt-32">
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Pricing</h2>
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            {packages.map((pkg) => (
+              <Card
+                key={pkg.name}
+                className={[
+                  "card-lift reveal-up relative border-gray-200 bg-white/95 dark:border-gray-700 dark:bg-slate-900/90",
+                  pkg.popular ? "border-blue-600 shadow-md shadow-blue-900/10 dark:border-cyan-400" : "",
+                ].join(" ")}
+              >
+                <CardContent className="p-6">
+                  {pkg.popular ? (
+                    <span className="absolute right-6 top-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white dark:bg-cyan-500 dark:text-slate-950">
+                      Most popular
+                    </span>
+                  ) : null}
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{pkg.name}</h3>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{pkg.price}</p>
+                  <ul className="mt-5 space-y-2 text-sm text-gray-700 dark:text-gray-200">
+                    {pkg.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-700 dark:text-cyan-300" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button asChild className="mt-6 h-11 w-full bg-blue-600 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
+                    <Link href={pkg.href} target="_blank" rel="noopener noreferrer" className="font-medium !text-white">{pkg.cta}</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-16 rounded-2xl border border-gray-200 bg-white/90 p-6 sm:p-8 dark:border-gray-700 dark:bg-slate-900/85">
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Custom Projects</h2>
+          <p className="mt-3 max-w-2xl text-gray-700 dark:text-gray-200">
+            Need something more advanced? Multi-page sites, integrations, or custom builds.
+          </p>
+          <Button asChild className="mt-6 h-11 bg-blue-600 px-6 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
+            <Link href="/contact?reason=custom" className="font-medium !text-white">Request a Custom Proposal</Link>
+          </Button>
+        </section>
+
+        <section className="mt-16">
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">FAQ</h2>
+          <div className="mt-6 grid gap-4">
+            {faq.map((item) => (
+              <Card key={item.q} className="card-lift reveal-up border-gray-200 bg-white/90 dark:border-gray-700 dark:bg-slate-900/85">
+                <CardContent className="p-5">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{item.q}</h3>
+                  <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">{item.a}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <section id="contact" className="mt-16 scroll-mt-32 rounded-2xl border border-gray-200 bg-white/90 p-6 sm:p-8 dark:border-gray-700 dark:bg-slate-900/85">
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Contact</h2>
+          <p className="mt-3 max-w-2xl text-gray-700 dark:text-gray-200">
+            Need help choosing a package or have a specific question? Start here and continue to the full form only if needed.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button asChild className="h-11 bg-blue-600 px-6 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
+              <Link href="/contact" className="font-medium !text-white">Open Contact Form</Link>
+            </Button>
+            <Button asChild variant="outline" className="h-11 border-gray-300 bg-white/90 px-6 text-base !text-slate-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-slate-900 dark:!text-white dark:hover:bg-slate-800">
+              <Link href="mailto:hello@donepage.co" className="font-medium !text-slate-900 dark:!text-white">Email hello@donepage.co</Link>
             </Button>
           </div>
-        </div>
+        </section>
 
-        <footer className="mt-16 text-center text-xs text-gray-500">{t.footer}</footer>
+        <section className="mt-16 rounded-2xl border border-blue-700 bg-blue-700 p-8 text-white shadow-xl shadow-blue-900/20 dark:border-cyan-500 dark:bg-cyan-500 dark:text-slate-950">
+          <h2 className="text-3xl font-semibold tracking-tight">Ready to launch?</h2>
+          <Button asChild variant="outline" className="mt-5 h-12 border-white bg-white px-7 text-base !text-slate-900 hover:bg-slate-100 dark:border-slate-200 dark:bg-slate-950 dark:!text-white dark:hover:bg-slate-900">
+            <Link href="/start" target="_blank" rel="noopener noreferrer" className="font-medium !text-slate-900 dark:!text-white">Get Started</Link>
+          </Button>
+        </section>
       </div>
-
-      <ChatWidget />
     </div>
   );
 }

@@ -146,32 +146,46 @@ export default function EditClient({
   return (
     <div>
       {/* Top bar */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl dark:border-gray-700 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div className="text-sm">
-            <div className="font-semibold text-gray-900">Editing: /{slug}</div>
-            <div className="text-xs text-gray-500">
+            <div className="font-semibold text-gray-900 dark:text-gray-100">Editing: /{slug}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-300">
               Draft: {draftV ? `v${draftV}` : "—"} · Published: {publishedV ? `v${publishedV}` : "—"}
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => router.push(`/${slug}`)} className="border-gray-300 bg-white hover:bg-gray-50">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/${slug}`)}
+              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
+            >
               Public Page
             </Button>
 
-            <Button variant="outline" onClick={openDraftPreview} className="border-gray-300 bg-white hover:bg-gray-50">
+            <Button
+              variant="outline"
+              onClick={openDraftPreview}
+              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
+            >
               Preview Draft
             </Button>
 
-            <Button variant="outline" onClick={openPublishedPreview} className="border-gray-300 bg-white hover:bg-gray-50">
+            <Button
+              variant="outline"
+              onClick={openPublishedPreview}
+              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
+            >
               Preview Published
             </Button>
 
             <Button
               variant="outline"
-              onClick={() => window.open(`/proposal/${slug}/edit?token=${encodeURIComponent(token)}`, "_blank")}
-              className="border-gray-300 bg-white hover:bg-gray-50"
+              onClick={() =>
+                router.push(`/proposal/${slug}/edit?token=${encodeURIComponent(token)}`)
+              }
+              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
             >
               Create Proposal
             </Button>
@@ -201,7 +215,7 @@ export default function EditClient({
               variant="outline"
               onClick={fetchVersions}
               disabled={loadingVersions}
-              className="h-8 border-gray-300 bg-white hover:bg-gray-50"
+              className="h-8 border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
             >
               {loadingVersions ? "Loading…" : "Refresh Versions"}
             </Button>
@@ -217,7 +231,9 @@ export default function EditClient({
                   onClick={() => setSelectedVersion(v.version)}
                   className={[
                     "h-8 rounded-full border px-3",
-                    active ? "border-blue-300 bg-blue-50" : "border-gray-200 bg-white",
+                    active
+                      ? "border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-100"
+                      : "border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-200",
                   ].join(" ")}
                 >
                   v{v.version}
@@ -232,7 +248,7 @@ export default function EditClient({
                 <Button
                   variant="outline"
                   onClick={() => window.open(`/preview/${slug}?token=${encodeURIComponent(token)}&v=${selectedVersion}`, "_blank")}
-                  className="h-8 border-gray-300 bg-white hover:bg-gray-50"
+                  className="h-8 border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
                 >
                   Preview v{selectedVersion}
                 </Button>
@@ -241,7 +257,7 @@ export default function EditClient({
                   variant="outline"
                   onClick={() => rollback(selectedVersion, false)}
                   disabled={rolling}
-                  className="h-8 border-gray-300 bg-white hover:bg-gray-50"
+                  className="h-8 border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
                 >
                   {rolling ? "…" : `Set Draft = v${selectedVersion}`}
                 </Button>

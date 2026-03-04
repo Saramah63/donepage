@@ -24,6 +24,83 @@ function safeTrim(v?: string) {
   return (v ?? "").trim();
 }
 
+function normalizeSpaces(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function titleCaseEn(value: string) {
+  const stop = new Set(["a", "an", "and", "as", "at", "by", "for", "in", "of", "on", "or", "the", "to", "vs", "via"]);
+  return value
+    .split(" ")
+    .map((w, i) => {
+      const raw = w.trim();
+      if (!raw) return raw;
+      const lower = raw.toLowerCase();
+      if (i > 0 && stop.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
+
+function sentenceCaseEn(value: string) {
+  const parts = value.split(/([.!?]+\s*)/);
+  let out = "";
+  for (let i = 0; i < parts.length; i += 2) {
+    const sentence = (parts[i] || "").trim();
+    const delimiter = parts[i + 1] || "";
+    if (!sentence) continue;
+    out += sentence.charAt(0).toUpperCase() + sentence.slice(1) + delimiter;
+  }
+  return out.trim();
+}
+
+function fixCommonTyposEn(value: string) {
+  const replacements: Array<[RegExp, string]> = [
+    [/\bteh\b/gi, "the"],
+    [/\badn\b/gi, "and"],
+    [/\bseperate\b/gi, "separate"],
+    [/\brecieve\b/gi, "receive"],
+    [/\bproffesional\b/gi, "professional"],
+    [/\bdefinately\b/gi, "definitely"],
+    [/\bcant\b/gi, "can't"],
+    [/\bdont\b/gi, "don't"],
+    [/\bwont\b/gi, "won't"],
+    [/\bim\b/gi, "I'm"],
+  ];
+  return replacements.reduce((acc, [pattern, next]) => acc.replace(pattern, next), value);
+}
+
+function ensureEndPunctuation(value: string) {
+  if (!value) return value;
+  return /[.!?]$/.test(value) ? value : `${value}.`;
+}
+
+function polishText(value: string, lang: ReturnType<typeof getLang>, mode: "title" | "sentence" = "sentence") {
+  let out = normalizeSpaces(value);
+  if (!out) return out;
+  if (lang === "en") {
+    out = fixCommonTyposEn(out);
+    out = mode === "title" ? titleCaseEn(out) : sentenceCaseEn(out);
+  }
+  if (mode === "sentence") out = ensureEndPunctuation(out);
+  return out;
+}
+
+function parseJsonMap(value?: string): Record<string, string> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      out[k] = String(v ?? "").trim();
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 function normalizeUrl(url?: string) {
   const v = safeTrim(url);
   if (!v) return "";
@@ -251,6 +328,11 @@ function ctaRefinement(answers: QuestionnaireAnswers) {
 
 function buildSteps(answers: QuestionnaireAnswers) {
   const lang = getLang(answers);
+  const customStep1 = safeTrim(answers.processStep1);
+  const customStep2 = safeTrim(answers.processStep2);
+  const customStep3 = safeTrim(answers.processStep3);
+  const customProblem = safeTrim(answers.problemStatement);
+  const customOutcome = safeTrim(answers.outcomeStatement);
   // numbered steps for “How it works” section — content only
   const goal =
     answers.primaryGoal === "calls"
@@ -297,67 +379,103 @@ function buildSteps(answers: QuestionnaireAnswers) {
     steps: [
       {
         no: 1,
-        title: pickLang(lang, {
-          en: "Share the essentials",
-          fa: "اطلاعات کلیدی را بدهید",
-          ar: "شارك الأساسيات",
-          fi: "Jaa olennaiset tiedot",
-        }),
+        title:
+          customStep1 ||
+          pickLang(lang, {
+            en: "Share the essentials",
+            fa: "اطلاعات کلیدی را بدهید",
+            ar: "شارك الأساسيات",
+            fi: "Jaa olennaiset tiedot",
+          }),
         desc: pickLang(lang, {
-          en: "Answer the questions (offer, audience, positioning). We use it to generate a high-converting structure.",
-          fa: "به سوال‌ها پاسخ دهید (پیشنهاد، مخاطب، جایگاه). بر این اساس ساختار پر‌تبدیل می‌سازیم.",
-          ar: "أجب عن الأسئلة (العرض، الجمهور، التموضع). نبني هيكلًا عالي التحويل.",
-          fi: "Vastaa kysymyksiin (tarjous, yleisö, positiointi). Rakennamme korkean konversion rakenteen.",
+          en: customProblem || "Clarify the key client pain and align your positioning to it.",
+          fa: customProblem || "مسئله اصلی مشتری را شفاف کنید و جایگاه خود را با آن همسو کنید.",
+          ar: customProblem || "وضّح ألم العميل الرئيسي ونسّق تموضعك معه.",
+          fi: customProblem || "Selkeytä asiakkaan ydinongelma ja kohdenna positiointi sen mukaan.",
         }),
       },
       {
         no: 2,
-        title: pickLang(lang, {
-          en: "Review and personalize",
-          fa: "بازبینی و شخصی‌سازی",
-          ar: "راجع وخصص",
-          fi: "Tarkista ja personoi",
-        }),
+        title:
+          customStep2 ||
+          pickLang(lang, {
+            en: "Review and personalize",
+            fa: "بازبینی و شخصی‌سازی",
+            ar: "راجع وخصص",
+            fi: "Tarkista ja personoi",
+          }),
         desc:
           pickLang(lang, {
-            en: 'Edit your “About”, links (email/WhatsApp/booking), and credibility signals. Keep it minimal or go deep.',
-            fa: "بخش «درباره»، لینک‌ها و سیگنال‌های اعتبار را ویرایش کنید. ساده یا عمیق، انتخاب با شماست.",
-            ar: "حرر قسم «نبذة»، الروابط (البريد/واتساب/الحجز) وعوامل الثقة.",
-            fi: "Muokkaa “Tietoja”, linkit (sähköposti/WhatsApp/varaus) ja uskottavuus.",
+            en: customOutcome || "Refine the offer and proof so the page communicates a concrete outcome.",
+            fa: customOutcome || "پیشنهاد و شواهد را طوری تنظیم کنید که نتیجه مشخص را منتقل کند.",
+            ar: customOutcome || "حسّن العرض والإثبات لعرض نتيجة واضحة.",
+            fi: customOutcome || "Tarkenna tarjous ja todisteet, jotta lopputulos on selkeä.",
           }),
       },
       {
         no: 3,
-        title: format(
-          pickLang(lang, {
-            en: "Publish and {goal}",
-            fa: "منتشر کنید و {goal}",
-            ar: "انشر و{goal}",
-            fi: "Julkaise ja {goal}",
-          }),
-          { goal }
-        ),
+        title:
+          customStep3 ||
+          format(
+            pickLang(lang, {
+              en: "Publish and {goal}",
+              fa: "منتشر کنید و {goal}",
+              ar: "انشر و{goal}",
+              fi: "Julkaise ja {goal}",
+            }),
+            { goal }
+          ),
         desc:
-          pickLang(lang, {
-            en: "Publish with your preferred slug. Your page goes live and stays SEO-ready, mobile-first, and shareable.",
-            fa: "با اسلاگ دلخواه منتشر کنید. صفحه شما آنلاین و آماده سئو و اشتراک‌گذاری می‌شود.",
-            ar: "انشر بالمسار المفضل. تصبح صفحتك مباشرة وجاهزة للسيو والمشاركة.",
-            fi: "Julkaise haluamallasi slugilla. Sivusi on live, SEO‑valmis ja jaettavissa.",
-          }),
+          customStep3
+            ? customStep3
+            : pickLang(lang, {
+                en: "Publish with your preferred slug. Your page goes live and stays SEO-ready, mobile-first, and shareable.",
+                fa: "با اسلاگ دلخواه منتشر کنید. صفحه شما آنلاین و آماده سئو و اشتراک‌گذاری می‌شود.",
+                ar: "انشر بالمسار المفضل. تصبح صفحتك مباشرة وجاهزة للسيو والمشاركة.",
+                fi: "Julkaise haluamallasi slugilla. Sivusi on live, SEO‑valmis ja jaettavissa.",
+              }),
       },
     ],
   };
 }
 
 function applyAnswerOverrides(base: ReturnType<typeof generateBaseContent>, answers: QuestionnaireAnswers) {
+  const lang = getLang(answers);
   // About override already handled in your UI using answers.aboutText,
   // but we also make base.about.story consistent for export/publish.
   if (base.about && safeTrim(answers.aboutText)) {
-    base.about.story = safeTrim(answers.aboutText);
+    base.about.story = polishText(safeTrim(answers.aboutText), lang, "sentence");
   }
   // Business name override if provided
   if (safeTrim(answers.businessName)) {
-    base.meta.businessName = safeTrim(answers.businessName);
+    base.meta.businessName = polishText(safeTrim(answers.businessName), lang, "title");
+  }
+  if (base.about) {
+    const serviceTypeRaw =
+      safeTrim(answers.serviceTypeOther) || safeTrim((answers.serviceType as string) || "");
+    const audienceRaw = safeTrim((answers.targetAudience as string) || "");
+    const yearsRaw = safeTrim(answers.yearsExp);
+    const outcomeRaw = safeTrim(answers.outcomeStatement);
+
+    const humanize = (value: string) =>
+      value
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (m) => m.toUpperCase());
+
+    const serviceType = serviceTypeRaw ? humanize(serviceTypeRaw) : "";
+    const audience = audienceRaw ? humanize(audienceRaw) : "";
+
+    if (serviceType || audience) {
+      base.about.team = polishText([serviceType, audience].filter(Boolean).join(" specialists for "), lang, "sentence");
+    }
+    if (yearsRaw) {
+      base.about.experience = yearsRaw;
+    }
+    if (outcomeRaw) {
+      base.about.mission = polishText(outcomeRaw, lang, "sentence");
+    }
   }
   return base;
 }
@@ -372,12 +490,107 @@ function parsePortfolioRaw(raw?: string) {
     .map((line) => {
       const parts = line.split("|").map((p) => p.trim());
       const [title, description, metric] = parts;
-      if (!title || !description || !metric) return null;
-      return { title, description, metric };
+      if (!title) return null;
+      return {
+        title,
+        description: description || "Project delivery tailored to client goals.",
+        metric: metric || "Delivered",
+      };
     })
     .filter(Boolean) as { title: string; description: string; metric: string }[];
 
   return items;
+}
+
+function parseServicePackages(raw?: string) {
+  const lines = (raw ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  return lines
+    .map((line) => {
+      const byPipe = line.split("|").map((p) => p.trim());
+      if (byPipe.length >= 2 && byPipe[0]) {
+        return {
+          title: byPipe[0],
+          description: byPipe[1] || "Tailored delivery for your goals.",
+          metric: byPipe[2] || "Included",
+        };
+      }
+
+      const byDash = line.split(" - ").map((p) => p.trim());
+      if (byDash.length >= 2 && byDash[0]) {
+        return {
+          title: byDash[0],
+          description: byDash[1],
+          metric: "Included",
+        };
+      }
+
+      return {
+        title: line,
+        description: "Tailored delivery for your goals.",
+        metric: "Included",
+      };
+    })
+    .filter((x) => x.title);
+}
+
+function expandTierListLine(input: string) {
+  const line = safeTrim(input);
+  if (!line || !line.includes(":")) return [];
+  const [left, right] = line.split(":");
+  const base = safeTrim(left);
+  const tiersRaw = safeTrim(right);
+  if (!base || !tiersRaw) return [];
+
+  const tierNames = tiersRaw
+    .replace(/\band\b/gi, ",")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  if (tierNames.length < 2) return [];
+
+  return tierNames.map((tier) => ({
+    title: `${base} - ${tier}`,
+    description: "Tailored delivery for your goals.",
+    metric: "Included",
+  }));
+}
+
+function detectPackageCount(raw: string) {
+  const text = (raw || "").toLowerCase();
+  const m = text.match(/(\d+)\s*(different\s*)?packages?/);
+  const count = m ? Number(m[1]) : 0;
+  return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
+function buildNamedTiers(count: number, offer: string, lang: ReturnType<typeof getLang>) {
+  const names = ["Starter", "Growth", "Premium", "Elite", "Enterprise"];
+  const desc = pickLang(lang, {
+    en: `${offer} package tailored to your goals.`,
+    fa: `پکیج ${offer} متناسب با اهداف شما.`,
+    ar: `باقة ${offer} مخصصة لأهدافك.`,
+    fi: `${offer}-paketti tavoitteidesi mukaan.`,
+  });
+  const metrics = [
+    pickLang(lang, { en: "Best for first results", fa: "مناسب شروع", ar: "مناسب للبداية", fi: "Paras aloitukseen" }),
+    pickLang(lang, { en: "Most popular", fa: "محبوب‌ترین", ar: "الأكثر شيوعًا", fi: "Suosituin" }),
+    pickLang(lang, { en: "Advanced support", fa: "پشتیبانی پیشرفته", ar: "دعم متقدم", fi: "Edistynyt tuki" }),
+    pickLang(lang, { en: "Priority execution", fa: "اجرای اولویت‌دار", ar: "تنفيذ بأولوية", fi: "Priorisoitu toteutus" }),
+    pickLang(lang, { en: "Custom scope", fa: "دامنه سفارشی", ar: "نطاق مخصص", fi: "Mukautettu laajuus" }),
+  ];
+  const out: Array<{ title: string; description: string; metric: string }> = [];
+  for (let i = 0; i < count; i += 1) {
+    out.push({
+      title: names[i] ?? `Package ${i + 1}`,
+      description: desc,
+      metric: metrics[Math.min(i, metrics.length - 1)],
+    });
+  }
+  return out;
 }
 
 function parsePortfolioJson(raw?: string) {
@@ -388,14 +601,47 @@ function parsePortfolioJson(raw?: string) {
     return parsed
       .map((p) => ({
         title: String(p.title ?? "").trim(),
-        description: String(p.description ?? "").trim(),
-        metric: String(p.metric ?? "").trim(),
+        description: String(p.description ?? "").trim() || "Project delivery tailored to client goals.",
+        metric: String(p.metric ?? "").trim() || "Delivered",
         imageUrl: p.imageUrl ? String(p.imageUrl).trim() : undefined,
       }))
-      .filter((p) => p.title && p.description && p.metric);
+      .filter((p) => p.title || p.imageUrl)
+      .map((p, i) => ({
+        ...p,
+        title: p.title || `Project ${i + 1}`,
+      }));
   } catch {
     return [];
   }
+}
+
+function extractMetricsFromProof(
+  proof: string,
+  fallback: { rating: string; clients: string; years: string }
+) {
+  const ratingMatch = proof.match(/(\d(?:\.\d)?)\s*\/\s*5|(\d(?:\.\d)?)\s*stars?/i);
+  const clientsMatch = proof.match(/(\d+\+?)\s*(clients?|customers?|projects?)/i);
+  const yearsMatch = proof.match(/(\d+\+?)\s*(years?|yrs?)/i);
+
+  const rating = safeTrim(fallback.rating) || (ratingMatch ? `${ratingMatch[1] || ratingMatch[2]}/5` : "");
+  const clients = safeTrim(fallback.clients) || (clientsMatch ? clientsMatch[1] : "");
+  const years = safeTrim(fallback.years) || (yearsMatch ? yearsMatch[1] : "");
+
+  return { rating, clients, years };
+}
+
+function trustFactorLabel(
+  key: string,
+  lang: ReturnType<typeof getLang>
+) {
+  const map: Record<string, Record<string, string>> = {
+    certifications: { en: "Certified Expertise", fa: "تخصص تأییدشده", ar: "خبرة معتمدة", fi: "Sertifioitu osaaminen" },
+    experience: { en: "Deep Experience", fa: "تجربه عمیق", ar: "خبرة عميقة", fi: "Vahva kokemus" },
+    results: { en: "Proven Results", fa: "نتایج اثبات‌شده", ar: "نتائج مثبتة", fi: "Todistetut tulokset" },
+    guarantee: { en: "Low-Risk Delivery", fa: "تحویل کم‌ریسک", ar: "تنفيذ منخفض المخاطر", fi: "Matalan riskin toimitus" },
+    portfolio: { en: "Validated Portfolio", fa: "پورتفولیوی معتبر", ar: "ملف أعمال موثّق", fi: "Validi portfolio" },
+  };
+  return (map[key]?.[lang] ?? map[key]?.en ?? key);
 }
 
 /**
@@ -407,13 +653,125 @@ export function generateContentAdvanced(answers: QuestionnaireAnswers) {
   const lang = getLang(answers);
   const base = applyAnswerOverrides(generateBaseContent(answers), answers);
 
-  // Upgrade hero/subheadline with pain point + proof line (still short)
-  base.meta.subheadline = `${painPoint(answers)} ${proofLine(answers)}`;
+  const customProblem = polishText(safeTrim(answers.problemStatement), lang, "sentence");
+  const customOutcome = polishText(safeTrim(answers.outcomeStatement), lang, "sentence");
+  const customProof = polishText(safeTrim(answers.proofLine), lang, "sentence");
+  const trustNotes = parseJsonMap(answers.trustFactorNotesJson);
+  const offer = polishText(safeTrim(answers.primaryOffer), lang, "title");
+  const audience = safeTrim(String(answers.targetAudience || "")).replace(/-/g, " ");
+
+  if (offer) {
+    const smartHeadline = pickLang(lang, {
+      en: audience ? `${offer} for ${polishText(audience, lang, "title")}` : offer,
+      fa: offer,
+      ar: offer,
+      fi: offer,
+    });
+    base.meta.headline = smartHeadline;
+  }
+
+  // Prefer user-written strategic text when provided.
+  const subheadlineParts = [
+    customProblem || painPoint(answers),
+    customOutcome || "",
+    customProof ? `(${customProof})` : "",
+  ].filter(Boolean);
+  base.meta.subheadline = subheadlineParts.join(" ").slice(0, 300);
 
   // CTA refinement (same fields, no UI change)
   const refined = ctaRefinement(answers);
-  base.cta.headline = refined.headline;
-  base.cta.subheadline = refined.subheadline;
+  base.cta.headline = customOutcome || refined.headline;
+  base.cta.subheadline = customProblem || refined.subheadline;
+
+  // Reflect custom proof into trust section subtitle when available
+  if (customProof) {
+    base.trust.subtitle = customProof;
+  }
+
+  const trustNoteValues = Object.values(trustNotes).filter(Boolean);
+  if (trustNoteValues.length > 0) {
+    const notePreview = trustNoteValues.slice(0, 2).join(" • ");
+    base.trust.subtitle = customProof ? `${customProof} • ${notePreview}` : notePreview;
+    const selectedFactors =
+      (Array.isArray(answers.trustFactors) && answers.trustFactors.length > 0
+        ? answers.trustFactors
+        : answers.trustFactor
+        ? [answers.trustFactor]
+        : []) as string[];
+    const noteBenefits = selectedFactors.slice(0, 3).map((factor) => ({
+      title: trustFactorLabel(factor, lang),
+      description: trustNotes[factor] || notePreview,
+    }));
+    base.value.benefits = noteBenefits as any;
+  }
+
+  // Make the "Why choose us" paragraph answer-driven.
+  const niche = polishText(safeTrim(answers.niche), lang, "title");
+  if (customProblem || customOutcome || niche) {
+    const sentence = [customProblem, customOutcome].filter(Boolean).join(" ");
+    base.value.description = niche
+      ? `${sentence} ${niche ? `Focused on ${niche}.` : ""}`.trim()
+      : sentence || base.value.description;
+  }
+
+  const metrics = extractMetricsFromProof(customProof, {
+    rating: answers.ratingValue || "",
+    clients: answers.clientsCount || "",
+    years: answers.yearsExp || "",
+  });
+  if (Array.isArray(base.trust.stats) && base.trust.stats.length >= 3) {
+    base.trust.stats = base.trust.stats.map((s, idx) => {
+      if (idx === 0 && metrics.rating) return { ...s, value: metrics.rating };
+      if (idx === 1 && metrics.clients) return { ...s, value: metrics.clients };
+      if (idx === 2 && metrics.years) return { ...s, value: metrics.years };
+      return s;
+    }) as any;
+  }
+
+  // Force service/packages section to include clear package cards when provided.
+  if (safeTrim(answers.customServices)) {
+    const packageLines = (answers.customServices || "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const expanded = packageLines.flatMap((line) => expandTierListLine(line));
+    let parsedPackages = expanded.length > 0 ? expanded : parseServicePackages(answers.customServices);
+    const explicitCount = detectPackageCount(answers.customServices || "");
+    if (parsedPackages.length < 2 && explicitCount >= 2) {
+      parsedPackages = buildNamedTiers(
+        explicitCount,
+        safeTrim(answers.primaryOffer) || "Service",
+        lang
+      );
+    }
+
+    const packageOfferings = parsedPackages.map((item) => ({
+      name: item.title,
+      description: item.description,
+      features: [item.metric],
+    }));
+    if (packageOfferings.length > 0) {
+      base.services.offerings = packageOfferings as any;
+    }
+  }
+  const hasPackageGoal =
+    answers.primaryGoal === "packages" ||
+    (Array.isArray(answers.primaryGoals) && answers.primaryGoals.includes("packages"));
+  if (hasPackageGoal) {
+    base.services.title = pickLang(lang, {
+      en: "Service Packages",
+      fa: "پکیج‌های خدمات",
+      ar: "باقات الخدمات",
+      fi: "Palvelupaketit",
+    });
+    base.services.subtitle = pickLang(lang, {
+      en: "Choose the package that matches your scope, budget, and growth stage.",
+      fa: "پکیجی را انتخاب کنید که با دامنه، بودجه و مرحله رشد شما هم‌خوان است.",
+      ar: "اختر الباقة المناسبة لنطاقك وميزانيتك ومرحلة نموك.",
+      fi: "Valitse paketti, joka sopii laajuuteesi, budjettiisi ja kasvuvaiheeseesi.",
+    });
+  }
 
   // Contact: wire actual editable destinations (fallbacks are empty)
   const bookingHref = buildBookingHref(answers);

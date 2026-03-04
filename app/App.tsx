@@ -90,6 +90,7 @@ export default function App() {
           answers={answers}
           onEdit={() => setStep("form")}
           mode="preview"
+          slug="local-preview"
         />
       )}
     </div>

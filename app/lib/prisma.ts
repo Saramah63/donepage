@@ -10,7 +10,9 @@ const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 export const prisma = hasDatabaseUrl
   ? global.__donepagePrisma ??
     new PrismaClient({
-      log: ["error"],
+      // Avoid noisy transient pool disconnect logs in local dev.
+      // Keep error logs in production.
+      log: process.env.NODE_ENV === "production" ? ["error"] : [],
     })
   : null;
 

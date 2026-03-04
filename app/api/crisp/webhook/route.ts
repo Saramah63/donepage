@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { prisma } from "@/app/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -94,6 +95,19 @@ export async function POST(req: Request) {
       html,
       replyTo: fromEmail || undefined,
     });
+
+    if (prisma) {
+      await prisma.contactMessage
+        .create({
+          data: {
+            source: "crisp_webhook",
+            email: fromEmail || null,
+            message: messageText || "(no content)",
+            payload: body as any,
+          },
+        })
+        .catch(() => {});
+    }
 
     return NextResponse.json({ ok: true, messageId: info.messageId });
   } catch (e: any) {

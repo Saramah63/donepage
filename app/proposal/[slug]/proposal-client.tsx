@@ -17,6 +17,14 @@ type ProposalData = {
   guarantee: string;
   ctaLabel: string;
   paymentLink: string;
+  tierDetails?: Record<
+    string,
+    {
+      scope: string[];
+      deliverables: string[];
+      timeline: string;
+    }
+  >;
   language?: string;
 };
 
@@ -33,8 +41,54 @@ export default function ProposalClient({
 }) {
   const pickLang = <T,>(map: Record<"en" | "fa" | "ar" | "fi", T>) =>
     map[lang] ?? map.en;
+  const preparedForByTemplate: Record<string, string> = {
+    B2B: pickLang({
+      en: "B2B Lead Generation",
+      fa: "جذب لید B2B",
+      ar: "توليد عملاء B2B",
+      fi: "B2B‑liidit",
+    }),
+    Consulting: pickLang({
+      en: "Consulting Services",
+      fa: "خدمات مشاوره",
+      ar: "خدمات استشارية",
+      fi: "Konsultointipalvelut",
+    }),
+    Coaching: pickLang({
+      en: "Coaching Programs",
+      fa: "برنامه‌های کوچینگ",
+      ar: "برامج الكوتشينغ",
+      fi: "Coaching-ohjelmat",
+    }),
+    Agency: pickLang({
+      en: "Agency Client Acquisition",
+      fa: "جذب مشتری آژانس",
+      ar: "اكتساب عملاء الوكالة",
+      fi: "Toimistoasiakashankinta",
+    }),
+    SaaS: pickLang({
+      en: "SaaS Demo & Trial Growth",
+      fa: "رشد دمو و تریال SaaS",
+      ar: "نمو ديمو وتجارب SaaS",
+      fi: "SaaS-demon ja trialin kasvu",
+    }),
+    "E‑commerce": pickLang({
+      en: "Offer Package Sales",
+      fa: "فروش پکیج خدمات",
+      ar: "بيع باقات الخدمات",
+      fi: "Palvelupakettien myynti",
+    }),
+    Legal: pickLang({
+      en: "Professional Services Lead Intake",
+      fa: "ورودی لید خدمات حرفه‌ای",
+      ar: "استقبال عملاء للخدمات المهنية",
+      fi: "Ammatillisten palvelujen liidit",
+    }),
+  };
+  const preparedFor = preparedForByTemplate[proposal.template] ?? proposal.template;
   const [selectedTier, setSelectedTier] = React.useState<string | null>(null);
   const [checkingOut, setCheckingOut] = React.useState(false);
+  const [selectedDeliverableIndex, setSelectedDeliverableIndex] = React.useState<number | null>(null);
 
   const resolvedTier =
     selectedTier ?? proposal.investment ?? proposal.investmentOptions?.[0] ?? null;
@@ -53,6 +107,21 @@ export default function ProposalClient({
       link,
     ])
   );
+  const normalizedTierDetails = Object.fromEntries(
+    Object.entries(proposal.tierDetails ?? {}).map(([tier, details]) => [
+      normalizeTier(tier),
+      details,
+    ])
+  );
+  const activeTierDetails =
+    (normalizedTier && normalizedTierDetails[normalizedTier]) || null;
+  const activeScope = activeTierDetails?.scope ?? proposal.scope;
+  const activeDeliverables = activeTierDetails?.deliverables ?? proposal.deliverables;
+  const activeTimeline = activeTierDetails?.timeline ?? proposal.timeline;
+
+  React.useEffect(() => {
+    setSelectedDeliverableIndex(null);
+  }, [resolvedTier]);
 
   const effectiveLink =
     (normalizedTier && normalizedLinks[normalizedTier]) ||
@@ -151,12 +220,7 @@ export default function ProposalClient({
               fi: "Valmisteltu:",
             })}{" "}
             <span className="font-semibold text-gray-900">
-              {pickLang({
-                en: "B2B Lead Generation",
-                fa: "جذب لید B2B",
-                ar: "توليد عملاء B2B",
-                fi: "B2B‑liidit",
-              })}
+              {preparedFor}
             </span>
           </div>
         </div>
@@ -203,7 +267,7 @@ export default function ProposalClient({
                 })}
               </h2>
               <ul className="mt-3 list-disc space-y-1 pl-5 text-gray-700">
-                {proposal.scope.map((s, i) => (
+                {activeScope.map((s, i) => (
                   <li key={i}>{s}</li>
                 ))}
               </ul>
@@ -219,10 +283,50 @@ export default function ProposalClient({
                 })}
               </h2>
               <ul className="mt-3 list-disc space-y-1 pl-5 text-gray-700">
-                {proposal.deliverables.map((s, i) => (
+                {activeDeliverables.map((s, i) => (
                   <li key={i}>{s}</li>
                 ))}
               </ul>
+            </section>
+
+            <section className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {pickLang({
+                  en: "Expected Business Impact",
+                  fa: "اثر مورد انتظار کسب‌وکار",
+                  ar: "الأثر التجاري المتوقع",
+                  fi: "Odotettu liiketoimintavaikutus",
+                })}
+              </h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {[
+                  pickLang({
+                    en: "Higher lead quality",
+                    fa: "کیفیت لید بالاتر",
+                    ar: "جودة عملاء محتملين أعلى",
+                    fi: "Parempi liidien laatu",
+                  }),
+                  pickLang({
+                    en: "Stronger buyer trust",
+                    fa: "اعتماد بیشتر خریدار",
+                    ar: "ثقة مشترٍ أقوى",
+                    fi: "Vahvempi ostajaluottamus",
+                  }),
+                  pickLang({
+                    en: "Faster sales conversations",
+                    fa: "گفت‌وگوی فروش سریع‌تر",
+                    ar: "محادثات بيع أسرع",
+                    fi: "Nopeammat myyntikeskustelut",
+                  }),
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
             </section>
 
             <section className="grid gap-6 sm:grid-cols-2">
@@ -236,7 +340,7 @@ export default function ProposalClient({
                   })}
                 </h3>
                 <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900">
-                  {proposal.timeline}
+                  {activeTimeline}
                 </div>
               </div>
               <div>
@@ -284,6 +388,14 @@ export default function ProposalClient({
 
           <aside className="space-y-6">
             <div className="rounded-3xl border border-blue-200 bg-blue-50/60 p-6">
+              <div className="inline-flex items-center rounded-full border border-blue-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                {pickLang({
+                  en: "Limited onboarding slots this week",
+                  fa: "ظرفیت پذیرش محدود در این هفته",
+                  ar: "أماكن بدء محدودة هذا الأسبوع",
+                  fi: "Rajoitettu määrä aloituspaikkoja tällä viikolla",
+                })}
+              </div>
               <div className="text-sm font-semibold text-blue-900">
                 {pickLang({
                   en: "Start Project",
@@ -300,6 +412,48 @@ export default function ProposalClient({
                   fi: "Hyväksy ja aloitetaan heti. Ensimmäinen päivitys 3 arkipäivässä.",
                 })}
               </p>
+              <div className="mt-3 rounded-xl border border-blue-200 bg-white/70 px-3 py-2 text-xs text-blue-900">
+                {pickLang({
+                  en: "Selected tier:",
+                  fa: "پلن انتخاب‌شده:",
+                  ar: "الباقة المختارة:",
+                  fi: "Valittu taso:",
+                })}{" "}
+                <span className="font-semibold">{resolvedTier ?? proposal.investment}</span>
+              </div>
+              {activeTierDetails ? (
+                <div className="mt-3 rounded-xl border border-blue-200 bg-white/85 px-3 py-3 text-xs text-blue-900">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                    {pickLang({
+                      en: "Included in this tier",
+                      fa: "موارد شامل این پلن",
+                      ar: "المتضمن في هذه الباقة",
+                      fi: "Sisaltyy tahan tasoon",
+                    })}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(activeTierDetails.deliverables ?? []).slice(0, 4).map((item, i) => (
+                      <button
+                        key={`${item}-${i}`}
+                        type="button"
+                        onClick={() =>
+                          setSelectedDeliverableIndex((prev) => (prev === i ? null : i))
+                        }
+                        className="rounded-full border border-blue-200 bg-blue-50/70 px-2.5 py-1 text-[11px] font-medium text-blue-900"
+                        title={item}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedDeliverableIndex !== null &&
+                  (activeTierDetails.deliverables ?? [])[selectedDeliverableIndex] ? (
+                    <div className="mt-2 rounded-lg border border-blue-200 bg-white px-2.5 py-2 text-[11px] text-blue-900/90">
+                      {(activeTierDetails.deliverables ?? [])[selectedDeliverableIndex]}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="mt-3 rounded-xl border border-blue-200 bg-white/80 px-3 py-2 text-[12px] text-blue-900/80">
                 {pickLang({
                   en: "This payment is for premium delivery of your project — separate from any Donepage subscription.",
@@ -322,6 +476,14 @@ export default function ProposalClient({
                     })
                   : proposal.ctaLabel}
               </button>
+              <div className="mt-3 text-[11px] text-blue-900/70">
+                {pickLang({
+                  en: "No call required. Approval and payment happen in one step.",
+                  fa: "بدون تماس. تایید و پرداخت در یک مرحله انجام می‌شود.",
+                  ar: "بدون مكالمة. الموافقة والدفع بخطوة واحدة.",
+                  fi: "Ei puhelua. Hyväksyntä ja maksu yhdellä askeleella.",
+                })}
+              </div>
             </div>
 
             {proposal.guarantee ? (

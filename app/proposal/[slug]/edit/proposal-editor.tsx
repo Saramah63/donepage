@@ -18,6 +18,14 @@ type ProposalData = {
   guarantee: string;
   ctaLabel: string;
   paymentLink: string;
+  tierDetails?: Record<
+    string,
+    {
+      scope: string[];
+      deliverables: string[];
+      timeline: string;
+    }
+  >;
   messagePreview: string;
   messageProposal: string;
   language?: string;
@@ -159,7 +167,7 @@ export default function ProposalEditor({ slug, token }: { slug: string; token: s
             <div>
               <label className="text-xs font-semibold text-gray-600">Template</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {["Agency", "SaaS", "Consulting", "E‑commerce", "Coaching", "B2B"].map((t) => (
+                {["Agency", "SaaS", "Consulting", "E‑commerce", "Coaching", "Legal", "B2B"].map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -266,12 +274,20 @@ export default function ProposalEditor({ slug, token }: { slug: string; token: s
               <div className="mt-3 text-xs font-semibold text-gray-600">
                 Tier payment links (one per line)
               </div>
+              <div className="mt-1 text-[11px] text-gray-500">
+                Use public checkout links only (example: `https://buy.stripe.com/...`). Dashboard links will not work.
+              </div>
               <textarea
                 className="mt-2 w-full min-h-[120px] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm"
                 value={mapToText(proposal.paymentLinks)}
                 onChange={(e) => update({ paymentLinks: textToMap(e.target.value) })}
                 placeholder="$3,000 (one‑time) | https://buy.stripe.com/fZu5kE1J85YCfaD1iy8Zq02\n$5,000 (one‑time) | https://buy.stripe.com/4gM4gA2Nccn02nRbXc8Zq03\n$7,000 (one‑time) | https://buy.stripe.com/6oUbJ2drQ3QubYrd1g8Zq04"
               />
+              {Object.keys(proposal.paymentLinks ?? {}).length === 0 ? (
+                <div className="mt-2 text-xs text-amber-700">
+                  No tier payment links detected yet. Add one line per tier to enable direct payment.
+                </div>
+              ) : null}
             </div>
           </div>
 

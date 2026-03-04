@@ -65,6 +65,9 @@ export default async function ProposalPage({
         if (shouldReplace(k)) (next as any)[k] = (baseLocalized as any)[k];
       }
     );
+    if (!(next as any).tierDetails && (baseLocalized as any).tierDetails) {
+      (next as any).tierDetails = (baseLocalized as any).tierDetails;
+    }
 
     if (!current.paymentLinks || Object.keys(current.paymentLinks).length === 0) {
       if (shouldReplace("investment")) (next as any).investment = baseLocalized.investment;

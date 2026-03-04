@@ -51,6 +51,7 @@ export type QuestionnaireAnswers = {
     | "enterprise";
   businessStage: "starting" | "established" | "scaling";
   primaryGoal: "leads" | "calls" | "packages" | "credibility";
+  primaryGoals?: Array<"leads" | "calls" | "packages" | "credibility">;
   experienceLevel: "new" | "intermediate" | "expert" | "veteran";
   pricingApproach: "budget" | "competitive" | "premium" | "custom";
   keyDifferentiator: "speed" | "quality" | "expertise" | "personal" | "results";
@@ -60,6 +61,10 @@ export type QuestionnaireAnswers = {
     | "results"
     | "guarantee"
     | "portfolio";
+  trustFactors?: Array<
+    "certifications" | "experience" | "results" | "guarantee" | "portfolio"
+  >;
+  trustFactorNotesJson?: string;
   includeAbout: "yes" | "no";
   customServices?: string;
 
@@ -98,6 +103,12 @@ type Step = {
   title: string;
   subtitle: string;
   options: Option[];
+};
+
+type StepSection = {
+  id: "brand" | "offer" | "conversion";
+  label: Record<UiLang, string>;
+  keys: Array<keyof QuestionnaireAnswers>;
 };
 
 const BASE_STEPS: Step[] = [
@@ -149,8 +160,8 @@ const BASE_STEPS: Step[] = [
   },
   {
     key: "customServices",
-    title: "Any specific services to include?",
-    subtitle: "Add services that don’t fit the categories above (one per line)",
+    title: "What exact services or packages do you want to sell?",
+    subtitle: "Mandatory for package-focused pages. Add each service/package on a new line.",
     options: [],
   },
   {
@@ -168,7 +179,7 @@ const BASE_STEPS: Step[] = [
   {
     key: "businessStage",
     title: "What stage is your business at?",
-    subtitle: "This helps us position your expertise appropriately",
+    subtitle: "This helps us position your expertise appropriately.",
     options: [
       { value: "starting", title: "Just Starting Out", desc: "New to the market, building your first clients" },
       { value: "established", title: "Established & Growing", desc: "Steady client base, looking to expand" },
@@ -178,7 +189,7 @@ const BASE_STEPS: Step[] = [
   {
     key: "primaryGoal",
     title: "What's your main goal with this landing page?",
-    subtitle: "We'll optimize your page for this outcome",
+    subtitle: "You can choose multiple goals. If you choose packages, service/package details become mandatory.",
     options: [
       { value: "leads", title: "Generate Qualified Leads", desc: "Collect contact info from interested prospects" },
       { value: "calls", title: "Book Discovery Calls", desc: "Get prospects to schedule a consultation" },
@@ -187,9 +198,57 @@ const BASE_STEPS: Step[] = [
     ],
   },
   {
+    key: "primaryOffer",
+    title: "What is your primary offer?",
+    subtitle: "Describe your main offer clearly (e.g. Done-for-you SEO, 1:1 coaching, legal advisory package).",
+    options: [],
+  },
+  {
+    key: "problemStatement",
+    title: "What exact problem do you solve?",
+    subtitle: "Mandatory. One clear sentence focused on the client pain.",
+    options: [],
+  },
+  {
+    key: "outcomeStatement",
+    title: "What measurable outcome do clients get?",
+    subtitle: "Mandatory. One result-focused sentence.",
+    options: [],
+  },
+  {
+    key: "trustFactor",
+    title: "Why should clients choose you?",
+    subtitle: "Select one or more trust factors and add proof text for each selected item.",
+    options: [
+      { value: "certifications", title: "Certifications & Credentials", desc: "Professional certifications and licenses" },
+      { value: "experience", title: "Years of Experience", desc: "Extensive time in the industry" },
+      { value: "results", title: "Client Results & ROI", desc: "Proven outcomes and success stories" },
+      { value: "guarantee", title: "Satisfaction Guarantee", desc: "Risk-free promise or money-back guarantee" },
+      { value: "portfolio", title: "Portfolio & Past Work", desc: "Showcase of completed projects" },
+    ],
+  },
+  {
+    key: "keyDifferentiator",
+    title: "What makes you stand out most?",
+    subtitle: "Choose your strongest competitive advantage.",
+    options: [
+      { value: "speed", title: "Fast Turnaround", desc: "Quick delivery without compromising quality" },
+      { value: "quality", title: "Exceptional Quality", desc: "Meticulous attention to detail and excellence" },
+      { value: "expertise", title: "Specialized Expertise", desc: "Deep knowledge in a specific niche" },
+      { value: "personal", title: "Personalized Service", desc: "Tailored approach for each client" },
+      { value: "results", title: "Proven Results", desc: "Track record of measurable success" },
+    ],
+  },
+  {
+    key: "proofLine",
+    title: "Add your strongest proof line",
+    subtitle: "Mandatory. Example: 4.9/5 rating • 120+ clients • 8 years experience",
+    options: [],
+  },
+  {
     key: "experienceLevel",
     title: "How much experience do you have?",
-    subtitle: "We'll highlight your background appropriately",
+    subtitle: "We'll position your authority level appropriately.",
     options: [
       { value: "new", title: "Less than 2 years", desc: "Fresh perspective and modern approaches" },
       { value: "intermediate", title: "2-5 years", desc: "Proven track record with real results" },
@@ -200,7 +259,7 @@ const BASE_STEPS: Step[] = [
   {
     key: "pricingApproach",
     title: "How do you position your pricing?",
-    subtitle: "This affects how we communicate value",
+    subtitle: "This controls pricing language and sales framing.",
     options: [
       { value: "budget", title: "Affordable & Accessible", desc: "Great value for budget-conscious clients" },
       { value: "competitive", title: "Competitive & Fair", desc: "Balanced pricing for quality service" },
@@ -209,33 +268,51 @@ const BASE_STEPS: Step[] = [
     ],
   },
   {
-    key: "keyDifferentiator",
-    title: "What makes you stand out?",
-    subtitle: "Choose your strongest competitive advantage",
-    options: [
-      { value: "speed", title: "Fast Turnaround", desc: "Quick delivery without compromising quality" },
-      { value: "quality", title: "Exceptional Quality", desc: "Meticulous attention to detail and excellence" },
-      { value: "expertise", title: "Specialized Expertise", desc: "Deep knowledge in a specific niche" },
-      { value: "personal", title: "Personalized Service", desc: "Tailored approach for each client" },
-      { value: "results", title: "Proven Results", desc: "Track record of measurable success" },
-    ],
+    key: "niche",
+    title: "What niche/industry do you focus on?",
+    subtitle: "Optional but recommended for better conversion and SEO relevance.",
+    options: [],
   },
   {
-    key: "trustFactor",
-    title: "What builds trust with your clients?",
-    subtitle: "Select your strongest credibility indicator",
-    options: [
-      { value: "certifications", title: "Certifications & Credentials", desc: "Professional certifications and licenses" },
-      { value: "experience", title: "Years of Experience", desc: "Extensive time in the industry" },
-      { value: "results", title: "Client Results & ROI", desc: "Proven outcomes and success stories" },
-      { value: "guarantee", title: "Satisfaction Guarantee", desc: "Risk-free promise or money-back guarantee" },
-      { value: "portfolio", title: "Portfolio & Past Work", desc: "Showcase of completed projects" },
-    ],
+    key: "processStep1",
+    title: "Process step 1",
+    subtitle: "Mandatory. Keep it short and outcome-oriented.",
+    options: [],
+  },
+  {
+    key: "processStep2",
+    title: "Process step 2",
+    subtitle: "Mandatory. Show what happens after step 1.",
+    options: [],
+  },
+  {
+    key: "processStep3",
+    title: "Process step 3",
+    subtitle: "Mandatory. Show final delivery/result stage.",
+    options: [],
+  },
+  {
+    key: "contactEmail",
+    title: "Contact email",
+    subtitle: "Mandatory. Used in CTA and contact section.",
+    options: [],
+  },
+  {
+    key: "whatsApp",
+    title: "WhatsApp number (optional)",
+    subtitle: "Use international format, e.g. +358401234567.",
+    options: [],
+  },
+  {
+    key: "bookingLink",
+    title: "Booking link (optional)",
+    subtitle: "Calendly / TidyCal / Google Calendar URL.",
+    options: [],
   },
   {
     key: "includeAbout",
     title: `Do you want to add an "About" section?`,
-    subtitle: "Tell your story and connect with potential clients",
+    subtitle: "Tell your story and connect with potential clients.",
     options: [
       { value: "yes", title: "Yes, Add About Section", desc: "Share your background and mission" },
       { value: "no", title: "No, Skip About Section", desc: "Keep the page focused on services only" },
@@ -244,82 +321,19 @@ const BASE_STEPS: Step[] = [
   {
     key: "aboutText",
     title: "Write a short About section (optional)",
-    subtitle: "A few sentences about who you are and how you help",
+    subtitle: "A few sentences about who you are and how you help.",
     options: [],
   },
   {
     key: "aboutImageUrl",
     title: "Add an About image (optional)",
-    subtitle: "Upload a photo/video or paste a direct URL. Leave empty to skip.",
-    options: [],
-  },
-  {
-    key: "contactEmail",
-    title: "Contact email",
-    subtitle: "Shown in the Contact section + used for mailto link",
-    options: [],
-  },
-  {
-    key: "whatsApp",
-    title: "WhatsApp number (optional)",
-    subtitle: "Use international format, e.g. +358401234567",
-    options: [],
-  },
-  {
-    key: "bookingLink",
-    title: "Booking link (optional)",
-    subtitle: "Calendly / TidyCal / Google Calendar booking URL",
-    options: [],
-  },
-];
-
-const ADVANCED_STEPS: Step[] = [
-  {
-    key: "problemStatement",
-    title: "What problem do you solve?",
-    subtitle: "One sentence. Be specific about the pain you remove.",
-    options: [],
-  },
-  {
-    key: "outcomeStatement",
-    title: "What outcome do you deliver?",
-    subtitle: "One sentence. Describe the end-result clients actually want.",
-    options: [],
-  },
-  {
-    key: "proofLine",
-    title: "Add one credibility / proof line",
-    subtitle: 'Example: "4.9/5 rating • 120+ clients • ICF-trained" (one line)',
-    options: [],
-  },
-  {
-    key: "niche",
-    title: "Your niche / industry (optional)",
-    subtitle: 'Example: "SaaS founders", "Real estate", "Wellness coaches"',
-    options: [],
-  },
-  {
-    key: "processStep1",
-    title: "Your process — Step 1",
-    subtitle: 'Example: "Audit + clarify goals"',
-    options: [],
-  },
-  {
-    key: "processStep2",
-    title: "Your process — Step 2",
-    subtitle: 'Example: "Build plan + execute"',
-    options: [],
-  },
-  {
-    key: "processStep3",
-    title: "Your process — Step 3",
-    subtitle: 'Example: "Deliver + optimize"',
+    subtitle: "Upload a photo/video or paste a direct URL.",
     options: [],
   },
   {
     key: "portfolioItemsRaw",
     title: "Portfolio highlights (optional)",
-    subtitle: "One per line: Title | Description | Metric (e.g. 40% growth)",
+    subtitle: "One per line: Title | Description | Metric (e.g. 40% growth).",
     options: [],
   },
   {
@@ -327,6 +341,62 @@ const ADVANCED_STEPS: Step[] = [
     title: "Portfolio items (optional)",
     subtitle: "Add real projects, metrics, and optional images/videos.",
     options: [],
+  },
+];
+
+const STEP_SECTIONS: StepSection[] = [
+  {
+    id: "brand",
+    label: {
+      en: "Brand Setup",
+      fa: "تنظیم برند",
+      ar: "إعداد العلامة",
+      fi: "Brändiasetukset",
+    },
+    keys: ["language", "businessName", "country", "serviceType", "targetAudience", "businessStage", "niche"],
+  },
+  {
+    id: "offer",
+    label: {
+      en: "Offer Strategy",
+      fa: "استراتژی پیشنهاد",
+      ar: "استراتيجية العرض",
+      fi: "Tarjousstrategia",
+    },
+    keys: [
+      "primaryGoal",
+      "customServices",
+      "primaryOffer",
+      "problemStatement",
+      "outcomeStatement",
+      "keyDifferentiator",
+      "pricingApproach",
+      "experienceLevel",
+      "proofLine",
+      "trustFactor",
+      "processStep1",
+      "processStep2",
+      "processStep3",
+    ],
+  },
+  {
+    id: "conversion",
+    label: {
+      en: "Conversion Assets",
+      fa: "دارایی‌های تبدیل",
+      ar: "أصول التحويل",
+      fi: "Konversio-assetit",
+    },
+    keys: [
+      "contactEmail",
+      "whatsApp",
+      "bookingLink",
+      "includeAbout",
+      "aboutText",
+      "aboutImageUrl",
+      "portfolioItemsRaw",
+      "portfolioItemsJson",
+    ],
   },
 ];
 
@@ -379,6 +449,7 @@ function ui(lang: UiLang, text: string) {
       "Back": "بازگشت",
       "Next": "بعدی",
       "Generate Page": "ساخت صفحه",
+      "Generating...": "در حال ساخت...",
       "Please upload an image or video file.": "لطفاً تصویر یا ویدیو آپلود کنید.",
       "File is too large. Please upload under 25MB.": "حجم فایل زیاد است. حداکثر ۲۵ مگابایت.",
       "Upload failed": "آپلود ناموفق بود",
@@ -403,6 +474,7 @@ function ui(lang: UiLang, text: string) {
       "Back": "رجوع",
       "Next": "التالي",
       "Generate Page": "إنشاء الصفحة",
+      "Generating...": "جارٍ الإنشاء...",
       "Please upload an image or video file.": "يرجى رفع صورة أو فيديو.",
       "File is too large. Please upload under 25MB.": "حجم الملف كبير. الحد 25MB.",
       "Upload failed": "فشل الرفع",
@@ -427,6 +499,7 @@ function ui(lang: UiLang, text: string) {
       "Back": "Takaisin",
       "Next": "Seuraava",
       "Generate Page": "Luo sivu",
+      "Generating...": "Luodaan...",
       "Please upload an image or video file.": "Lataa kuva tai video.",
       "File is too large. Please upload under 25MB.": "Tiedosto on liian suuri. Max 25MB.",
       "Upload failed": "Lataus epäonnistui",
@@ -439,6 +512,22 @@ function ui(lang: UiLang, text: string) {
     },
   };
   return map[lang]?.[text] ?? text;
+}
+
+function parseJsonMap(value?: string): Record<string, string> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      // Keep raw user text (including spaces) so textarea typing stays natural.
+      out[k] = String(v ?? "");
+    }
+    return out;
+  } catch {
+    return {};
+  }
 }
 
 const STEP_I18N: Record<UiLang, Partial<Record<keyof QuestionnaireAnswers, { title: string; subtitle: string }>>> = {
@@ -912,23 +1001,45 @@ function getDefaultLanguage(country?: string, countryOther?: string) {
 }
 
 export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete }: Props) {
-  const [advanced, setAdvanced] = React.useState(false);
+  const DRAFT_KEY = "dp:questionnaire:draft:v1";
   const [uploading, setUploading] = React.useState(false);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [languageTouched, setLanguageTouched] = React.useState(false);
   const [portfolioItems, setPortfolioItems] = React.useState<
     { title: string; description: string; metric: string; imageUrl?: string }[]
   >([]);
 
-  const STEPS = React.useMemo(() => {
-    // Advanced = add steps, without touching base flow UX
-    return advanced ? [...BASE_STEPS, ...ADVANCED_STEPS] : BASE_STEPS;
-  }, [advanced]);
+  const STEPS = BASE_STEPS;
 
   const total = STEPS.length;
 
   const [stepIndex, setStepIndex] = React.useState(0);
   const [answers, setAnswers] = React.useState<Partial<QuestionnaireAnswers>>(initialAnswers ?? {});
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (initialAnswers) return;
+    try {
+      const raw = window.localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<QuestionnaireAnswers> | null;
+      if (!parsed || typeof parsed !== "object" || Object.keys(parsed).length === 0) return;
+      setAnswers(parsed);
+    } catch {
+      // ignore corrupted draft cache
+    }
+  }, [initialAnswers, DRAFT_KEY]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (Object.keys(answers ?? {}).length === 0) return;
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(answers));
+    } catch {
+      // ignore draft save errors
+    }
+  }, [answers, DRAFT_KEY]);
 
   React.useEffect(() => {
     if (!initialAnswers) return;
@@ -962,35 +1073,79 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     }
   }, [answers.country, answers.countryOther, answers.language, languageTouched]);
 
-  // If user toggles Advanced OFF while on advanced steps, clamp index
   React.useEffect(() => {
     setStepIndex((s) => clamp(s, 0, total - 1));
   }, [total]);
 
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [stepIndex]);
+
   const uiLang = toUiLang(answers.language);
   const step = localizeStep(uiLang, STEPS[stepIndex]);
   const currentValue = answers[step.key] as string | undefined;
+  const selectedPrimaryGoals =
+    Array.isArray(answers.primaryGoals) && answers.primaryGoals.length > 0
+      ? answers.primaryGoals
+      : answers.primaryGoal
+      ? [answers.primaryGoal]
+      : [];
+  const selectedTrustFactors =
+    Array.isArray(answers.trustFactors) && answers.trustFactors.length > 0
+      ? answers.trustFactors
+      : answers.trustFactor
+      ? [answers.trustFactor]
+      : [];
+  const trustFactorNotes = parseJsonMap(answers.trustFactorNotesJson);
 
   const progress = Math.round(((stepIndex + 1) / total) * 100);
   const isInputStep = step.options.length === 0;
+  const currentSection = STEP_SECTIONS.find((section) => section.keys.includes(step.key)) ?? STEP_SECTIONS[0];
+  const sectionStartIndexMap = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    STEP_SECTIONS.forEach((section) => {
+      const firstIdx = STEPS.findIndex((s) => section.keys.includes(s.key));
+      map[section.id] = firstIdx >= 0 ? firstIdx : 0;
+    });
+    return map;
+  }, []);
+  const sectionProgress = Math.round(
+    ((stepIndex + 1) / total) * 100
+  );
 
   const needsCountryOther = step.key === "country" && currentValue === "Other";
   const needsLanguageOther = step.key === "language" && currentValue === "Other";
   const needsServiceOther = step.key === "serviceType" && currentValue === "other";
+  const requiresPackageDetails = selectedPrimaryGoals.includes("packages");
+  const hasTrustNotesForAllSelected =
+    selectedTrustFactors.length > 0 &&
+    selectedTrustFactors.every((factor) =>
+      Boolean((trustFactorNotes[factor] ?? "").toString().trim())
+    );
+  const optionalInputKeys: Array<keyof QuestionnaireAnswers> = [
+    "niche",
+    "aboutText",
+    "aboutImageUrl",
+    "whatsApp",
+    "bookingLink",
+    "portfolioItemsRaw",
+    "portfolioItemsJson",
+  ];
 
   const canGoNext = isInputStep
-    ? Boolean(
-        (currentValue ?? "").toString().trim() ||
-          step.key === "niche" ||
-          step.key === "aboutImageUrl" ||
-          step.key === "whatsApp" ||
-          step.key === "bookingLink" ||
-          step.key === "aboutText" ||
-          step.key === "portfolioItemsRaw" ||
-          step.key === "portfolioItemsJson" ||
-          step.key === "customServices"
-      )
-    : Boolean(currentValue) &&
+    ? optionalInputKeys.includes(step.key)
+      ? true
+      : step.key === "customServices"
+      ? requiresPackageDetails
+        ? Boolean((answers.customServices ?? "").toString().trim())
+        : true
+      : Boolean((currentValue ?? "").toString().trim())
+    : (step.key === "primaryGoal"
+        ? selectedPrimaryGoals.length > 0
+        : step.key === "trustFactor"
+        ? hasTrustNotesForAllSelected
+        : Boolean(currentValue)) &&
       (!needsCountryOther ||
         Boolean((answers.countryOther ?? "").toString().trim())) &&
       (!needsLanguageOther ||
@@ -1007,6 +1162,35 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
   }, [answers, onChange]);
 
   const setValue = (value: string) => {
+    if (step.key === "primaryGoal") {
+      const prev = selectedPrimaryGoals as string[];
+      const next = prev.includes(value)
+        ? prev.filter((v) => v !== value)
+        : [...prev, value];
+      update({
+        primaryGoals: next as QuestionnaireAnswers["primaryGoals"],
+        primaryGoal: (next[0] as QuestionnaireAnswers["primaryGoal"]) ?? undefined,
+      });
+      return;
+    }
+
+    if (step.key === "trustFactor") {
+      const prev = selectedTrustFactors as string[];
+      const next = prev.includes(value)
+        ? prev.filter((v) => v !== value)
+        : [...prev, value];
+      const nextNotes = { ...trustFactorNotes };
+      Object.keys(nextNotes).forEach((k) => {
+        if (!next.includes(k)) delete nextNotes[k];
+      });
+      update({
+        trustFactors: next as QuestionnaireAnswers["trustFactors"],
+        trustFactor: (next[0] as QuestionnaireAnswers["trustFactor"]) ?? undefined,
+        trustFactorNotesJson: JSON.stringify(nextNotes),
+      });
+      return;
+    }
+
     if (step.key === "language") setLanguageTouched(true);
     if (step.key === "language" && typeof window !== "undefined") {
       const code = normalizeLangCode(value);
@@ -1020,8 +1204,17 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     setStepIndex((s) => Math.max(0, s - 1));
   };
 
+  const jumpToSection = (sectionId: StepSection["id"]) => {
+    const idx = sectionStartIndexMap[sectionId] ?? 0;
+    setStepIndex(Math.max(0, Math.min(total - 1, idx)));
+  };
+
+  const jumpToStep = (idx: number) => {
+    setStepIndex(Math.max(0, Math.min(total - 1, idx)));
+  };
+
   const goNext = async () => {
-    if (!canGoNext) return;
+    if (!canGoNext || isSubmitting) return;
 
     if (stepIndex < total - 1) {
       setStepIndex((s) => Math.min(total - 1, s + 1));
@@ -1029,8 +1222,16 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     }
 
     const final = answers as QuestionnaireAnswers;
-    onGenerate?.(final);
-    onComplete?.(final);
+    setIsSubmitting(true);
+    try {
+      await Promise.resolve(onGenerate?.(final));
+      await Promise.resolve(onComplete?.(final));
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(DRAFT_KEY);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const uploadMedia = async (file: File) => {
@@ -1127,16 +1328,9 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     ar: "منشئ صفحة هبوط",
     fi: "Laskeutumissivun generaattori",
   });
-  const advancedHelperText = pickUi(uiLang, {
-    en: "Turn on for better copy (problem, outcome, proof, process).",
-    fa: "برای متن بهتر روشن کنید (مشکل، نتیجه، اثبات، فرایند).",
-    ar: "فعّل للحصول على نص أفضل (مشكلة، نتيجة، إثبات، عملية).",
-    fi: "Ota käyttöön paremman tekstin vuoksi (ongelma, lopputulos, todiste, prosessi).",
-  });
-
   return (
     <div
-      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40"
+      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 text-gray-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-gray-100"
       dir={uiLang === "fa" || uiLang === "ar" ? "rtl" : "ltr"}
     >
       <div
@@ -1148,23 +1342,78 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
 
       <div className="relative mx-auto flex max-w-4xl flex-col px-4 pb-14 pt-12 sm:pt-16">
         <div className="mx-auto w-full max-w-3xl">
-          <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md">
+          <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md dark:border-gray-700 dark:bg-slate-900/70">
             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-600" />
             <span className="text-sm font-semibold text-gray-900">{landingTag}</span>
           </div>
 
-          <h1 className="mt-5 text-center text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="mt-5 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
             {headerQuestionCountText}
           </h1>
 
-          <div className="mt-6 flex items-center justify-between text-sm text-gray-600">
-            <div className="font-medium">
+          <div className="mt-6 flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+            <div className="font-semibold text-gray-800 dark:text-gray-200">
               {questionLabel}
             </div>
-            <div className="font-semibold text-gray-700">{progress}%</div>
+            <div className="font-bold text-gray-900 dark:text-gray-100">{progress}%</div>
           </div>
 
-          <div className="mt-3 h-2 w-full rounded-full bg-white/80 ring-1 ring-gray-200">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {STEP_SECTIONS.map((section) => {
+              const active = section.id === currentSection.id;
+              const label = section.label[uiLang] ?? section.label.en;
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => jumpToSection(section.id)}
+                  className={[
+                    "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                    active
+                      ? "border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:text-blue-700 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300 dark:hover:border-blue-700 dark:hover:text-blue-200",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              );
+            })}
+            <span className="ml-auto text-xs font-medium text-gray-500 dark:text-gray-400">
+              {sectionProgress}%
+            </span>
+          </div>
+
+          <div className="mt-3">
+            <label className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-300">
+              {pickUi(uiLang, {
+                en: "Jump to question",
+                fa: "پرش به سؤال",
+                ar: "الانتقال إلى سؤال",
+                fi: "Siirry kysymykseen",
+              })}
+            </label>
+            <select
+              value={stepIndex}
+              onChange={(e) => jumpToStep(Number(e.target.value))}
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-100"
+            >
+              {STEPS.map((s, idx) => {
+                const localized = localizeStep(uiLang, s);
+                return (
+                  <option key={`${String(s.key)}-${idx}`} value={idx}>
+                    {pickUi(uiLang, {
+                      en: `Q${idx + 1}: ${localized.title}`,
+                      fa: `س${idx + 1}: ${localized.title}`,
+                      ar: `س${idx + 1}: ${localized.title}`,
+                      fi: `K${idx + 1}: ${localized.title}`,
+                    })}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div className="mt-3 h-2 w-full rounded-full bg-white/80 ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
             <div
               className="h-2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 transition-[width] duration-500 ease-out"
               style={{ width: `${progress}%` }}
@@ -1172,42 +1421,20 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
           </div>
         </div>
 
-        <Card className="mx-auto mt-8 w-full max-w-3xl border border-gray-200 bg-white/85 shadow-xl shadow-blue-500/5 backdrop-blur-xl">
+        <Card className="mx-auto mt-8 w-full max-w-3xl border border-gray-200 bg-white/85 shadow-xl shadow-blue-500/5 backdrop-blur-xl dark:border-gray-700 dark:bg-slate-900/85">
           <CardContent className="p-6 sm:p-8">
-            {/* ✅ Advanced Toggle (minimal, no redesign) */}
-            <div className="mb-5 flex items-center justify-between rounded-2xl border border-gray-200 bg-white/70 px-4 py-3">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-900">{ui(uiLang, "Advanced mode")}</div>
-                <div className="text-xs text-gray-600">
-                  {advancedHelperText}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setAdvanced((v) => !v)}
-                className={[
-                  "relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full border transition-colors",
-                  advanced ? "border-blue-600 bg-blue-600" : "border-gray-300 bg-gray-200",
-                ].join(" ")}
-                aria-pressed={advanced}
-                aria-label={ui(uiLang, "Advanced mode")}
-              >
-                <span
-                  className={[
-                    "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
-                    advanced ? "translate-x-6" : "translate-x-1",
-                  ].join(" ")}
-                />
-              </button>
-            </div>
-
             <div className="space-y-2">
-              <div className="text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
+              <div className="text-xl font-bold tracking-tight text-gray-950 dark:text-gray-100 sm:text-2xl">
                 {step.title}
               </div>
-              <div className="text-sm text-gray-600 sm:text-base">{step.subtitle}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300 sm:text-base">{step.subtitle}</div>
             </div>
+
+            {!canGoNext ? (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                {ui(uiLang, "Complete this step to continue.")}
+              </div>
+            ) : null}
 
             {/* INPUT STEP */}
             {isInputStep ? (
@@ -1222,7 +1449,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     })}
                     value={(answers.aboutText as string) ?? ""}
                     onChange={(e) => setValue(e.target.value)}
-                    className="w-full min-h-[140px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full min-h-[140px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                   />
                 ) : step.key === "aboutImageUrl" ? (
                   <div className="space-y-4">
@@ -1301,7 +1528,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                       })}
                       value={(currentValue as string) ?? ""}
                       onChange={(e) => setValue(e.target.value)}
-                      className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                      className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                     />
                   </div>
                 ) : step.key === "portfolioItemsRaw" ? (
@@ -1314,20 +1541,30 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     })}
                     value={(currentValue as string) ?? ""}
                     onChange={(e) => setValue(e.target.value)}
-                    className="w-full min-h-[160px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full min-h-[160px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                   />
                 ) : step.key === "customServices" ? (
-                  <textarea
-                    placeholder={pickUi(uiLang, {
-                      en: `Service name | Optional short description\nExample: Conversion Audit | Full-funnel review and optimization plan`,
-                      fa: `نام خدمت | توضیح کوتاه (اختیاری)\nمثال: ممیزی تبدیل | بررسی کامل قیف و برنامه بهینه‌سازی`,
-                      ar: `اسم الخدمة | وصف قصير (اختياري)\nمثال: تدقيق التحويل | مراجعة القمع وخطة التحسين`,
-                      fi: `Palvelun nimi | Lyhyt kuvaus (valinnainen)\nEsim: Konversioauditointi | Täysi suppilon arviointi`,
-                    })}
-                    value={(currentValue as string) ?? ""}
-                    onChange={(e) => setValue(e.target.value)}
-                    className="w-full min-h-[140px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
-                  />
+                  <div className="space-y-2">
+                    <textarea
+                      placeholder={pickUi(uiLang, {
+                        en: `Service/package name | Short description\nExample: Conversion Audit | Full-funnel review and optimization plan`,
+                        fa: `نام خدمت/پکیج | توضیح کوتاه\nمثال: ممیزی تبدیل | بررسی کامل قیف و برنامه بهینه‌سازی`,
+                        ar: `اسم الخدمة/الباقة | وصف قصير\nمثال: تدقيق التحويل | مراجعة القمع وخطة التحسين`,
+                        fi: `Palvelu-/pakettinimi | Lyhyt kuvaus\nEsim: Konversioauditointi | Täysi suppilon arviointi`,
+                      })}
+                      value={(currentValue as string) ?? ""}
+                      onChange={(e) => setValue(e.target.value)}
+                    className="w-full min-h-[140px] rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
+                    />
+                    {requiresPackageDetails && !String(currentValue ?? "").trim() ? (
+                      <div className="text-xs font-medium text-amber-700">
+                        {ui(
+                          uiLang,
+                          "Required: add at least one package/service line because you selected 'Sell Service Packages'."
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
                 ) : step.key === "portfolioItemsJson" ? (
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600">
@@ -1359,7 +1596,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                               next[idx] = { ...next[idx], title: e.target.value };
                               syncPortfolioJson(next);
                             }}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                           />
                           <input
                             placeholder={pickUi(uiLang, {
@@ -1374,7 +1611,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                               next[idx] = { ...next[idx], metric: e.target.value };
                               syncPortfolioJson(next);
                             }}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                           />
                           <div className="flex items-center gap-2">
                             <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-900 hover:bg-gray-50">
@@ -1425,7 +1662,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                             next[idx] = { ...next[idx], description: e.target.value };
                             syncPortfolioJson(next);
                           }}
-                          className="mt-3 w-full min-h-[90px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                          className="mt-3 w-full min-h-[90px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                         />
 
                         {item.imageUrl ? (
@@ -1572,7 +1809,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     }
                     value={(currentValue as string) ?? ""}
                     onChange={(e) => setValue(e.target.value)}
-                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                   />
                 )}
               </div>
@@ -1582,7 +1819,16 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                   ? getLanguageOptions(answers.country, answers.countryOther, uiLang)
                   : step.options
                 ).map((opt) => {
-                  const selected = currentValue === opt.value;
+                  const selected =
+                    step.key === "primaryGoal"
+                      ? selectedPrimaryGoals.includes(
+                          opt.value as QuestionnaireAnswers["primaryGoal"]
+                        )
+                      : step.key === "trustFactor"
+                      ? selectedTrustFactors.includes(
+                          opt.value as QuestionnaireAnswers["trustFactor"]
+                        )
+                      : currentValue === opt.value;
                   return (
                     <button
                       key={opt.value}
@@ -1592,8 +1838,8 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                         "group w-full rounded-2xl border p-4 text-left transition-all duration-200",
                         "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
                         selected
-                          ? "border-blue-300 bg-blue-50/70 shadow-sm"
-                          : "border-gray-200 bg-white hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md",
+                          ? "border-blue-300 bg-blue-50/70 shadow-sm dark:border-blue-600 dark:bg-blue-900/30"
+                          : "border-gray-200 bg-white hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md dark:border-gray-700 dark:bg-slate-900 dark:hover:border-blue-600 dark:hover:bg-slate-800",
                       ].join(" ")}
                     >
                       <div className="flex items-start gap-3">
@@ -1602,7 +1848,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                             "mt-1 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border transition-all",
                             selected
                               ? "border-blue-600 bg-blue-600"
-                              : "border-gray-300 bg-white group-hover:border-blue-400",
+                              : "border-gray-300 bg-white group-hover:border-blue-400 dark:border-gray-600 dark:bg-slate-800 dark:group-hover:border-blue-500",
                           ].join(" ")}
                           aria-hidden="true"
                         >
@@ -1616,26 +1862,66 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-3">
-                            <div className="text-base font-semibold text-gray-900">{opt.title}</div>
+                            <div className="text-base font-semibold text-gray-900 dark:text-gray-100">{opt.title}</div>
                             {selected ? (
                               <span className="inline-flex items-center rounded-full bg-blue-600/10 px-2 py-1 text-xs font-semibold text-blue-700">
                                 {ui(uiLang, "Selected")}
                               </span>
                             ) : null}
                           </div>
-                          <div className="mt-1 text-sm leading-relaxed text-gray-600">{opt.desc}</div>
+                          <div className="mt-1 text-sm leading-relaxed text-gray-700 dark:text-gray-300">{opt.desc}</div>
                         </div>
                       </div>
                     </button>
                   );
                 })}
 
+                {step.key === "trustFactor" && selectedTrustFactors.length > 0 ? (
+                  <div className="mt-2 space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {ui(uiLang, "Add details for selected trust items (required)")}
+                    </div>
+                    {selectedTrustFactors.map((factor) => {
+                      const label =
+                        step.options.find((o) => o.value === factor)?.title ?? factor;
+                      return (
+                        <div key={factor} className="space-y-2">
+                          <label className="text-xs font-semibold text-gray-700">
+                            {label}
+                          </label>
+                          <textarea
+                            value={trustFactorNotes[factor] ?? ""}
+                            onChange={(e) => {
+                              const next = { ...trustFactorNotes, [factor]: e.target.value };
+                              update({ trustFactorNotesJson: JSON.stringify(next) });
+                            }}
+                            onKeyDown={(e) => {
+                              // Keep typing behavior natural inside this field.
+                              e.stopPropagation();
+                            }}
+                            placeholder={ui(
+                              uiLang,
+                              "Write proof/details for this item (certificate, years, result, etc.)"
+                            )}
+                      className="w-full min-h-[80px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
+                          />
+                        </div>
+                      );
+                    })}
+                    {!hasTrustNotesForAllSelected ? (
+                      <div className="text-xs font-medium text-amber-700">
+                        {ui(uiLang, "Please add proof text for each selected item to continue.")}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {step.key === "country" && currentValue === "Other" ? (
                   <input
                     placeholder={ui(uiLang, "Enter your country")}
                     value={(answers.countryOther as string) ?? ""}
                     onChange={(e) => update({ countryOther: e.target.value })}
-                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                   />
                 ) : null}
 
@@ -1644,7 +1930,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     placeholder={ui(uiLang, "Enter your language")}
                     value={(answers.languageOther as string) ?? ""}
                     onChange={(e) => update({ languageOther: e.target.value })}
-                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                   />
                 ) : null}
 
@@ -1653,7 +1939,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
                     placeholder={ui(uiLang, "Enter your service")}
                     value={(answers.serviceTypeOther as string) ?? ""}
                     onChange={(e) => update({ serviceTypeOther: e.target.value })}
-                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-100"
                   />
                 ) : null}
               </div>
@@ -1663,7 +1949,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
               <Button
                 variant="outline"
                 onClick={goBack}
-                disabled={stepIndex === 0}
+                disabled={stepIndex === 0 || isSubmitting}
                 className="h-11 rounded-xl border-gray-300 bg-white px-5 text-gray-900 hover:bg-gray-50 disabled:opacity-50"
               >
                 {ui(uiLang, "Back")}
@@ -1671,10 +1957,14 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
 
               <Button
                 onClick={goNext}
-                disabled={!canGoNext}
+                disabled={!canGoNext || isSubmitting}
                 className="h-11 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl hover:shadow-blue-500/25 disabled:opacity-50"
               >
-                {stepIndex === total - 1 ? ui(uiLang, "Generate Page") : ui(uiLang, "Next")}
+                {isSubmitting
+                  ? ui(uiLang, "Generating...")
+                  : stepIndex === total - 1
+                  ? ui(uiLang, "Generate Page")
+                  : ui(uiLang, "Next")}
               </Button>
             </div>
           </CardContent>

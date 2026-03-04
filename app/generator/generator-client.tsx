@@ -14,7 +14,7 @@ type Props = {
   onSave: (
     slug: string,
     answers: QuestionnaireAnswers
-  ) => Promise<{ ok: boolean; slug: string }>;
+  ) => Promise<{ ok: boolean; slug: string; editToken?: string }>;
 
   // ✅ برای مدل B
   editSlug?: string | null;
@@ -149,7 +149,7 @@ export default function GeneratorClient({
       const slugToUse = editSlug || makeSlug(finalAnswers);
 
       // 1) Save server-side (KV/memory) — createdAt on server is preserved
-      await onSave(slugToUse, finalAnswers);
+      const saved = await onSave(slugToUse, finalAnswers);
 
       // 2) Client fallback cache (preserve createdAt if exists)
       const key = `landing:${slugToUse}`;
@@ -164,6 +164,11 @@ export default function GeneratorClient({
           updatedAt: now,
         })
       );
+
+      // Keep edit token for direct draft saves from preview page.
+      if (saved?.editToken) {
+        localStorage.setItem(`dp:edit-token:${slugToUse}`, saved.editToken);
+      }
 
       // 3) Navigate back to the landing page
       if (editSlug) toast.success("Updated successfully");

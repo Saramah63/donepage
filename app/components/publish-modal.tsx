@@ -244,9 +244,56 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
     };
   }, [open, safeSlug, validation.ok]);
 
+  const publishReadiness = React.useMemo(
+    () => [
+      {
+        key: "brand",
+        ready: Boolean(answers.businessName?.trim()),
+        label: t({
+          en: "Business name",
+          fa: "نام کسب‌وکار",
+          ar: "اسم النشاط",
+          fi: "Yrityksen nimi",
+        }),
+      },
+      {
+        key: "offer",
+        ready: Boolean(
+          answers.primaryOffer?.trim() ||
+            answers.customServices?.trim() ||
+            answers.serviceTypeOther?.trim()
+        ),
+        label: t({
+          en: "Offer or services",
+          fa: "پیشنهاد یا خدمات",
+          ar: "العرض أو الخدمات",
+          fi: "Tarjous tai palvelut",
+        }),
+      },
+      {
+        key: "contact",
+        ready: Boolean(
+          answers.contactEmail?.trim() ||
+            answers.bookingLink?.trim() ||
+            answers.whatsApp?.trim()
+        ),
+        label: t({
+          en: "At least one contact method",
+          fa: "حداقل یک روش تماس",
+          ar: "طريقة تواصل واحدة على الأقل",
+          fi: "Vähintään yksi yhteystapa",
+        }),
+      },
+    ],
+    [answers, t]
+  );
+
+  const missingReadiness = publishReadiness.filter((item) => !item.ready);
+
   const canPublish =
     validation.ok &&
     availability.status === "available" &&
+    missingReadiness.length === 0 &&
     !publishing;
 
   const ensurePaid = async () => {
@@ -346,6 +393,18 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
       return;
     }
 
+    if (missingReadiness.length > 0) {
+      toast.message(
+        t({
+          en: "Complete the pre‑publish checklist first.",
+          fa: "ابتدا چک‌لیست پیش از انتشار را کامل کنید.",
+          ar: "أكمل قائمة ما قبل النشر أولاً.",
+          fi: "Täydennä esitarkistuslista ensin.",
+        })
+      );
+      return;
+    }
+
     const paid = await ensurePaid();
     if (!paid) return;
 
@@ -386,6 +445,23 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
 
       setPublishedUrl(data.url);
       setEditUrl(data.editUrl ?? null);
+
+      // Client-side reliability fallback: keep the just-published answers
+      // so opening /{slug} in this browser never shows "Landing not found"
+      // if server storage is temporarily unavailable.
+      try {
+        localStorage.setItem(
+          `landing:${safeSlug}`,
+          JSON.stringify({
+            answers,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            source: "publish-success",
+          })
+        );
+      } catch {
+        // non-blocking
+      }
 
       toast.success(
         t({
@@ -720,7 +796,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center text-3xl">
             {t({
@@ -740,7 +816,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
+        <div className="mt-6 grid gap-5 xl:grid-cols-2">
           {/* Quick Publish */}
           <Card className="border-gray-200 transition-all hover:shadow-lg">
             <CardContent className="space-y-5 pt-8">
@@ -898,6 +974,37 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                 ))}
               </ul>
 
+              <div className="rounded-xl border border-gray-200 bg-white p-3">
+                <div className="text-xs font-semibold text-gray-900">
+                  {t({
+                    en: "Pre‑publish checklist",
+                    fa: "چک‌لیست پیش از انتشار",
+                    ar: "قائمة ما قبل النشر",
+                    fi: "Julkaisun esitarkistus",
+                  })}
+                </div>
+                <div className="mt-2 space-y-2 text-xs">
+                  {publishReadiness.map((item) => (
+                    <div key={item.key} className="flex items-center gap-2 text-gray-700">
+                      <span className={item.ready ? "text-green-700" : "text-amber-700"}>
+                        {item.ready ? "✓" : "!"}
+                      </span>
+                      <span>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+                {missingReadiness.length > 0 ? (
+                  <div className="mt-2 text-[11px] text-amber-700">
+                    {t({
+                      en: "Complete missing items for a higher‑converting page before publishing.",
+                      fa: "برای نرخ تبدیل بهتر، موارد ناقص را قبل از انتشار تکمیل کنید.",
+                      ar: "أكمل العناصر الناقصة قبل النشر لرفع التحويل.",
+                      fi: "Täydennä puuttuvat kohdat paremman konversion varmistamiseksi.",
+                    })}
+                  </div>
+                ) : null}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   onClick={handlePublish}
@@ -944,6 +1051,22 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
                     fa: "کپی لینک",
                     ar: "نسخ الرابط",
                     fi: "Kopioi linkki",
+                  })}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  disabled={!publishedUrl}
+                  onClick={() => {
+                    if (!publishedUrl) return;
+                    window.open(publishedUrl, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  {t({
+                    en: "Open Published",
+                    fa: "باز کردن نسخه منتشرشده",
+                    ar: "فتح النسخة المنشورة",
+                    fi: "Avaa julkaistu",
                   })}
                 </Button>
               </div>

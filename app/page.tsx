@@ -1,9 +1,9 @@
 import HomePageClient from "@/app/components/home-page-client";
 
 export const metadata = {
-  title: "Donepage — Your landing page, done",
+  title: "Donepage — Launch your landing page in days",
   description:
-    "Answer a few questions and Donepage builds a polished, SEO-ready landing page you can publish instantly.",
+    "Answer a few questions and Donepage builds a conversion-ready landing page in days.",
   robots: { index: true, follow: true },
 };
 

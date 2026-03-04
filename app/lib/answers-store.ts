@@ -1,6 +1,11 @@
 // app/lib/answers-store.ts
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
 import crypto from "crypto";
+import {
+  delPersistentKV as delKV,
+  getPersistentKV as getKV,
+  setPersistentKV as setKV,
+} from "@/app/lib/persistent-kv";
 
 export type LandingStatus = "draft" | "published";
 
@@ -37,70 +42,6 @@ const keyVersions = (slug: string) => `${KEY_PREFIX}${slug}:versions`;
 
 /** token registry (hash -> payload) */
 const keyEditToken = (tokenHash: string) => `editToken:${tokenHash}`;
-
-/** Local dev fallback if KV env is missing */
-declare global {
-  var __donepageMemoryStore: Map<string, any> | undefined;
-}
-
-function hasKV() {
-  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
-}
-
-function memStore() {
-  if (!global.__donepageMemoryStore) global.__donepageMemoryStore = new Map();
-  return global.__donepageMemoryStore;
-}
-
-type KvModule = typeof import("@vercel/kv");
-let kvClient: KvModule["kv"] | null = null;
-let warnedNoKV = false;
-
-async function getKvClient() {
-  if (!hasKV()) {
-    if (!warnedNoKV) {
-      console.warn(
-        "KV is not configured. Falling back to in-memory store. Set KV_REST_API_URL and KV_REST_API_TOKEN."
-      );
-      warnedNoKV = true;
-    }
-    return null;
-  }
-  if (!kvClient) {
-    const mod = await import("@vercel/kv");
-    kvClient = mod.kv;
-  }
-  return kvClient;
-}
-
-/** KV wrapper (supports local in-memory fallback) */
-async function getKV<T>(key: string): Promise<T | null> {
-  const client = await getKvClient();
-  if (client) return (await client.get<T>(key)) ?? null;
-  const store = memStore();
-  return (store.get(key) as T) ?? null;
-}
-
-async function setKV<T>(key: string, value: T, opts?: { ex?: number }) {
-  const client = await getKvClient();
-  if (client) {
-    // @vercel/kv supports { ex } TTL
-    await (client.set as any)(key, value, opts ?? undefined);
-    return;
-  }
-  const store = memStore();
-  store.set(key, value);
-}
-
-async function delKV(key: string) {
-  const client = await getKvClient();
-  if (client) {
-    await client.del(key);
-    return;
-  }
-  const store = memStore();
-  store.delete(key);
-}
 
 function sanitizeSlug(input: string) {
   return (input || "")

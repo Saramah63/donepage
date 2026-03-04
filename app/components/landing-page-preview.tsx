@@ -18,8 +18,12 @@ import {
   Globe,
   CheckCircle,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+import { ThemeToggle } from "@/app/components/theme-toggle";
+import { QualificationTrigger } from "@/app/components/qualification-widget";
+import type { BusinessContext } from "@/app/lib/qualification/types";
 
 import type { QuestionnaireAnswers } from "./questionnaire";
 import { PublishModal } from "./publish-modal";
@@ -32,6 +36,127 @@ interface LandingPagePreviewProps {
   onEdit: () => void;
   mode?: "preview" | "export";
   proposalUrl?: string;
+  slug?: string;
+}
+
+function parsePackageLines(raw: string) {
+  const lines = (raw || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const out = lines
+    .map((line) => {
+      const byPipe = line.split("|").map((p) => p.trim());
+      const [nameA, descA, metricA] = byPipe;
+
+      if (byPipe.length >= 2 && nameA) {
+        return { name: nameA, description: descA || "", metric: metricA || "" };
+      }
+
+      const dashParts = line.split(" - ").map((p) => p.trim());
+      if (dashParts.length >= 2) {
+        const [nameB, descB] = dashParts;
+        return { name: nameB || "", description: descB || "", metric: "" };
+      }
+
+      const colonParts = line.split(":").map((p) => p.trim());
+      if (colonParts.length >= 2) {
+        const [nameC, ...rest] = colonParts;
+        return { name: nameC || "", description: rest.join(": ") || "", metric: "" };
+      }
+
+      return { name: line, description: "", metric: "" };
+    })
+    .filter((x) => x.name);
+
+  return out;
+}
+
+function normalizePackageBase(base: string) {
+  return base
+    .replace(/\bin\s+\d+\s+(different\s+)?packages?\b/gi, "")
+    .replace(/\bpackages?\b$/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function expandTierSentence(raw: string) {
+  const lines = (raw || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const out: Array<{ name: string; description: string; metric: string }> = [];
+  for (const line of lines) {
+    if (!line.includes(":")) continue;
+    const [left, right] = line.split(":", 2);
+    const base = normalizePackageBase(left.trim());
+    const tiers = right
+      .replace(/\band\b/gi, ",")
+      .replace(/[\u2022;]/g, ",")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (!base || tiers.length < 2) continue;
+    for (const tier of tiers) {
+      out.push({
+        name: `${base} - ${tier}`,
+        description: "Tailored delivery for your goals.",
+        metric: "Included",
+      });
+    }
+  }
+  return out;
+}
+
+function buildDefaultTiers(offer?: string, pricingApproach?: string) {
+  const base = offer?.trim() || "Service";
+  const premiumMetric =
+    pricingApproach === "premium"
+      ? "Priority delivery"
+      : pricingApproach === "custom"
+      ? "Custom scope"
+      : "Advanced support";
+  return [
+    {
+      name: "Starter",
+      description: `${base} essentials to get quick traction.`,
+      metric: "Best for first results",
+    },
+    {
+      name: "Growth",
+      description: `${base} with deeper execution and optimization.`,
+      metric: "Most popular",
+    },
+    {
+      name: "Premium",
+      description: `${base} with full strategic and hands-on support.`,
+      metric: premiumMetric,
+    },
+  ];
+}
+
+function detectPackageCount(raw: string) {
+  const text = (raw || "").toLowerCase();
+  const m = text.match(/(\d+)\s*(different\s*)?packages?/);
+  const count = m ? Number(m[1]) : 0;
+  return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
+function buildNamedTiers(count: number, offer?: string, pricingApproach?: string) {
+  const names = ["Starter", "Growth", "Premium", "Elite", "Enterprise"];
+  const defaults = buildDefaultTiers(offer, pricingApproach);
+  const out: Array<{ name: string; description: string; metric: string }> = [];
+  for (let i = 0; i < count; i += 1) {
+    const base = defaults[Math.min(i, defaults.length - 1)];
+    out.push({
+      name: names[i] ?? `Package ${i + 1}`,
+      description: base.description,
+      metric: base.metric,
+    });
+  }
+  return out;
 }
 
 export function LandingPagePreview({
@@ -39,12 +164,21 @@ export function LandingPagePreview({
   onEdit,
   mode = "preview",
   proposalUrl,
+  slug = "landing",
 }: LandingPagePreviewProps) {
   const [isPublishModalOpen, setPublishModalOpen] = React.useState(false);
   const [isPricingModalOpen, setPricingModalOpen] = React.useState(false);
   const [mediaPreview, setMediaPreview] = React.useState<
     { src: string; title?: string; isVideo?: boolean } | null
   >(null);
+  React.useEffect(() => {
+    if (!mediaPreview) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMediaPreview(null);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [mediaPreview]);
 
   /** 🔑 SINGLE SOURCE OF CONTENT */
   const content = React.useMemo(
@@ -56,20 +190,166 @@ export function LandingPagePreview({
   const emailHref = content.contact?.email?.href || "";
   const bookingHref = content.contact?.call?.href || emailHref || "";
   const waHref = content.contact?.chat?.href || emailHref || "";
+  const goal = (answers.primaryGoal || "").toLowerCase();
+  const heroPrimaryHref =
+    goal === "packages"
+      ? "#packages"
+      : goal === "credibility"
+      ? "#why-choose-us"
+      : "#contact";
+  const heroSecondaryHref =
+    goal === "calls"
+      ? "#portfolio"
+      : goal === "credibility"
+      ? "#why-choose-us"
+      : "#services";
+  const ctaPrimaryHref =
+    goal === "packages"
+      ? "#packages"
+      : goal === "credibility"
+      ? "#why-choose-us"
+      : "#contact";
+  const hasShareableSlug = Boolean(slug && slug !== "landing" && slug !== "local-preview");
+  const previewDraftUrl = hasShareableSlug ? `/preview/${slug}?mode=draft` : null;
+  const lang = getLang(answers);
   const hero = content.meta;
+  const heroBusinessName =
+    hero.businessName?.trim() ||
+    answers.businessName?.trim() ||
+    pickLang(lang, {
+      en: "Your Business",
+      fa: "کسب‌وکار شما",
+      ar: "عملك",
+      fi: "Yrityksesi",
+    });
+  const heroHeadline =
+    hero.headline?.trim() ||
+    pickLang(lang, {
+      en: "High-converting landing page for your business",
+      fa: "لندینگ حرفه‌ای و پرفروش برای کسب‌وکار شما",
+      ar: "صفحة هبوط عالية التحويل لعملك",
+      fi: "Korkean konversion laskeutumissivu yrityksellesi",
+    });
+  const heroSubheadline =
+    hero.subheadline?.trim() ||
+    pickLang(lang, {
+      en: "Built to communicate value clearly and convert visitors into qualified leads.",
+      fa: "برای انتقال شفاف ارزش و تبدیل بازدیدکننده به سرنخ باکیفیت ساخته شده است.",
+      ar: "مصممة لشرح القيمة بوضوح وتحويل الزوار إلى عملاء محتملين مؤهلين.",
+      fi: "Rakennettu viestimään arvo selkeästi ja muuttamaan kävijät liideiksi.",
+    });
+  const heroPrimaryCTA =
+    hero.primaryCTA?.trim() ||
+    pickLang(lang, {
+      en: "Start Project",
+      fa: "شروع پروژه",
+      ar: "ابدأ المشروع",
+      fi: "Aloita projekti",
+    });
+  const heroSecondaryCTA =
+    hero.secondaryCTA?.trim() ||
+    pickLang(lang, {
+      en: "See Packages",
+      fa: "مشاهده پکیج‌ها",
+      ar: "عرض الباقات",
+      fi: "Katso paketit",
+    });
+  const heroBadges = Array.isArray(hero.trustBadges) && hero.trustBadges.length > 0
+    ? hero.trustBadges
+    : [
+        pickLang(lang, {
+          en: "Conversion-focused",
+          fa: "متمرکز بر تبدیل",
+          ar: "مركز على التحويل",
+          fi: "Konversiokeskeinen",
+        }),
+        pickLang(lang, {
+          en: "SEO-ready",
+          fa: "آماده سئو",
+          ar: "جاهز للسيو",
+          fi: "SEO-valmis",
+        }),
+        pickLang(lang, {
+          en: "Fast launch",
+          fa: "راه‌اندازی سریع",
+          ar: "إطلاق سريع",
+          fi: "Nopea julkaisu",
+        }),
+      ];
   const offerings = content.services.offerings as Array<{
     name: string;
     description: string;
     features: string[];
   }>;
+  const packageItems = React.useMemo(() => {
+    const raw = answers.customServices || "";
+    const hasRaw = Boolean(raw.trim());
+    const expanded = expandTierSentence(answers.customServices || "");
+    const parsed = expanded.length > 0 ? expanded : parsePackageLines(raw);
+    const explicitCount = detectPackageCount(raw);
+    if (parsed.length >= 2) return parsed;
+    if (hasRaw && parsed.length === 1) return parsed;
+    const hasPackageGoal =
+      answers.primaryGoal === "packages" ||
+      (Array.isArray(answers.primaryGoals) && answers.primaryGoals.includes("packages"));
+    if (hasRaw && explicitCount >= 2) {
+      return buildNamedTiers(explicitCount, answers.primaryOffer, answers.pricingApproach);
+    }
+    if (hasPackageGoal) {
+      if (explicitCount >= 2) {
+        return buildNamedTiers(explicitCount, answers.primaryOffer, answers.pricingApproach);
+      }
+      return parsed.length === 1
+        ? [parsed[0], ...buildDefaultTiers(answers.primaryOffer, answers.pricingApproach).slice(1)]
+        : buildDefaultTiers(answers.primaryOffer, answers.pricingApproach);
+    }
+    return parsed;
+  }, [answers.customServices, answers.primaryGoal, answers.primaryGoals, answers.primaryOffer, answers.pricingApproach]);
+  const packageNameSet = React.useMemo(
+    () => new Set(packageItems.map((p) => p.name.toLowerCase())),
+    [packageItems]
+  );
+  const hasPackageGoal =
+    answers.primaryGoal === "packages" ||
+    (Array.isArray(answers.primaryGoals) && answers.primaryGoals.includes("packages"));
+  const hasCustomPackages = packageItems.length > 0;
+  const coreOfferings = React.useMemo(
+    () =>
+      hasPackageGoal || hasCustomPackages
+        ? []
+        : offerings.filter((o) => !packageNameSet.has(o.name.toLowerCase())),
+    [offerings, packageNameSet, hasPackageGoal, hasCustomPackages]
+  );
   const portfolioItems = content.portfolio.items as Array<{
     title: string;
     description: string;
     metric: string;
     imageUrl?: string;
   }>;
+  const heroStats = content.trust.stats.slice(0, 3);
+  const packageCount = packageItems.length;
+  const solutionCount = coreOfferings.length > 0 ? coreOfferings.length : offerings.length;
 
   const isVideoUrl = (url: string) => /\.(mp4|webm|mov)(\?.*)?$/i.test(url);
+  const qualificationContext = React.useMemo<BusinessContext>(() => {
+    const map: Record<string, BusinessContext["industry"]> = {
+      consulting: "coach_consultant",
+      coaching: "coach_consultant",
+      design: "agency_services",
+      development: "agency_services",
+      marketing: "agency_services",
+      creative: "agency_services",
+      legal: "legal_immigration_general",
+      accounting: "b2b_services_manufacturing",
+      other: "generic",
+    };
+    return {
+      industry: map[answers.serviceType] ?? "generic",
+      language: answers.language,
+      audience: answers.targetAudience,
+      offerType: answers.primaryOffer,
+    };
+  }, [answers]);
 
   const handleExport = async () => {
     const root = document.getElementById("landing-root");
@@ -128,29 +408,35 @@ export function LandingPagePreview({
 
   const langRaw = (answers as any)?.language?.toLowerCase?.() ?? "";
   const isRTL = langRaw.includes("arabic") || langRaw.includes("persian") || langRaw.includes("farsi");
-  const lang = getLang(answers);
 
   return (
     <div
       id="landing-root"
-      className="min-h-screen bg-white"
+      className="donepage-surface-theme min-h-screen bg-white text-gray-900 dark:bg-slate-950 dark:text-gray-100"
       dir={isRTL ? "rtl" : "ltr"}
     >
       {mediaPreview ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-          <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setMediaPreview(null)}
+        >
+          <div
+            className="relative w-full max-w-2xl rounded-2xl bg-white p-4 text-gray-900 shadow-2xl dark:bg-slate-900 dark:text-gray-100"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               onClick={() => setMediaPreview(null)}
-              className="absolute right-3 top-3 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700"
             >
+              <X className="h-3.5 w-3.5" />
               {pickLang(lang, { en: "Close", fa: "بستن", ar: "إغلاق", fi: "Sulje" })}
             </button>
-            <div className="mt-6">
+            <div className="mt-8 max-h-[70vh] overflow-auto">
               {mediaPreview.isVideo ? (
                 <video
                   src={mediaPreview.src}
-                  className="w-full rounded-xl"
+                  className="max-h-[62vh] w-full rounded-xl object-contain"
                   controls
                 />
               ) : (
@@ -158,12 +444,12 @@ export function LandingPagePreview({
                 <img
                   src={mediaPreview.src}
                   alt={mediaPreview.title ?? "Preview"}
-                  className="w-full rounded-xl object-contain"
+                  className="max-h-[62vh] w-full rounded-xl object-contain"
                 />
               )}
             </div>
             {mediaPreview.title ? (
-              <div className="mt-3 text-sm font-semibold text-gray-800">
+              <div className="mt-3 text-sm font-semibold text-gray-800 dark:text-gray-200">
                 {mediaPreview.title}
               </div>
             ) : null}
@@ -172,7 +458,7 @@ export function LandingPagePreview({
       ) : null}
       {/* ACTION BAR */}
       {mode === "preview" && (
-        <div className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
+        <div className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl dark:border-gray-800 dark:bg-slate-950/80">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500">
@@ -187,7 +473,7 @@ export function LandingPagePreview({
                     fi: "Sivu valmis",
                   })}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {pickLang(lang, {
                     en: "SEO-ready · Conversion-focused",
                     fa: "آماده سئو · متمرکز بر تبدیل",
@@ -199,16 +485,31 @@ export function LandingPagePreview({
             </div>
 
             <div className="flex gap-2">
+              <ThemeToggle />
+
               <Button size="sm" variant="outline" onClick={onEdit}>
                 <Edit className="mr-2 h-4 w-4" />
-                {pickLang(lang, { en: "Edit", fa: "ویرایش", ar: "تعديل", fi: "Muokkaa" })}
+                {pickLang(lang, { en: "Edit Draft", fa: "ویرایش درفت", ar: "تعديل المسودة", fi: "Muokkaa luonnosta" })}
               </Button>
 
               {proposalUrl ? (
                 <Button size="sm" variant="outline" asChild>
-                  <Link href={proposalUrl}>
+                  <Link href={proposalUrl} target="_blank" rel="noreferrer">
                     <ShieldCheck className="mr-2 h-4 w-4" />
                     {pickLang(lang, { en: "Proposal", fa: "پروپوزال", ar: "عرض", fi: "Tarjous" })}
+                  </Link>
+                </Button>
+              ) : null}
+
+              {previewDraftUrl ? (
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={previewDraftUrl}>
+                    {pickLang(lang, {
+                      en: "Preview Draft",
+                      fa: "پیش‌نمایش درفت",
+                      ar: "معاينة المسودة",
+                      fi: "Esikatsele luonnos",
+                    })}
                   </Link>
                 </Button>
               ) : null}
@@ -228,200 +529,169 @@ export function LandingPagePreview({
       )}
 
       <div className={mode === "preview" ? "pt-16" : ""}>
+        {mode !== "preview" ? (
+          <div className="fixed right-4 top-4 z-50">
+            <ThemeToggle />
+          </div>
+        ) : null}
         {/* HERO */}
-        <section className="relative px-4 pb-24 pt-20 text-center bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50">
-          <div className="mx-auto max-w-4xl">
-            <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200/60 bg-white/70 px-4 py-2 text-xs font-semibold text-blue-700">
-              <Sparkles className="h-4 w-4" />
-              {hero.businessName}
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-              {hero.headline}
-            </h1>
-            <p className="mx-auto mt-5 max-w-3xl text-lg text-gray-600 sm:text-xl">
-              {hero.subheadline}
-            </p>
+        <section
+          id="hero"
+          className={[
+            "section-tone section-tone-hero relative flex items-center justify-center overflow-hidden px-4 bg-gradient-to-br from-stone-100 via-amber-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/25",
+            mode === "preview" ? "min-h-[calc(100vh-4rem)] py-12" : "min-h-screen py-12",
+          ].join(" ")}
+        >
+          <div className="mesh-hero" aria-hidden="true" />
+          <div className="hero-spotlight" aria-hidden="true" />
+          <div className="noise-film" aria-hidden="true" />
+          <div className="pointer-events-none absolute -left-16 top-0 h-44 w-44 rounded-full bg-amber-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 top-10 h-56 w-56 rounded-full bg-slate-300/30 blur-3xl dark:bg-amber-900/30" />
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg">
-                {hero.primaryCTA}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline">
-                {hero.secondaryCTA}
-              </Button>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              {hero.trustBadges.map((badge) => (
-                <div
-                  key={badge}
-                  className="flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-sm text-gray-700 shadow-sm"
-                >
-                  <CheckCircle className="h-4 w-4 text-blue-600" />
-                  {badge}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* VALUE / BENEFITS */}
-        <section className="px-4 py-20 bg-white">
-          <div className="mx-auto max-w-6xl">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold text-gray-900">{content.value.title}</h2>
-              <p className="mt-3 text-gray-600">{content.value.description}</p>
-            </div>
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {content.value.benefits.map((b) => (
-                <Card
-                  key={b.title}
-                  className="border-gray-200 bg-white/90 shadow-lg shadow-blue-500/5"
-                >
-                  <CardContent className="pt-6">
-                    <div className="text-lg font-semibold text-gray-900">{b.title}</div>
-                    <p className="mt-2 text-sm text-gray-600">{b.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* SERVICES */}
-        <section className="px-4 py-20 bg-gradient-to-br from-slate-50 to-cyan-50">
-          <div className="mx-auto max-w-6xl">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold text-gray-900">{content.services.title}</h2>
-              <p className="mt-3 text-gray-600">{content.services.subtitle}</p>
-            </div>
-
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
-              {offerings.map((offer) => (
-                <Card
-                  key={offer.name}
-                  className="border-gray-200 bg-white/90 shadow-lg shadow-cyan-500/5"
-                >
-                  <CardContent className="pt-6">
-                    <div className="text-xl font-semibold text-gray-900">{offer.name}</div>
-                    <p className="mt-2 text-sm text-gray-600">{offer.description}</p>
-                    <div className="mt-4 grid gap-2 text-sm text-gray-700">
-                      {offer.features.map((f) => (
-                        <div key={f} className="flex items-start gap-2">
-                          <CheckCircle className="mt-0.5 h-4 w-4 text-blue-600" />
-                          {f}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* TRUST / STATS */}
-        <section className="px-4 py-20 bg-white">
-          <div className="mx-auto max-w-6xl">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold text-gray-900">{content.trust.title}</h2>
-              <p className="mt-3 text-gray-600">{content.trust.subtitle}</p>
-            </div>
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {content.trust.stats.map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm"
-                >
-                  <div className="text-3xl font-bold text-gray-900">{s.value}</div>
-                  <div className="mt-2 text-sm text-gray-600">{s.label}</div>
-                </div>
-              ))}
-            </div>
-            {content.trust.guarantee ? (
-              <div className="mt-10 rounded-2xl border border-blue-200/60 bg-blue-50/60 p-6">
-                <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
-                  <ShieldCheck className="h-4 w-4" />
-                  {content.trust.guarantee.title}
-                </div>
-                <p className="mt-2 text-sm text-blue-900/80">
-                  {content.trust.guarantee.description}
-                </p>
+          <div className="mx-auto grid w-full max-w-5xl gap-10 md:grid-cols-2 md:items-center md:gap-12">
+            <div className="mx-auto w-full max-w-2xl text-center md:mx-0 md:text-left">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-white/80 px-4 py-2 text-xs font-semibold text-amber-800 dark:border-amber-700/70 dark:bg-slate-900/85 dark:text-amber-200">
+                <Sparkles className="h-4 w-4" />
+                {heroBusinessName}
               </div>
-            ) : null}
-          </div>
-        </section>
 
-        {/* PORTFOLIO */}
-        <section className="px-4 py-20 bg-gradient-to-br from-gray-50 to-blue-50">
-          <div className="mx-auto max-w-6xl">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold text-gray-900">{content.portfolio.title}</h2>
-              <p className="mt-3 text-gray-600">{content.portfolio.subtitle}</p>
-            </div>
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {portfolioItems.map((item) => (
-                <Card
-                  key={item.title}
-                  className="border-gray-200 bg-white/90 shadow-lg shadow-blue-500/5"
+              <h1 className="mx-auto max-w-xl text-4xl font-semibold leading-[1.06] tracking-[-0.02em] text-gray-900 dark:text-gray-100 sm:text-5xl lg:text-6xl md:mx-0">
+                {heroHeadline}
+              </h1>
+
+              <p className="mx-auto mt-5 max-w-3xl text-base text-gray-600 dark:text-gray-300 sm:text-lg md:mx-0">
+                {heroSubheadline}
+              </p>
+              <p className="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                {pickLang(lang, {
+                  en: "Designed for clarity, trust, and conversion from first visit.",
+                  fa: "برای وضوح، اعتماد و تبدیل از اولین بازدید طراحی شده است.",
+                  ar: "مصمم للوضوح والثقة والتحويل من الزيارة الأولى.",
+                  fi: "Suunniteltu selkeyteen, luottamukseen ja konversioon ensivierailusta.",
+                })}
+              </p>
+
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:items-start">
+                <Button
+                  size="lg"
+                  asChild
+                  className="bg-slate-900 text-amber-100 hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
                 >
-                  <CardContent className="pt-6">
-                    {"imageUrl" in item && (item as any).imageUrl ? (
-                      <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                        <button
-                          type="button"
-                          className="block w-full cursor-zoom-in"
-                          onClick={() =>
-                            setMediaPreview({
-                              src: (item as any).imageUrl,
-                              title: item.title,
-                              isVideo: isVideoUrl((item as any).imageUrl),
-                            })
-                          }
-                        >
-                          {isVideoUrl((item as any).imageUrl) ? (
-                            <video
-                              src={(item as any).imageUrl}
-                              className="h-40 w-full object-cover"
-                              muted
-                            />
-                          ) : (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={(item as any).imageUrl}
-                              className="h-40 w-full object-cover"
-                              alt={item.title}
-                            />
-                          )}
-                        </button>
-                      </div>
-                    ) : null}
-                    <div className="text-lg font-semibold text-gray-900">{item.title}</div>
-                    <p className="mt-2 text-sm text-gray-600">{item.description}</p>
-                    <div className="mt-4 inline-flex items-center rounded-full bg-blue-600/10 px-3 py-1 text-xs font-semibold text-blue-700">
-                      {item.metric}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  <a href={heroPrimaryHref}>
+                    {heroPrimaryCTA}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </a>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="border-amber-300/80 bg-white/90 text-slate-800 hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-slate-800"
+                >
+                  <a href={heroSecondaryHref}>
+                    {heroSecondaryCTA}
+                  </a>
+                </Button>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3 md:justify-start">
+                {heroBadges.map((badge, idx) => (
+                  <div
+                    key={`${badge}-${idx}`}
+                    className="flex items-center gap-2 rounded-full border border-amber-200 bg-white/85 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm dark:border-amber-700/70 dark:bg-slate-900/90 dark:text-slate-200"
+                  >
+                    <CheckCircle className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+                    {badge}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mx-auto mt-8 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-3 md:mx-0">
+                <div className="rounded-xl border border-amber-200 bg-white/90 px-3 py-3 dark:border-amber-700/70 dark:bg-slate-900/90">
+                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{solutionCount}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300">
+                    {pickLang(lang, { en: "Solutions", fa: "راهکار", ar: "حلول", fi: "Ratkaisut" })}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-white/90 px-3 py-3 dark:border-amber-700/70 dark:bg-slate-900/90">
+                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{packageCount}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300">
+                    {pickLang(lang, { en: "Packages", fa: "پکیج", ar: "باقات", fi: "Paketit" })}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-white/90 px-3 py-3 dark:border-amber-700/70 dark:bg-slate-900/90">
+                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{portfolioItems.length}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300">
+                    {pickLang(lang, { en: "Portfolio", fa: "نمونه‌کار", ar: "معرض الأعمال", fi: "Portfolio" })}
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <Card className="reveal-up mx-auto w-full max-w-xl border-amber-200 bg-white/90 shadow-xl shadow-amber-500/10 backdrop-blur dark:border-amber-700/70 dark:bg-slate-900/90">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {pickLang(lang, {
+                    en: "Performance Snapshot",
+                    fa: "نمای سریع",
+                    ar: "لمحة سريعة",
+                    fi: "Pikatilanne",
+                  })}
+                  <span className="rounded-full border border-amber-300 bg-amber-100/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100">
+                    {pickLang(lang, { en: "Live", fa: "زنده", ar: "مباشر", fi: "Live" })}
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3 md:grid-cols-1">
+                  {heroStats.map((s, idx) => {
+                    const rate = 70 + idx * 10;
+                    return (
+                    <div
+                      key={`${s.label}-${idx}`}
+                      className="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 dark:border-amber-700/60 dark:bg-slate-800"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="text-xl font-bold text-slate-900 dark:text-amber-100">{s.value}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                            {rate}%
+                          </span>
+                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-amber-200 dark:bg-slate-700">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400"
+                            style={{ width: `${rate}%` }}
+                          />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-1 text-xs text-slate-700 dark:text-slate-200">{s.label}</div>
+                    </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 rounded-xl border border-amber-200 bg-white/90 p-3 text-xs text-slate-700 dark:border-amber-700/60 dark:bg-slate-800/90 dark:text-slate-200">
+                  {pickLang(lang, {
+                    en: "Structured for professional positioning, premium trust signals, and clean conversion flow.",
+                    fa: "ساختاربندی‌شده برای جایگاه حرفه‌ای، سیگنال‌های اعتماد ممتاز و جریان تبدیل شفاف.",
+                    ar: "مهيكل لتموضع احترافي وإشارات ثقة قوية وتدفق تحويل واضح.",
+                    fi: "Rakennettu ammattimaiseen positiointiin, vahvoihin luottamussignaaleihin ja selkeään konversiovirtaan.",
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
         {/* ABOUT */}
         {answers.includeAbout === "yes" && content.about && (
-          <section className="px-4 py-20 bg-white">
+          <section className="section-tone section-tone-about px-4 py-20 bg-white dark:bg-slate-950">
             <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.1fr_0.9fr] md:items-center">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+                <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-200">
                   {content.about.badge}
                 </div>
-                <h2 className="mt-4 text-3xl font-bold text-gray-900">{content.about.title}</h2>
-                <p className="mt-4 text-gray-600">
-                  {answers.aboutText?.trim() || content.about.story}
-                </p>
-                <div className="mt-6 grid gap-3 text-sm text-gray-700">
+                <h2 className="mt-4 text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.about.title}</h2>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">{content.about.story}</p>
+                <div className="mt-6 grid gap-3 text-sm text-gray-700 dark:text-gray-200">
                   <div>
                     {pickLang(lang, {
                       en: "Mission",
@@ -454,7 +724,7 @@ export function LandingPagePreview({
               </div>
 
               {answers.aboutImageUrl?.trim() ? (
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3 shadow-sm">
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3 shadow-sm dark:border-gray-700 dark:bg-slate-800">
                   {isVideoUrl(answers.aboutImageUrl.trim()) ? (
                     <video
                       src={answers.aboutImageUrl.trim()}
@@ -476,27 +746,272 @@ export function LandingPagePreview({
           </section>
         )}
 
-        {/* CTA */}
-        <section className="px-4 py-20 bg-gradient-to-br from-blue-50 to-cyan-50">
-          <div className="mx-auto max-w-5xl rounded-3xl border border-blue-200/50 bg-white/70 px-6 py-10 text-center shadow-xl shadow-blue-500/10 backdrop-blur">
-            <h2 className="text-3xl font-bold text-gray-900">{content.cta.headline}</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-600">{content.cta.subheadline}</p>
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg">
-                {content.cta.buttonText}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+        {/* VALUE / BENEFITS */}
+        <section id="why-choose-us" className="section-tone section-tone-value px-4 py-20 bg-white dark:bg-slate-950">
+          <div className="mx-auto max-w-6xl">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.value.title}</h2>
+              <p className="mt-3 text-gray-600 dark:text-gray-300">{content.value.description}</p>
             </div>
-            <div className="mt-3 text-xs text-gray-500">{content.cta.subtext}</div>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {content.value.benefits.map((b, idx) => (
+                <Card
+                  key={`${b.title}-${idx}`}
+                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                >
+                  <CardContent className="pt-6">
+                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{b.title}</div>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{b.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* SERVICES */}
+        <section id="services" className="section-tone section-tone-services px-4 py-20 bg-gradient-to-br from-slate-50 to-cyan-50 dark:from-slate-900 dark:to-slate-950">
+          <div className="mx-auto max-w-6xl">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.services.title}</h2>
+              <p className="mt-3 text-gray-600 dark:text-gray-300">{content.services.subtitle}</p>
+            </div>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-2">
+              {coreOfferings.map((offer, idx) => (
+                <Card
+                  key={`${offer.name}-${idx}`}
+                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                >
+                  <CardContent className="pt-6">
+                    <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">{offer.name}</div>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{offer.description}</p>
+                    <div className="mt-4 grid gap-2 text-sm text-gray-700 dark:text-gray-200">
+                      {offer.features.map((f, fIdx) => (
+                        <div key={`${f}-${fIdx}`} className="flex items-start gap-2">
+                          <CheckCircle className="mt-0.5 h-4 w-4 text-amber-600 dark:text-amber-300" />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {packageItems.length > 0 ? (
+              <div id="packages" className="mt-12">
+                {coreOfferings.length > 0 ? (
+                  <h3 className="text-2xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
+                    {pickLang(lang, {
+                      en: "Service Packages",
+                      fa: "پکیج‌های خدمات",
+                      ar: "باقات الخدمات",
+                      fi: "Palvelupaketit",
+                    })}
+                  </h3>
+                ) : null}
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  {pickLang(lang, {
+                    en: "Packages extracted directly from your answers.",
+                    fa: "پکیج‌ها مستقیماً از پاسخ‌های شما استخراج شده‌اند.",
+                    ar: "تم استخراج الباقات مباشرة من إجاباتك.",
+                    fi: "Paketit on haettu suoraan vastauksistasi.",
+                  })}
+                </p>
+                <div className="mt-6 grid gap-6 md:grid-cols-2">
+                  {packageItems.map((pkg, idx) => (
+                    <Card
+                      key={`${pkg.name}-${idx}`}
+                      className="reveal-up card-lift border-amber-300/70 bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 shadow-lg shadow-amber-500/15 dark:border-amber-700/70 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/35"
+                    >
+                      <CardContent className="pt-6">
+                        <div className="text-xl font-semibold text-slate-900 dark:text-amber-100">{pkg.name}</div>
+                        {pkg.description ? (
+                          <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{pkg.description}</p>
+                        ) : null}
+                        {pkg.metric ? (
+                          <div className="mt-4 inline-flex items-center rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-semibold text-amber-900 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100">
+                            {pkg.metric}
+                          </div>
+                        ) : null}
+                        <div className="mt-5">
+                          <Button
+                            asChild
+                            size="sm"
+                            className="bg-amber-600 text-white hover:bg-amber-500 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                          >
+                            <a href="#contact">
+                              {pickLang(lang, {
+                                en: "Choose This Package",
+                                fa: "انتخاب این پکیج",
+                                ar: "اختر هذه الباقة",
+                                fi: "Valitse tämä paketti",
+                              })}
+                            </a>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        {/* PROCESS */}
+        {content.steps?.steps?.length ? (
+          <section className="section-tone section-tone-process px-4 py-20 bg-white dark:bg-slate-950">
+            <div className="mx-auto max-w-6xl">
+              <div className="max-w-2xl">
+                <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
+                  {content.steps.title}
+                </h2>
+                <p className="mt-3 text-gray-600 dark:text-gray-300">
+                  {content.steps.subtitle}
+                </p>
+              </div>
+              <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {content.steps.steps.map((item: any, idx: number) => (
+                <Card
+                  key={`${item.no}-${idx}`}
+                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                >
+                  <CardContent className="pt-6">
+                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-600 text-sm font-bold text-white dark:bg-amber-500 dark:text-slate-950">
+                        {item.no}
+                      </div>
+                      <div className="mt-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        {item.title}
+                      </div>
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                        {item.desc}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {/* TRUST / STATS */}
+        <section className="section-tone section-tone-trust px-4 py-20 bg-white dark:bg-slate-950">
+          <div className="mx-auto max-w-6xl">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.trust.title}</h2>
+              <p className="mt-3 text-gray-600 dark:text-gray-300">{content.trust.subtitle}</p>
+            </div>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {content.trust.stats.map((s, idx) => (
+                <div
+                  key={`${s.label}-${idx}`}
+                  className="card-lift rounded-2xl border border-amber-200 bg-white p-6 text-center shadow-sm dark:border-amber-700/60 dark:bg-slate-900"
+                >
+                  <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{s.value}</div>
+                  <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {content.trust.guarantee ? (
+              <div className="mt-10 rounded-2xl border border-amber-200/70 bg-amber-50/70 p-6 dark:border-amber-700/60 dark:bg-amber-950/25">
+                <div className="flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+                  <ShieldCheck className="h-4 w-4" />
+                  {content.trust.guarantee.title}
+                </div>
+                <p className="mt-2 text-sm text-amber-900/80 dark:text-amber-100/90">
+                  {content.trust.guarantee.description}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        {/* PORTFOLIO */}
+        <section id="portfolio" className="section-tone section-tone-portfolio px-4 py-20 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-slate-900 dark:to-slate-950">
+          <div className="mx-auto max-w-6xl">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.portfolio.title}</h2>
+              <p className="mt-3 text-gray-600 dark:text-gray-300">{content.portfolio.subtitle}</p>
+            </div>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {portfolioItems.map((item, idx) => (
+                <Card
+                  key={`${item.title}-${idx}`}
+                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                >
+                  <CardContent className="pt-6">
+                    {"imageUrl" in item && (item as any).imageUrl ? (
+                      <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-slate-800">
+                        <button
+                          type="button"
+                          className="block w-full cursor-zoom-in"
+                          onClick={() =>
+                            setMediaPreview({
+                              src: (item as any).imageUrl,
+                              title: item.title,
+                              isVideo: isVideoUrl((item as any).imageUrl),
+                            })
+                          }
+                        >
+                          {isVideoUrl((item as any).imageUrl) ? (
+                            <video
+                              src={(item as any).imageUrl}
+                              className="h-40 w-full object-cover"
+                              muted
+                            />
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={(item as any).imageUrl}
+                              className="h-40 w-full object-cover"
+                              alt={item.title}
+                            />
+                          )}
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{item.title}</div>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{item.description}</p>
+                    <div className="mt-4 inline-flex items-center rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100">
+                      {item.metric}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="section-tone section-tone-cta px-4 py-20 bg-gradient-to-br from-amber-50 to-stone-100 dark:from-slate-900 dark:to-slate-950">
+          <div className="mx-auto max-w-5xl rounded-3xl border border-amber-200/70 bg-white/80 px-6 py-10 text-center shadow-xl shadow-amber-500/10 backdrop-blur dark:border-amber-700/60 dark:bg-slate-900/85">
+            <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.cta.headline}</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-gray-600 dark:text-gray-300">{content.cta.subheadline}</p>
+            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button
+                size="lg"
+                asChild
+                className="bg-slate-900 text-amber-100 hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+              >
+                <a href={ctaPrimaryHref}>
+                  {content.cta.buttonText}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </a>
+              </Button>
+              <QualificationTrigger slug={slug} context={qualificationContext} />
+            </div>
+            <div className="mt-3 text-xs text-gray-500 dark:text-gray-300">{content.cta.subtext}</div>
           </div>
         </section>
 
         {/* CONTACT */}
-        <section className="px-4 py-20 bg-gray-50">
+        <section id="contact" className="px-4 py-20 bg-gray-50 dark:bg-slate-900">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold text-gray-900">{content.contact.title}</h2>
-              <p className="mt-3 text-gray-600">{content.contact.subtitle}</p>
+              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.contact.title}</h2>
+              <p className="mt-3 text-gray-600 dark:text-gray-300">{content.contact.subtitle}</p>
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -530,7 +1045,7 @@ export function LandingPagePreview({
           </div>
         </section>
 
-        <footer className="bg-gray-900 py-10 text-center text-gray-400">
+        <footer className="bg-gray-900 py-10 text-center text-gray-400 dark:bg-black">
           © 2026 {hero.businessName} · Built with Donepage
         </footer>
       </div>
@@ -567,21 +1082,21 @@ function ContactCard({
   disabledText?: string;
 }) {
   return (
-    <Card className="text-center">
+    <Card className="text-center border-amber-200 bg-white/90 dark:border-amber-700/60 dark:bg-slate-900">
       <CardContent className="pt-8">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-600 text-white dark:bg-amber-500 dark:text-slate-950">
           {icon}
         </div>
-        <h3 className="font-semibold">{title}</h3>
+        <h3 className="font-semibold dark:text-gray-100">{title}</h3>
 
         {href ? (
-          <Button asChild className="mt-4 w-full">
-            <a href={href} target="_blank" rel="noreferrer">
+          <Button asChild className="mt-4 w-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400">
+            <a href={href} target="_blank" rel="noreferrer" className="text-white dark:text-slate-950">
               {label}
             </a>
           </Button>
         ) : (
-          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-300">
             {disabledText || "Not set"}
           </div>
         )}

@@ -66,20 +66,20 @@ export default function SlugClient({
     <div dir={isRTL ? "rtl" : "ltr"}>
       {/* Minimal banner for clarity */}
       {view.mode !== "published" ? (
-        <div className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
+        <div className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 dark:border-gray-700 dark:bg-slate-950/80">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2">
-            <div className="text-xs font-medium text-gray-700">{badge}</div>
+            <div className="text-xs font-medium text-gray-700 dark:text-gray-200">{badge}</div>
 
             <div className="flex items-center gap-2">
               <button
-                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
                 onClick={() => router.push(`/${slug}`)}
               >
                 View Published
               </button>
 
               <button
-                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
                 onClick={() => router.push(`/generator?edit=${slug}`)}
               >
                 Edit Draft
@@ -94,6 +94,7 @@ export default function SlugClient({
         onEdit={() => router.push(`/generator?edit=${slug}`)}
         mode={view.mode === "published" ? "export" : "preview"}
         proposalUrl={`/proposal/${slug}`}
+        slug={slug}
       />
     </div>
   );

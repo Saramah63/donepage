@@ -7,7 +7,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -54,4 +53,56 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model KeyValueStore {
+  key       String   @id
+  value     Json
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  source    String   @default("contact_form")
+  email     String?
+  message   String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([email])
+}
+
+model QualificationSession {
+  id                 String   @id @default(cuid())
+  slug               String
+  industry           String
+  fitScore           Int
+  leadType           String
+  buyingStage        String
+  budgetBand         String
+  urgency            String
+  nextAction         String
+  recommendedPackage String
+  rationaleShort     String
+  keySignals         Json
+  redFlags           Json
+  answers            Json
+  context            Json
+  email              String?
+  consentToStore     Boolean  @default(false)
+  ipHash             String?
+  userAgent          String?
+  status             String   @default("completed")
+  startedAt          DateTime @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime @default(now())
+
+  @@index([slug, createdAt])
+  @@index([leadType, createdAt])
+  @@index([nextAction, createdAt])
 }

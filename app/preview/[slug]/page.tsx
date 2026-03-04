@@ -1,5 +1,14 @@
 import { notFound } from "next/navigation";
-import { resolveEditToken, listVersions, getAnswersByVersion } from "@/app/lib/answers-store";
+import {
+  resolveEditToken,
+  listVersions,
+  getAnswersByVersion,
+  getAnswersBySlug,
+  getPublishedBySlug,
+  getDraftBySlug,
+  publishBySlug,
+  type StoredLanding,
+} from "@/app/lib/answers-store";
 import PreviewClient from "./preview-client";
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
 
@@ -38,16 +47,88 @@ export default async function PreviewPage({
   }
 
   const st = await listVersions(slug);
+  const latestPublishedMeta = st.versions.find((v) => v.status === "published");
+  const latestDraftMeta = st.versions.find((v) => v.status === "draft");
 
-  const targetV =
-    explicitV ||
-    (mode === "published" ? st.pointers.publishedVersion : st.pointers.draftVersion);
+  async function resolveSnapshot(): Promise<{ snapshot: StoredLanding | null; usedDraftFallback: boolean }> {
+    if (mode === "published") {
+      if (explicitV) {
+        const byExplicit = await getAnswersByVersion(slug, explicitV);
+        if (byExplicit?.answers) return { snapshot: byExplicit, usedDraftFallback: byExplicit.status !== "published" };
+      }
 
-  if (!targetV) return notFound();
+      const byPointerVersion = st.pointers.publishedVersion
+        ? await getAnswersByVersion(slug, st.pointers.publishedVersion)
+        : null;
+      if (byPointerVersion?.answers) {
+        return { snapshot: byPointerVersion, usedDraftFallback: byPointerVersion.status !== "published" };
+      }
 
-  const payload = await getAnswersByVersion(slug, targetV);
-  const answers = (payload?.answers ?? null) as QuestionnaireAnswers | null;
+      const byPublishedPointer = await getPublishedBySlug(slug);
+      if (byPublishedPointer?.answers) {
+        return { snapshot: byPublishedPointer, usedDraftFallback: byPublishedPointer.status !== "published" };
+      }
+
+      const byLatestPublishedVersion = latestPublishedMeta
+        ? await getAnswersByVersion(slug, latestPublishedMeta.version)
+        : null;
+      if (byLatestPublishedVersion?.answers) {
+        return { snapshot: byLatestPublishedVersion, usedDraftFallback: byLatestPublishedVersion.status !== "published" };
+      }
+
+      // Owner convenience: if user opened published preview with a valid edit token
+      // but there is no published snapshot yet, publish current draft automatically.
+      if (token) {
+        try {
+          const auto = await publishBySlug(slug, undefined, "Auto-publish from published preview");
+          const autoPub = await getAnswersByVersion(slug, auto.version);
+          if (autoPub?.answers) {
+            return { snapshot: autoPub, usedDraftFallback: false };
+          }
+        } catch {
+          // keep graceful fallback below
+        }
+      }
+
+      // Graceful fallback: show latest available snapshot instead of hard 404.
+      const draft = await getDraftBySlug(slug);
+      if (draft?.answers) return { snapshot: draft, usedDraftFallback: true };
+      const any = await getAnswersBySlug(slug);
+      return { snapshot: any, usedDraftFallback: true };
+    }
+
+    if (explicitV) {
+      const byExplicit = await getAnswersByVersion(slug, explicitV);
+      if (byExplicit?.answers) return { snapshot: byExplicit, usedDraftFallback: false };
+    }
+
+    const byPointerVersion = st.pointers.draftVersion
+      ? await getAnswersByVersion(slug, st.pointers.draftVersion)
+      : null;
+    if (byPointerVersion?.answers) return { snapshot: byPointerVersion, usedDraftFallback: false };
+
+    const byDraftPointer = await getDraftBySlug(slug);
+    if (byDraftPointer?.answers) return { snapshot: byDraftPointer, usedDraftFallback: false };
+
+    const byLatestDraftVersion = latestDraftMeta
+      ? await getAnswersByVersion(slug, latestDraftMeta.version)
+      : null;
+    if (byLatestDraftVersion?.answers) return { snapshot: byLatestDraftVersion, usedDraftFallback: false };
+
+    return { snapshot: await getAnswersBySlug(slug), usedDraftFallback: false };
+  }
+
+  const { snapshot, usedDraftFallback } = await resolveSnapshot();
+  const answers = (snapshot?.answers ?? null) as QuestionnaireAnswers | null;
   if (!answers) return notFound();
 
-  return <PreviewClient slug={slug} version={targetV} answers={answers} />;
+  return (
+    <PreviewClient
+      slug={slug}
+      version={snapshot?.version ?? 1}
+      answers={answers}
+      requestedMode={mode}
+      usedDraftFallback={usedDraftFallback}
+    />
+  );
 }
