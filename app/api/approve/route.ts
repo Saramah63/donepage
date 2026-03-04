@@ -8,7 +8,12 @@ type Body = {
   token?: string;
 };
 
-function getBaseUrl() {
+function getBaseUrl(req: Request) {
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const proto =
+    req.headers.get("x-forwarded-proto") ??
+    new URL(req.url).protocol.replace(":", "");
+  if (host) return `${proto}://${host}`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (appUrl) return appUrl.replace(/\/+$/, "");
   const vercel = process.env.VERCEL_URL?.trim();
@@ -31,7 +36,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const base = getBaseUrl();
+    const base = getBaseUrl(req);
     const publishedUrl = `${base}/preview/${projectId}?token=${encodeURIComponent(token)}&mode=published`;
 
     const updated = await updateProject(projectId, {

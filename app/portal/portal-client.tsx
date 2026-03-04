@@ -6,11 +6,16 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { ThemeToggle } from "@/app/components/theme-toggle";
+import PublishGateModal from "@/app/components/publish-gate-modal";
 
 type Project = {
   id: string;
   plan: "launch" | "growth";
   status: string;
+  paymentStatus: "unpaid" | "paid";
+  publishStatus: "draft" | "approved" | "publishing" | "published";
+  publishTarget?: "subdomain" | "custom_domain" | null;
+  dnsStatus: "not_started" | "pending" | "verified";
   revisionsAllowed: number;
   revisionsUsed: number;
   previewUrl: string;
@@ -50,8 +55,9 @@ export default function PortalClient() {
   const [loading, setLoading] = React.useState(true);
   const [message, setMessage] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
-  const [approveLoading, setApproveLoading] = React.useState(false);
+  const [approveLoading] = React.useState(false);
   const [publishedUrl, setPublishedUrl] = React.useState<string | null>(null);
+  const [showPublish, setShowPublish] = React.useState(false);
 
   React.useEffect(() => {
     if (!tokenParam) return;
@@ -118,23 +124,7 @@ export default function PortalClient() {
 
   const approvePublish = async () => {
     if (!project) return;
-    setApproveLoading(true);
-    try {
-      const res = await fetch("/api/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: project.id, token }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed");
-      setPublishedUrl(data.publishedUrl || null);
-      window.dispatchEvent(new CustomEvent("dp_published", { detail: { projectId: project.id } }));
-      fetchProject();
-    } catch {
-      // ignore
-    } finally {
-      setApproveLoading(false);
-    }
+    setShowPublish(true);
   };
 
   if (loading) {
@@ -167,7 +157,11 @@ export default function PortalClient() {
           <CardContent className="p-8">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Client Portal</h1>
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-              Plan: <span className="font-semibold capitalize">{project.plan}</span> · Status: {project.status}
+              Plan: <span className="font-semibold capitalize">{project.plan}</span> · Status: {project.status} · Publish:{" "}
+              <span className="font-semibold">{project.publishStatus}</span> · Payment:{" "}
+              <span className={project.paymentStatus === "paid" ? "font-semibold text-green-600" : "font-semibold text-amber-600"}>
+                {project.paymentStatus}
+              </span>
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -184,7 +178,7 @@ export default function PortalClient() {
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button asChild className="h-11 bg-blue-600 !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
-                <Link href={`${project.previewUrl}&portal=1`}>Open Instant Draft</Link>
+                <Link href={`${project.previewUrl}&portal=1`}>Edit draft</Link>
               </Button>
               <Button
                 className="h-11"
@@ -192,7 +186,7 @@ export default function PortalClient() {
                 onClick={approvePublish}
                 disabled={approveLoading}
               >
-                {approveLoading ? "Publishing..." : "Approve & publish"}
+                Publish
               </Button>
             </div>
 
@@ -265,6 +259,19 @@ export default function PortalClient() {
           </CardContent>
         </Card>
       </div>
+
+      {project ? (
+        <PublishGateModal
+          open={showPublish}
+          onClose={() => setShowPublish(false)}
+          token={token}
+          project={project}
+          onPublished={(url) => {
+            setPublishedUrl(url);
+            fetchProject();
+          }}
+        />
+      ) : null}
     </main>
   );
 }

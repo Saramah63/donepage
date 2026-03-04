@@ -6,6 +6,7 @@ import {
   makeAccessToken,
   type ProjectPlan,
 } from "@/app/lib/project-store";
+import type { DraftContent } from "@/app/lib/draft-content";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,12 @@ type Body = {
   answers?: Record<string, unknown>;
 };
 
-function getBaseUrl() {
+function getBaseUrl(req: Request) {
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const proto =
+    req.headers.get("x-forwarded-proto") ??
+    new URL(req.url).protocol.replace(":", "");
+  if (host) return `${proto}://${host}`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (appUrl) return appUrl.replace(/\/+$/, "");
   const vercel = process.env.VERCEL_URL?.trim();
@@ -40,16 +46,26 @@ export async function POST(req: Request) {
     const humanEtaDate = formatYmdISO(eta);
     const token = makeAccessToken();
 
-    const base = getBaseUrl();
+    const base = getBaseUrl(req);
+
+    const draftContent: DraftContent = {
+      answers: answers as any,
+      overrides: {},
+    };
 
     const project = await createProject({
       plan,
       status: "instant_ready",
+      paymentStatus: "unpaid",
+      publishStatus: "draft",
+      publishTarget: null,
+      dnsStatus: (answers as any)?.domain ? "pending" : "not_started",
       revisionsAllowed: config.revisionsAllowed,
       revisionsUsed: 0,
       previewUrl: "",
       publishedUrl: null,
       domain: (answers as any)?.domain ?? null,
+      draftContent,
       basicSeo: config.basicSeo,
       priorityDelivery: config.priorityDelivery,
       humanEtaDate,

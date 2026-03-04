@@ -44,9 +44,8 @@ export default async function PreviewPage({
     const portalUrl = `/portal?token=${encodeURIComponent(project.accessToken)}`;
     return (
       <ProjectPreviewClient
-        projectId={project.id}
+        project={project}
         token={project.accessToken}
-        plan={project.plan}
         revisionsRemaining={revisionsRemaining}
         portalUrl={portalUrl}
         answers={project.answers as QuestionnaireAnswers}

@@ -124,11 +124,16 @@ model Project {
   id               String   @id @default(cuid())
   plan             String
   status           String
+  paymentStatus    String   @default("unpaid")
+  publishStatus    String   @default("draft")
+  publishTarget    String?
+  dnsStatus        String   @default("not_started")
   revisionsAllowed Int
   revisionsUsed    Int
   previewUrl       String
   publishedUrl     String?
   domain           String?
+  draftContent     Json?
   basicSeo         Boolean
   priorityDelivery Boolean
   humanEtaDate     String

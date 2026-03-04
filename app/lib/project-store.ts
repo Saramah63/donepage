@@ -1,5 +1,10 @@
 import crypto from "crypto";
 import { prisma } from "@/app/lib/prisma";
+import {
+  getPersistentKV as getKV,
+  setPersistentKV as setKV,
+} from "@/app/lib/persistent-kv";
+import type { DraftContent } from "@/app/lib/draft-content";
 
 export type ProjectPlan = "launch" | "growth";
 export type ProjectStatus =
@@ -15,11 +20,16 @@ export type ProjectRecord = {
   id: string;
   plan: ProjectPlan;
   status: ProjectStatus;
+  paymentStatus: "unpaid" | "paid";
+  publishStatus: "draft" | "approved" | "publishing" | "published";
+  publishTarget?: "subdomain" | "custom_domain" | null;
+  dnsStatus: "not_started" | "pending" | "verified";
   revisionsAllowed: number;
   revisionsUsed: number;
   previewUrl: string;
   publishedUrl?: string | null;
   domain?: string | null;
+  draftContent?: DraftContent | null;
   basicSeo: boolean;
   priorityDelivery: boolean;
   humanEtaDate: string;
@@ -40,12 +50,31 @@ export type RevisionRequest = {
 const memoryProjects = new Map<string, ProjectRecord>();
 const memoryRevisions = new Map<string, RevisionRequest[]>();
 
+const PROJECT_KEY_PREFIX = "project:";
+const PROJECT_TOKEN_PREFIX = "project:token:";
+const PROJECT_INDEX_KEY = "project:index";
+const REVISION_PREFIX = "project:revisions:";
+
+const projectKey = (id: string) => `${PROJECT_KEY_PREFIX}${id}`;
+const tokenKey = (token: string) => `${PROJECT_TOKEN_PREFIX}${token}`;
+const revisionsKey = (projectId: string) => `${REVISION_PREFIX}${projectId}`;
+
 function makeToken() {
   return crypto.randomBytes(24).toString("base64url");
 }
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function normalizeProject(input: ProjectRecord): ProjectRecord {
+  return {
+    ...input,
+    paymentStatus: (input as any).paymentStatus || "unpaid",
+    publishStatus: (input as any).publishStatus || "draft",
+    publishTarget: (input as any).publishTarget ?? null,
+    dnsStatus: (input as any).dnsStatus || "not_started",
+  };
 }
 
 export function getPlanConfig(plan: ProjectPlan) {
@@ -57,11 +86,16 @@ export function getPlanConfig(plan: ProjectPlan) {
 export async function createProject(input: {
   plan: ProjectPlan;
   status: ProjectStatus;
+  paymentStatus: "unpaid" | "paid";
+  publishStatus: "draft" | "approved" | "publishing" | "published";
+  publishTarget?: "subdomain" | "custom_domain" | null;
+  dnsStatus: "not_started" | "pending" | "verified";
   revisionsAllowed: number;
   revisionsUsed: number;
   previewUrl: string;
   publishedUrl?: string | null;
   domain?: string | null;
+  draftContent?: DraftContent | null;
   basicSeo: boolean;
   priorityDelivery: boolean;
   humanEtaDate: string;
@@ -74,11 +108,16 @@ export async function createProject(input: {
       data: {
         plan: input.plan,
         status: input.status,
+        paymentStatus: input.paymentStatus,
+        publishStatus: input.publishStatus,
+        publishTarget: input.publishTarget ?? null,
+        dnsStatus: input.dnsStatus,
         revisionsAllowed: input.revisionsAllowed,
         revisionsUsed: input.revisionsUsed,
         previewUrl: input.previewUrl,
         publishedUrl: input.publishedUrl ?? null,
         domain: input.domain ?? null,
+        draftContent: input.draftContent ?? null,
         basicSeo: input.basicSeo,
         priorityDelivery: input.priorityDelivery,
         humanEtaDate: input.humanEtaDate,
@@ -93,11 +132,16 @@ export async function createProject(input: {
     id,
     plan: input.plan,
     status: input.status,
+    paymentStatus: input.paymentStatus,
+    publishStatus: input.publishStatus,
+    publishTarget: input.publishTarget ?? null,
+    dnsStatus: input.dnsStatus,
     revisionsAllowed: input.revisionsAllowed,
     revisionsUsed: input.revisionsUsed,
     previewUrl: input.previewUrl,
     publishedUrl: input.publishedUrl ?? null,
     domain: input.domain ?? null,
+    draftContent: input.draftContent ?? null,
     basicSeo: input.basicSeo,
     priorityDelivery: input.priorityDelivery,
     humanEtaDate: input.humanEtaDate,
@@ -107,6 +151,15 @@ export async function createProject(input: {
     updatedAt: nowIso(),
   };
   memoryProjects.set(id, record);
+  try {
+    const list = (await getKV<string[]>(PROJECT_INDEX_KEY)) ?? [];
+    const nextList = [id, ...list.filter((item) => item !== id)];
+    await setKV(projectKey(id), record);
+    await setKV(tokenKey(record.accessToken), id);
+    await setKV(PROJECT_INDEX_KEY, nextList);
+  } catch {
+    // KV fallback is handled inside persistent-kv
+  }
   return record;
 }
 
@@ -117,7 +170,10 @@ export async function getProjectById(id: string) {
       | ProjectRecord
       | null;
   }
-  return memoryProjects.get(id) ?? null;
+  const fromKV = await getKV<ProjectRecord>(projectKey(id));
+  if (fromKV) return normalizeProject(fromKV);
+  const fromMem = memoryProjects.get(id);
+  return fromMem ? normalizeProject(fromMem) : null;
 }
 
 export async function getProjectByToken(token: string) {
@@ -127,8 +183,13 @@ export async function getProjectByToken(token: string) {
       where: { accessToken: token },
     })) as ProjectRecord | null;
   }
+  const id = await getKV<string>(tokenKey(token));
+  if (id) {
+    const found = await getKV<ProjectRecord>(projectKey(id));
+    if (found) return normalizeProject(found);
+  }
   for (const record of memoryProjects.values()) {
-    if (record.accessToken === token) return record;
+    if (record.accessToken === token) return normalizeProject(record);
   }
   return null;
 }
@@ -141,10 +202,16 @@ export async function updateProject(id: string, patch: Partial<ProjectRecord>) {
       data: { ...patch },
     })) as ProjectRecord;
   }
-  const existing = memoryProjects.get(id);
+  const existing =
+    (await getKV<ProjectRecord>(projectKey(id))) ?? memoryProjects.get(id);
   if (!existing) return null;
-  const next = { ...existing, ...patch, updatedAt: nowIso() };
+  const next = normalizeProject({ ...existing, ...patch, updatedAt: nowIso() });
   memoryProjects.set(id, next);
+  try {
+    await setKV(projectKey(id), next);
+  } catch {
+    // KV fallback handled in persistent-kv
+  }
   return next;
 }
 
@@ -170,9 +237,17 @@ export async function addRevisionRequest(input: {
     section: input.section ?? null,
     createdAt: nowIso(),
   };
-  const list = memoryRevisions.get(input.projectId) ?? [];
-  list.push(record);
-  memoryRevisions.set(input.projectId, list);
+  const list =
+    (await getKV<RevisionRequest[]>(revisionsKey(input.projectId))) ??
+    memoryRevisions.get(input.projectId) ??
+    [];
+  const nextList = [record, ...list];
+  memoryRevisions.set(input.projectId, nextList);
+  try {
+    await setKV(revisionsKey(input.projectId), nextList);
+  } catch {
+    // KV fallback handled in persistent-kv
+  }
   return record;
 }
 
@@ -184,6 +259,8 @@ export async function listRevisions(projectId: string) {
       orderBy: { createdAt: "desc" },
     })) as RevisionRequest[];
   }
+  const list = await getKV<RevisionRequest[]>(revisionsKey(projectId));
+  if (list) return list;
   return memoryRevisions.get(projectId) ?? [];
 }
 

@@ -61,7 +61,18 @@ export async function getPersistentKV<T>(key: string): Promise<T | null> {
   }
 
   const client = await getKvClient();
-  if (client) return (await client.get<T>(key)) ?? null;
+  if (client) {
+    try {
+      return (await client.get<T>(key)) ?? null;
+    } catch (e: any) {
+      if (!warnedNoKV) {
+        console.warn(
+          `KV store unavailable (${e?.code ?? "unknown"}). Falling back to memory.`
+        );
+        warnedNoKV = true;
+      }
+    }
+  }
 
   const item = memStore().get(key);
   if (!item) return null;
@@ -101,8 +112,17 @@ export async function setPersistentKV<T>(
 
   const client = await getKvClient();
   if (client) {
-    await (client.set as any)(key, value, opts ?? undefined);
-    return;
+    try {
+      await (client.set as any)(key, value, opts ?? undefined);
+      return;
+    } catch (e: any) {
+      if (!warnedNoKV) {
+        console.warn(
+          `KV store unavailable (${e?.code ?? "unknown"}). Falling back to memory.`
+        );
+        warnedNoKV = true;
+      }
+    }
   }
 
   memStore().set(key, {
@@ -131,8 +151,17 @@ export async function delPersistentKV(key: string) {
 
   const client = await getKvClient();
   if (client) {
-    await client.del(key);
-    return;
+    try {
+      await client.del(key);
+      return;
+    } catch (e: any) {
+      if (!warnedNoKV) {
+        console.warn(
+          `KV store unavailable (${e?.code ?? "unknown"}). Falling back to memory.`
+        );
+        warnedNoKV = true;
+      }
+    }
   }
 
   memStore().delete(key);

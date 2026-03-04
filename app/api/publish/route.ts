@@ -1,90 +1,91 @@
 import { NextResponse } from "next/server";
-import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
-import {
-  isSlugTaken,
-  saveDraftVersion,
-  publishVersion,
-  setEditTokenForSlug,
-} from "@/app/lib/answers-store";
-import crypto from "crypto";
+import { getProjectById, updateProject } from "@/app/lib/project-store";
 
-function sanitizeSlug(input: string) {
-  return (input || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 50);
-}
+export const runtime = "nodejs";
 
-function getBaseUrl() {
+type Body = {
+  projectId?: string;
+  token?: string;
+  publishTarget?: "subdomain" | "custom_domain";
+  domain?: string | null;
+};
+
+function getBaseUrl(req: Request) {
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const proto =
+    req.headers.get("x-forwarded-proto") ??
+    new URL(req.url).protocol.replace(":", "");
+  if (host) return `${proto}://${host}`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (appUrl) return appUrl.replace(/\/+$/, "");
-
-  const vercelUrl = process.env.VERCEL_URL?.trim();
-  if (vercelUrl) return `https://${vercelUrl}`;
-
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return `https://${vercel}`;
   return "http://localhost:3000";
-}
-
-function makeEditToken() {
-  return crypto.randomBytes(24).toString("hex");
 }
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => null)) as {
-      slug?: string;
-      answers?: QuestionnaireAnswers;
-    } | null;
+    const body = (await req.json().catch(() => null)) as Body | null;
+    const projectId = (body?.projectId || "").trim();
+    const token = (body?.token || "").trim();
+    const publishTarget = body?.publishTarget ?? "subdomain";
+    const domain = (body?.domain || "").trim();
 
-    const slug = sanitizeSlug(body?.slug ?? "");
-    const answers = body?.answers;
-
-    if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
-    if (!answers || !answers.serviceType || !answers.targetAudience) {
-      return NextResponse.json({ error: "Missing answers" }, { status: 400 });
+    if (!projectId || !token) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // slug availability
-    const taken = await isSlugTaken(slug);
-    if (taken) {
-      return NextResponse.json(
-        { error: "Slug taken", code: "SLUG_TAKEN" },
-        { status: 409 }
-      );
+    const project = await getProjectById(projectId);
+    if (!project || project.accessToken !== token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // create secure edit token
-    const editToken = makeEditToken();
-    await setEditTokenForSlug(slug, editToken);
+    if (project.paymentStatus !== "paid") {
+      return NextResponse.json({ error: "Payment required" }, { status: 402 });
+    }
 
-    // create version 1 draft then publish it
-    const d = await saveDraftVersion(slug, answers, "Initial publish");
-    if (!d.ok) throw new Error("Draft create failed");
+    let finalTarget: "subdomain" | "custom_domain" = publishTarget;
+    if (publishTarget === "custom_domain") {
+      if (project.plan !== "growth") {
+        return NextResponse.json(
+          { error: "Custom domain not included in this plan" },
+          { status: 400 }
+        );
+      }
+      const finalDomain = domain || project.domain || "";
+      if (!finalDomain) {
+        return NextResponse.json({ error: "Domain required" }, { status: 400 });
+      }
+      if (project.dnsStatus !== "verified") {
+        finalTarget = "subdomain";
+      }
+    }
 
-    const p = await publishVersion(slug, d.version);
-    if (!p.ok) throw new Error("Publish failed");
+    const base = getBaseUrl(req);
+    const subdomainUrl = `https://${project.id}.donepage.co`;
+    const publishedUrl =
+      finalTarget === "custom_domain"
+        ? `https://${(domain || project.domain || "").replace(/^https?:\/\//, "")}`
+        : subdomainUrl;
 
-    const base = getBaseUrl();
+    await updateProject(projectId, { publishStatus: "publishing" });
 
-    const url = `${base}/${slug}`;
-    const editUrl = `${base}/edit/${slug}?token=${editToken}`;
+    const updated = await updateProject(projectId, {
+      status: "published",
+      publishStatus: "published",
+      publishedUrl,
+      publishTarget: finalTarget,
+      domain: domain || project.domain || null,
+    });
 
     return NextResponse.json({
       ok: true,
-      slug,
-      url,
-      editToken, // optional
-      editUrl,   // ✅ share privately
-      version: d.version,
+      publishStatus: updated?.publishStatus ?? "published",
+      publishedUrl,
+      publishTarget: finalTarget,
+      base,
     });
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message ?? "Publish failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: e?.message ?? "Failed" }, { status: 500 });
   }
 }

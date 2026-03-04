@@ -15,13 +15,14 @@ export const revalidate = 0;
 
 type Plan = "launch" | "growth" | "hosting" | "";
 
-export default function StartPage({
+export default async function StartPage({
   searchParams,
 }: {
-  searchParams?: { plan?: string; open?: string };
+  searchParams?: Promise<{ plan?: string; open?: string }> | { plan?: string; open?: string };
 }) {
-  const plan = (searchParams?.plan || "").toLowerCase() as Plan;
-  const openQuestionnaire = (searchParams?.open || "") === "1";
+  const sp = (await Promise.resolve(searchParams)) ?? {};
+  const plan = (sp?.plan || "").toLowerCase() as Plan;
+  const openQuestionnaire = (sp?.open || "") === "1";
 
   if (openQuestionnaire) {
     return (

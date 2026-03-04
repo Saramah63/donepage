@@ -25,6 +25,7 @@ import { QualificationTrigger } from "@/app/components/qualification-widget";
 import type { BusinessContext } from "@/app/lib/qualification/types";
 
 import type { QuestionnaireAnswers } from "./questionnaire";
+import type { DraftOverrides } from "@/app/lib/draft-content";
 import { PublishModal } from "./publish-modal";
 import { PricingModal } from "./pricing-modal";
 import { exportLandingHTML } from "@/app/lib/export-html";
@@ -37,6 +38,8 @@ interface LandingPagePreviewProps {
   slug?: string;
   autoOpenPublish?: boolean;
   publishHint?: "custom" | "subdomain" | null;
+  overrides?: DraftOverrides;
+  onInlineEdit?: (field: string, value: string, index?: number) => void;
 }
 
 function parsePackageLines(raw: string) {
@@ -71,6 +74,46 @@ function parsePackageLines(raw: string) {
     .filter((x) => x.name);
 
   return out;
+}
+
+function normalizeUrl(url?: string) {
+  const v = (url || "").trim();
+  if (!v) return "";
+  if (v.startsWith("mailto:") || v.startsWith("tel:")) return v;
+  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+  return `https://${v}`;
+}
+
+function EditableText({
+  as: Tag,
+  value,
+  className,
+  onChange,
+  placeholder,
+}: {
+  as: keyof JSX.IntrinsicElements;
+  value: string;
+  className?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+}) {
+  if (!onChange) {
+    return <Tag className={className}>{value}</Tag>;
+  }
+  return (
+    <Tag
+      className={className}
+      contentEditable
+      suppressContentEditableWarning
+      data-placeholder={placeholder || ""}
+      onBlur={(e) => {
+        const next = e.currentTarget.textContent || "";
+        onChange(next.trim());
+      }}
+    >
+      {value}
+    </Tag>
+  );
 }
 
 function normalizePackageBase(base: string) {
@@ -166,6 +209,8 @@ export function LandingPagePreview({
   slug = "landing",
   autoOpenPublish = false,
   publishHint = null,
+  overrides,
+  onInlineEdit,
 }: LandingPagePreviewProps) {
   const [isPublishModalOpen, setPublishModalOpen] = React.useState(false);
   const [isPricingModalOpen, setPricingModalOpen] = React.useState(false);
@@ -189,18 +234,41 @@ export function LandingPagePreview({
     setPublishModalOpen(true);
   }, [autoOpenPublish]);
 
+  const draftOverrides = overrides || {};
+
   /** 🔑 SINGLE SOURCE OF CONTENT */
-  const content = React.useMemo(
-    () => generateContentAdvanced(answers),
-    [answers]
-  );
+  const content = React.useMemo(() => {
+    const base = generateContentAdvanced(answers);
+    if (draftOverrides.heroHeadline) base.meta.headline = draftOverrides.heroHeadline;
+    if (draftOverrides.heroSubheadline) base.meta.subheadline = draftOverrides.heroSubheadline;
+    if (draftOverrides.heroPrimaryCTA) base.meta.primaryCTA = draftOverrides.heroPrimaryCTA;
+    if (draftOverrides.heroSecondaryCTA) base.meta.secondaryCTA = draftOverrides.heroSecondaryCTA;
+    if (draftOverrides.ctaHeadline) base.cta.headline = draftOverrides.ctaHeadline;
+    if (draftOverrides.ctaSubheadline) base.cta.subheadline = draftOverrides.ctaSubheadline;
+    if (draftOverrides.ctaButtonText) base.cta.buttonText = draftOverrides.ctaButtonText;
+    if (draftOverrides.contactTitle) base.contact.title = draftOverrides.contactTitle;
+    if (draftOverrides.contactSubtitle) base.contact.subtitle = draftOverrides.contactSubtitle;
+    if (draftOverrides.benefits && draftOverrides.benefits.length > 0) {
+      base.value.benefits = draftOverrides.benefits;
+    }
+    return base;
+  }, [answers, draftOverrides]);
 
   /** 🔑 SINGLE SOURCE OF LINKS (NO RE-COMPUTE) */
-  const emailHref = content.contact?.email?.href || "";
-  const bookingHref = content.contact?.call?.href || emailHref || "";
-  const waHref = content.contact?.chat?.href || emailHref || "";
+  const emailHref = draftOverrides.contactEmail
+    ? `mailto:${draftOverrides.contactEmail}`
+    : content.contact?.email?.href || "";
+  const bookingHref = draftOverrides.contactBookingLink
+    ? normalizeUrl(draftOverrides.contactBookingLink)
+    : content.contact?.call?.href || emailHref || "";
+  const waHref = draftOverrides.contactWhatsApp
+    ? normalizeUrl(draftOverrides.contactWhatsApp)
+    : content.contact?.chat?.href || emailHref || "";
   const goal = (answers.primaryGoal || "").toLowerCase();
   const heroPrimaryHref =
+    draftOverrides.ctaButtonUrl
+      ? normalizeUrl(draftOverrides.ctaButtonUrl)
+      :
     goal === "packages"
       ? "#packages"
       : goal === "credibility"
@@ -213,6 +281,9 @@ export function LandingPagePreview({
       ? "#why-choose-us"
       : "#services";
   const ctaPrimaryHref =
+    draftOverrides.ctaButtonUrl
+      ? normalizeUrl(draftOverrides.ctaButtonUrl)
+      :
     goal === "packages"
       ? "#packages"
       : goal === "credibility"
@@ -334,6 +405,11 @@ export function LandingPagePreview({
     imageUrl?: string;
   }>;
   const heroStats = content.trust.stats.slice(0, 3);
+
+  const editable = Boolean(onInlineEdit);
+  const edit = (field: string, value: string, index?: number) =>
+    onInlineEdit?.(field, value, index);
+  const faqItems = draftOverrides.faq ?? [];
   const packageCount = packageItems.length;
   const solutionCount = coreOfferings.length > 0 ? coreOfferings.length : offerings.length;
 
@@ -541,13 +617,21 @@ export function LandingPagePreview({
                 {heroBusinessName}
               </div>
 
-              <h1 className="mx-auto max-w-xl text-4xl font-semibold leading-[1.06] tracking-[-0.02em] text-gray-900 dark:text-gray-100 sm:text-5xl lg:text-6xl md:mx-0">
-                {heroHeadline}
-              </h1>
+              <EditableText
+                as="h1"
+                value={heroHeadline}
+                className="mx-auto max-w-xl text-4xl font-semibold leading-[1.06] tracking-[-0.02em] text-gray-900 dark:text-gray-100 sm:text-5xl lg:text-6xl md:mx-0"
+                onChange={editable ? (v) => edit("heroHeadline", v) : undefined}
+                placeholder="Headline"
+              />
 
-              <p className="mx-auto mt-5 max-w-3xl text-base text-gray-600 dark:text-gray-300 sm:text-lg md:mx-0">
-                {heroSubheadline}
-              </p>
+              <EditableText
+                as="p"
+                value={heroSubheadline}
+                className="mx-auto mt-5 max-w-3xl text-base text-gray-600 dark:text-gray-300 sm:text-lg md:mx-0"
+                onChange={editable ? (v) => edit("heroSubheadline", v) : undefined}
+                placeholder="Subheadline"
+              />
               <p className="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">
                 {pickLang(lang, {
                   en: "Designed for clarity, trust, and conversion from first visit.",
@@ -564,7 +648,17 @@ export function LandingPagePreview({
                   className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
                 >
                   <a href={heroPrimaryHref}>
-                    {heroPrimaryCTA}
+                    {editable ? (
+                      <span
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={(e) => edit("heroPrimaryCTA", e.currentTarget.textContent || "")}
+                      >
+                        {heroPrimaryCTA}
+                      </span>
+                    ) : (
+                      heroPrimaryCTA
+                    )}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </a>
                 </Button>
@@ -575,7 +669,17 @@ export function LandingPagePreview({
                   className="border-amber-300/80 bg-white/90 text-slate-800 hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-slate-800"
                 >
                   <a href={heroSecondaryHref}>
-                    {heroSecondaryCTA}
+                    {editable ? (
+                      <span
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={(e) => edit("heroSecondaryCTA", e.currentTarget.textContent || "")}
+                      >
+                        {heroSecondaryCTA}
+                      </span>
+                    ) : (
+                      heroSecondaryCTA
+                    )}
                   </a>
                 </Button>
               </div>
@@ -746,8 +850,20 @@ export function LandingPagePreview({
                   className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
                 >
                   <CardContent className="pt-6">
-                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{b.title}</div>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{b.description}</p>
+                    <EditableText
+                      as="div"
+                      value={b.title}
+                      className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+                      onChange={editable ? (v) => edit("benefits.title", v, idx) : undefined}
+                      placeholder="Benefit title"
+                    />
+                    <EditableText
+                      as="p"
+                      value={b.description}
+                      className="mt-2 text-sm text-gray-600 dark:text-gray-300"
+                      onChange={editable ? (v) => edit("benefits.description", v, idx) : undefined}
+                      placeholder="Benefit description"
+                    />
                   </CardContent>
                 </Card>
               ))}
@@ -970,11 +1086,56 @@ export function LandingPagePreview({
           </div>
         </section>
 
+        {faqItems.length > 0 ? (
+          <section className="section-tone px-4 py-20 bg-white dark:bg-slate-950">
+            <div className="mx-auto max-w-5xl">
+              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
+                FAQ
+              </h2>
+              <div className="mt-8 space-y-4">
+                {faqItems.map((item, idx) => (
+                  <div
+                    key={`${item.question}-${idx}`}
+                    className="rounded-2xl border border-amber-200 bg-white/90 p-5 shadow-sm dark:border-amber-700/60 dark:bg-slate-900/90"
+                  >
+                    <EditableText
+                      as="div"
+                      value={item.question}
+                      className="text-base font-semibold text-gray-900 dark:text-gray-100"
+                      onChange={editable ? (v) => edit("faq.question", v, idx) : undefined}
+                      placeholder="Question"
+                    />
+                    <EditableText
+                      as="p"
+                      value={item.answer}
+                      className="mt-2 text-sm text-gray-600 dark:text-gray-300"
+                      onChange={editable ? (v) => edit("faq.answer", v, idx) : undefined}
+                      placeholder="Answer"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {/* CTA */}
         <section className="section-tone section-tone-cta px-4 py-20 bg-gradient-to-br from-amber-50 to-stone-100 dark:from-slate-900 dark:to-slate-950">
           <div className="mx-auto max-w-5xl rounded-3xl border border-amber-200/70 bg-white/80 px-6 py-10 text-center shadow-xl shadow-amber-500/10 backdrop-blur dark:border-amber-700/60 dark:bg-slate-900/85">
-            <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.cta.headline}</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-600 dark:text-gray-300">{content.cta.subheadline}</p>
+            <EditableText
+              as="h2"
+              value={content.cta.headline}
+              className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100"
+              onChange={editable ? (v) => edit("ctaHeadline", v) : undefined}
+              placeholder="CTA headline"
+            />
+            <EditableText
+              as="p"
+              value={content.cta.subheadline}
+              className="mx-auto mt-4 max-w-2xl text-gray-600 dark:text-gray-300"
+              onChange={editable ? (v) => edit("ctaSubheadline", v) : undefined}
+              placeholder="CTA subheadline"
+            />
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button
                 size="lg"
@@ -982,12 +1143,35 @@ export function LandingPagePreview({
                 className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
               >
                 <a href={ctaPrimaryHref}>
-                  {content.cta.buttonText}
+                  {editable ? (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => edit("ctaButtonText", e.currentTarget.textContent || "")}
+                    >
+                      {content.cta.buttonText}
+                    </span>
+                  ) : (
+                    content.cta.buttonText
+                  )}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </a>
               </Button>
               <QualificationTrigger slug={slug} context={qualificationContext} />
             </div>
+            {editable ? (
+              <div className="mt-3 text-xs text-gray-500">
+                CTA link:{" "}
+                <span
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
+                  onBlur={(e) => edit("ctaButtonUrl", e.currentTarget.textContent || "")}
+                >
+                  {draftOverrides.ctaButtonUrl || "https://"}
+                </span>
+              </div>
+            ) : null}
             <div className="mt-3 text-xs text-gray-500 dark:text-gray-300">{content.cta.subtext}</div>
           </div>
         </section>
@@ -996,8 +1180,20 @@ export function LandingPagePreview({
         <section id="contact" className="px-4 py-20 bg-gray-50 dark:bg-slate-900">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.contact.title}</h2>
-              <p className="mt-3 text-gray-600 dark:text-gray-300">{content.contact.subtitle}</p>
+              <EditableText
+                as="h2"
+                value={content.contact.title}
+                className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100"
+                onChange={editable ? (v) => edit("contactTitle", v) : undefined}
+                placeholder="Contact title"
+              />
+              <EditableText
+                as="p"
+                value={content.contact.subtitle}
+                className="mt-3 text-gray-600 dark:text-gray-300"
+                onChange={editable ? (v) => edit("contactSubtitle", v) : undefined}
+                placeholder="Contact subtitle"
+              />
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -1028,6 +1224,43 @@ export function LandingPagePreview({
                 disabledText={content.contact.chat.disabledText}
               />
             </div>
+            {editable ? (
+              <div className="mt-6 grid gap-3 text-xs text-gray-600 dark:text-gray-300 md:grid-cols-2">
+                <div>
+                  Email:{" "}
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
+                    onBlur={(e) => edit("contactEmail", e.currentTarget.textContent || "")}
+                  >
+                    {draftOverrides.contactEmail || "email@example.com"}
+                  </span>
+                </div>
+                <div>
+                  Booking link:{" "}
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
+                    onBlur={(e) => edit("contactBookingLink", e.currentTarget.textContent || "")}
+                  >
+                    {draftOverrides.contactBookingLink || "https://"}
+                  </span>
+                </div>
+                <div>
+                  WhatsApp:{" "}
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
+                    onBlur={(e) => edit("contactWhatsApp", e.currentTarget.textContent || "")}
+                  >
+                    {draftOverrides.contactWhatsApp || "wa.me/"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
           </div>
         </section>
 

@@ -150,9 +150,10 @@ export default function GeneratorClient({
 
       // 1) Save server-side (KV/memory) — createdAt on server is preserved
       const saved = await onSave(slugToUse, finalAnswers);
+      const canonicalSlug = saved?.slug || slugToUse;
 
       // 2) Client fallback cache (preserve createdAt if exists)
-      const key = `landing:${slugToUse}`;
+      const key = `landing:${canonicalSlug}`;
       const existing = safeParseJSON<StoredLandingLocal>(localStorage.getItem(key));
       const now = Date.now();
 
@@ -167,14 +168,14 @@ export default function GeneratorClient({
 
       // Keep edit token for direct draft saves from preview page.
       if (saved?.editToken) {
-        localStorage.setItem(`dp:edit-token:${slugToUse}`, saved.editToken);
+        localStorage.setItem(`dp:edit-token:${canonicalSlug}`, saved.editToken);
       }
 
       // 3) Navigate back to the landing page
       if (editSlug) toast.success("Updated successfully");
       else toast.success("Generated successfully");
 
-      router.push(`/${slugToUse}`);
+      router.push(`/${canonicalSlug}`);
     } catch (e: any) {
       toast.error(e?.message ?? (editSlug ? "Update failed" : "Generate failed"));
     } finally {
