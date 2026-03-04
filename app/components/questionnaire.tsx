@@ -1228,9 +1228,6 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
     try {
       await Promise.resolve(onGenerate?.(final));
       await Promise.resolve(onComplete?.(final));
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem(DRAFT_KEY);
-      }
     } finally {
       setIsSubmitting(false);
     }

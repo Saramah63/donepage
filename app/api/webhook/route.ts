@@ -46,8 +46,9 @@ export async function POST(req: Request) {
       const plan = (session.metadata?.plan as string | undefined) || "unknown";
       const email = session.customer_details?.email || session.customer_email || null;
 
-      if (prisma) {
-        await prisma.order.upsert({
+      const prismaAny = prisma as any;
+      if (prismaAny?.order) {
+        await prismaAny.order.upsert({
           where: { stripeSessionId: session.id },
           create: {
             stripeSessionId: session.id,
@@ -66,14 +67,15 @@ export async function POST(req: Request) {
 
     if (event.type === "invoice.paid") {
       const invoice = event.data.object as Stripe.Invoice;
-      const priceId = invoice.lines?.data?.[0]?.price?.id;
+      const priceId = (invoice.lines?.data?.[0] as any)?.price?.id;
       const plan =
         (invoice.metadata?.plan as string | undefined) ??
         getPlanFromPriceId(priceId) ??
         "hosting";
 
-      if (prisma) {
-        await prisma.order
+      const prismaAny = prisma as any;
+      if (prismaAny?.order) {
+        await prismaAny.order
           .create({
             data: {
               stripeSessionId: invoice.id,

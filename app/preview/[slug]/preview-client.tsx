@@ -3,7 +3,6 @@
 import * as React from "react";
 import { LandingPagePreview } from "@/app/components/landing-page-preview";
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
-import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -23,10 +22,12 @@ export default function PreviewClient({
 }) {
   const searchParams = useSearchParams();
   const [token, setToken] = React.useState(searchParams.get("token") || "");
+  const publishMode = searchParams.get("publish");
   const langRaw = (answers as any)?.language?.toLowerCase?.() ?? "";
   const isRTL = langRaw.includes("arabic") || langRaw.includes("persian") || langRaw.includes("farsi");
   const [draftAnswers, setDraftAnswers] = React.useState<QuestionnaireAnswers>(answers);
   const [saving, setSaving] = React.useState(false);
+  const [showEditor, setShowEditor] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState<
     "hero" | "services" | "trust" | "about" | "contact" | "cta" | "portfolio"
   >("hero");
@@ -99,84 +100,56 @@ export default function PreviewClient({
 
   return (
     <div dir={isRTL ? "rtl" : "ltr"}>
-      {/* no action bar => mode="export" */}
-      <div className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-slate-950">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-          <div>
-            Preview: <span className="font-semibold">/{slug}</span> · Version{" "}
-            <span className="font-semibold">v{version}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              asChild
-              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
-            >
-              <Link href={`/generator?edit=${slug}`}>Edit Draft</Link>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              asChild
-              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
-            >
-              <Link href={`/preview/${slug}?mode=draft`}>Preview Draft</Link>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              asChild
-              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-800"
-            >
-              <Link href={`/proposal/${slug}`} target="_blank" rel="noreferrer">View Proposal</Link>
-            </Button>
-            <Button
-              size="sm"
-              onClick={saveDraftChanges}
-              disabled={saving}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700"
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
+      {requestedMode === "published" && usedDraftFallback ? (
+        <div className="mx-auto max-w-6xl px-4 py-4">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+            Published version not found. Showing latest draft fallback for now.
           </div>
         </div>
-        {requestedMode === "published" && usedDraftFallback ? (
-          <div className="mx-auto max-w-6xl px-4 pb-3">
-            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
-              Published version not found. Showing latest draft fallback for now.
-            </div>
-          </div>
-        ) : null}
-      </div>
+      ) : null}
 
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-700 dark:bg-slate-900">
-        <div className="mx-auto max-w-6xl space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { id: "hero", label: "Hero" },
-              { id: "services", label: "Services" },
-              { id: "trust", label: "Trust" },
-              { id: "about", label: "About" },
-              { id: "contact", label: "Contact" },
-              { id: "cta", label: "CTA" },
-              { id: "portfolio", label: "Portfolio" },
-            ].map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setActiveSection(s.id as typeof activeSection)}
-                className={[
-                  "rounded-full border px-3 py-1 text-xs font-semibold transition",
-                  activeSection === s.id
-                    ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
-                    : "border-gray-300 bg-white text-gray-700 hover:border-blue-200 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-200",
-                ].join(" ")}
+      {showEditor ? (
+        <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-700 dark:bg-slate-900">
+          <div className="mx-auto max-w-6xl space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Edit answers (changes update the preview below)
+              </div>
+              <Button
+                size="sm"
+                onClick={saveDraftChanges}
+                disabled={saving}
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700"
               >
-                {s.label}
-              </button>
-            ))}
-          </div>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { id: "hero", label: "Hero" },
+                { id: "services", label: "Services" },
+                { id: "trust", label: "Trust" },
+                { id: "about", label: "About" },
+                { id: "contact", label: "Contact" },
+                { id: "cta", label: "CTA" },
+                { id: "portfolio", label: "Portfolio" },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setActiveSection(s.id as typeof activeSection)}
+                  className={[
+                    "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                    activeSection === s.id
+                      ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
+                      : "border-gray-300 bg-white text-gray-700 hover:border-blue-200 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-200",
+                  ].join(" ")}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-200">
             <div className="mb-2 font-semibold">Jump to section in preview</div>
@@ -365,8 +338,18 @@ export default function PreviewClient({
           ) : null}
         </div>
       </div>
+      ) : null}
 
-      <LandingPagePreview answers={draftAnswers} onEdit={() => {}} mode="export" slug={slug} />
+      <LandingPagePreview
+        answers={draftAnswers}
+        onEdit={() => setShowEditor(true)}
+        mode="preview"
+        slug={slug}
+        autoOpenPublish={publishMode === "custom" || publishMode === "subdomain"}
+        publishHint={
+          publishMode === "custom" ? "custom" : publishMode === "subdomain" ? "subdomain" : null
+        }
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { forbidden } from "next/navigation";
 import { getOrderById } from "@/app/lib/order-store";
 import { getDraftBySlug } from "@/app/lib/answers-store";
-import CustomerPreviewClient from "./customer-preview-client";
+import PreviewClient from "./[slug]/preview-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -15,11 +15,12 @@ export const metadata: Metadata = {
 export default async function PreviewByTokenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string; token?: string }>;
+  searchParams: Promise<{ order?: string; token?: string; publish?: string }>;
 }) {
   const sp = await searchParams;
   const orderId = (sp.order ?? "").trim();
   const token = (sp.token ?? "").trim();
+  const publish = (sp.publish ?? "").trim();
 
   if (!orderId || !token) forbidden();
 
@@ -39,5 +40,13 @@ export default async function PreviewByTokenPage({
     );
   }
 
-  return <CustomerPreviewClient answers={draft.answers} slug={order.draftSlug} />;
+  return (
+    <PreviewClient
+      slug={order.draftSlug}
+      version={draft.version ?? 1}
+      answers={draft.answers}
+      requestedMode="draft"
+      usedDraftFallback={false}
+    />
+  );
 }

@@ -13,7 +13,6 @@ import {
   Calendar,
   Mail,
   MessageSquare,
-  Download,
   Edit,
   Globe,
   CheckCircle,
@@ -35,8 +34,9 @@ interface LandingPagePreviewProps {
   answers: QuestionnaireAnswers;
   onEdit: () => void;
   mode?: "preview" | "export";
-  proposalUrl?: string;
   slug?: string;
+  autoOpenPublish?: boolean;
+  publishHint?: "custom" | "subdomain" | null;
 }
 
 function parsePackageLines(raw: string) {
@@ -163,8 +163,9 @@ export function LandingPagePreview({
   answers,
   onEdit,
   mode = "preview",
-  proposalUrl,
   slug = "landing",
+  autoOpenPublish = false,
+  publishHint = null,
 }: LandingPagePreviewProps) {
   const [isPublishModalOpen, setPublishModalOpen] = React.useState(false);
   const [isPricingModalOpen, setPricingModalOpen] = React.useState(false);
@@ -179,6 +180,14 @@ export function LandingPagePreview({
     window.addEventListener("keydown", onEsc);
     return () => window.removeEventListener("keydown", onEsc);
   }, [mediaPreview]);
+
+  const autoOpenedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!autoOpenPublish) return;
+    if (autoOpenedRef.current) return;
+    autoOpenedRef.current = true;
+    setPublishModalOpen(true);
+  }, [autoOpenPublish]);
 
   /** 🔑 SINGLE SOURCE OF CONTENT */
   const content = React.useMemo(
@@ -209,8 +218,6 @@ export function LandingPagePreview({
       : goal === "credibility"
       ? "#why-choose-us"
       : "#contact";
-  const hasShareableSlug = Boolean(slug && slug !== "landing" && slug !== "local-preview");
-  const previewDraftUrl = hasShareableSlug ? `/preview/${slug}?mode=draft` : null;
   const lang = getLang(answers);
   const hero = content.meta;
   const heroBusinessName =
@@ -485,46 +492,25 @@ export function LandingPagePreview({
             </div>
 
             <div className="flex gap-2">
-              <ThemeToggle />
-
               <Button size="sm" variant="outline" onClick={onEdit}>
                 <Edit className="mr-2 h-4 w-4" />
-                {pickLang(lang, { en: "Edit Draft", fa: "ویرایش درفت", ar: "تعديل المسودة", fi: "Muokkaa luonnosta" })}
+                {pickLang(lang, { en: "Edit Answers", fa: "ویرایش پاسخ‌ها", ar: "تعديل الإجابات", fi: "Muokkaa vastauksia" })}
               </Button>
-
-              {proposalUrl ? (
-                <Button size="sm" variant="outline" asChild>
-                  <Link href={proposalUrl} target="_blank" rel="noreferrer">
-                    <ShieldCheck className="mr-2 h-4 w-4" />
-                    {pickLang(lang, { en: "Proposal", fa: "پروپوزال", ar: "عرض", fi: "Tarjous" })}
-                  </Link>
-                </Button>
-              ) : null}
-
-              {previewDraftUrl ? (
-                <Button size="sm" variant="outline" asChild>
-                  <Link href={previewDraftUrl}>
-                    {pickLang(lang, {
-                      en: "Preview Draft",
-                      fa: "پیش‌نمایش درفت",
-                      ar: "معاينة المسودة",
-                      fi: "Esikatsele luonnos",
-                    })}
-                  </Link>
-                </Button>
-              ) : null}
-
-              <Button size="sm" onClick={handleExport}>
-                <Download className="mr-2 h-4 w-4" />
-                {pickLang(lang, { en: "Export", fa: "خروجی", ar: "تصدير", fi: "Vie" })}
-              </Button>
-
               <Button size="sm" onClick={() => setPublishModalOpen(true)}>
                 <Globe className="mr-2 h-4 w-4" />
                 {pickLang(lang, { en: "Publish", fa: "انتشار", ar: "نشر", fi: "Julkaise" })}
               </Button>
             </div>
           </div>
+          {publishHint ? (
+            <div className="mx-auto max-w-7xl px-4 pb-3">
+              <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-900 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
+                {publishHint === "custom"
+                  ? "Custom domain selected. Open Publish and enter your domain."
+                  : "Donepage subdomain selected. Open Publish to use the suggested subdomain."}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -1055,6 +1041,7 @@ export function LandingPagePreview({
         onClose={() => setPublishModalOpen(false)}
         answers={answers}
         onOpenPricing={() => setPricingModalOpen(true)}
+        defaultChoice={publishHint}
       />
 
       <PricingModal

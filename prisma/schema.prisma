@@ -119,3 +119,39 @@ model Order {
   @@index([plan])
   @@index([status])
 }
+
+model Project {
+  id               String   @id @default(cuid())
+  plan             String
+  status           String
+  revisionsAllowed Int
+  revisionsUsed    Int
+  previewUrl       String
+  publishedUrl     String?
+  domain           String?
+  basicSeo         Boolean
+  priorityDelivery Boolean
+  humanEtaDate     String
+  accessToken      String   @unique
+  answers          Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  revisions        RevisionRequest[]
+
+  @@index([plan])
+  @@index([status])
+}
+
+model RevisionRequest {
+  id        String   @id @default(cuid())
+  projectId String
+  message   String
+  section   String?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
+}

@@ -10,17 +10,25 @@ const packages = [
   {
     name: "Launch",
     price: "€99",
-    features: ["1 landing page", "1 revision", "Delivered in 5 business days"],
+    features: [
+      "Instant AI Draft (immediate)",
+      "Human polish + 1 revision (within 5 business days)",
+    ],
     cta: "Start Launch",
-    href: "/api/checkout?plan=launch",
+    href: "STRIPE_LINK_LAUNCH",
     popular: false,
   },
   {
     name: "Growth",
     price: "€249",
-    features: ["1 landing page", "3 revisions", "Domain connection", "Basic SEO", "Priority delivery"],
+    features: [
+      "Instant AI Draft (immediate)",
+      "Priority human polish + 3 revisions (within 2 business days)",
+      "Domain connection",
+      "Basic SEO",
+    ],
     cta: "Start Growth",
-    href: "/api/checkout?plan=growth",
+    href: "STRIPE_LINK_GROWTH",
     popular: true,
   },
   {
@@ -28,10 +36,21 @@ const packages = [
     price: "€19/month",
     features: ["Hosting on Vercel", "SSL & uptime", "Minor updates", "Email support"],
     cta: "Request Hosting",
-    href: "/contact?reason=hosting",
+    href: "STRIPE_LINK_HOSTING",
     popular: false,
   },
 ];
+
+const STRIPE_LINKS = {
+  STRIPE_LINK_LAUNCH: process.env.NEXT_PUBLIC_STRIPE_LINK_LAUNCH || "",
+  STRIPE_LINK_GROWTH: process.env.NEXT_PUBLIC_STRIPE_LINK_GROWTH || "",
+  STRIPE_LINK_HOSTING: process.env.NEXT_PUBLIC_STRIPE_LINK_HOSTING || "",
+} as const;
+
+function firePurchaseIntent(plan: "launch" | "growth" | "hosting") {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("dp_purchase_intent", { detail: { plan } }));
+}
 
 const faq = [
   {
@@ -42,7 +61,7 @@ const faq = [
     q: "Can I use my own domain?",
     a: "Yes. Domain connection is included in Growth, and available as an add-on for other setups.",
   },
-  { q: "How long does it take?", a: "Launch is delivered in 5 business days. Growth is prioritized for faster turnaround." },
+  { q: "How long does it take?", a: "Launch is delivered within 5 business days. Growth is prioritized within 2 business days." },
   {
     q: "What’s included in revisions?",
     a: "Revisions include copy, section layout adjustments, and CTA refinements based on your brief.",
@@ -136,7 +155,7 @@ export default function HomePageClient() {
         <section id="how" className="mt-16 scroll-mt-32">
           <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">How it works</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {["Answer simple questions", "We structure & build your page", "You launch and collect leads"].map((step, index) => (
+            {["Answer simple questions", "Instant AI draft + human polish", "You launch and collect leads"].map((step, index) => (
               <Card key={step} className="card-lift reveal-up border-gray-200 bg-white/90 dark:border-gray-700 dark:bg-slate-900/85">
                 <CardContent className="p-5">
                   <div className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white dark:bg-blue-500">
@@ -177,7 +196,17 @@ export default function HomePageClient() {
                     ))}
                   </ul>
                   <Button asChild className="mt-6 h-11 w-full bg-blue-600 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
-                    <Link href={pkg.href} target="_blank" rel="noopener noreferrer" className="font-medium !text-white">{pkg.cta}</Link>
+                    <a
+                      href={STRIPE_LINKS[pkg.href as keyof typeof STRIPE_LINKS]}
+                      onClick={() => {
+                        if (pkg.name === "Launch") firePurchaseIntent("launch");
+                        if (pkg.name === "Growth") firePurchaseIntent("growth");
+                        if (pkg.name === "Hosting & Support") firePurchaseIntent("hosting");
+                      }}
+                      className="font-medium !text-white"
+                    >
+                      {pkg.cta}
+                    </a>
                   </Button>
                 </CardContent>
               </Card>

@@ -6,16 +6,20 @@ import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
 export default function CustomerPreviewClient({
   answers,
   slug,
+  publishHint = null,
 }: {
   answers: QuestionnaireAnswers;
   slug: string;
+  publishHint?: "custom" | "subdomain" | null;
 }) {
   return (
     <LandingPagePreview
       answers={answers}
       slug={slug}
-      mode="export"
+      mode="preview"
       onEdit={() => {}}
+      autoOpenPublish={publishHint === "custom" || publishHint === "subdomain"}
+      publishHint={publishHint}
     />
   );
 }

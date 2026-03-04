@@ -14,6 +14,7 @@ import { CheckCircle, Globe, Zap, CreditCard, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { QuestionnaireAnswers } from "./questionnaire";
 import { getLang, pickLang } from "@/app/components/content";
+import Link from "next/link";
 
 /* ---------------------------------------------
    Types
@@ -24,6 +25,7 @@ interface PublishModalProps {
   onClose: () => void;
   answers: QuestionnaireAnswers;
   onOpenPricing?: () => void;
+  defaultChoice?: "custom" | "subdomain" | null;
 }
 
 type AvailabilityState =
@@ -116,7 +118,13 @@ async function copyToClipboard(value: string, label = "Copied", errorLabel = "Co
    Component
 ---------------------------------------------- */
 
-export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishModalProps) {
+export function PublishModal({
+  open,
+  onClose,
+  answers,
+  onOpenPricing,
+  defaultChoice = null,
+}: PublishModalProps) {
   const lang = getLang(answers);
   const t = <T,>(map: Record<"en" | "fa" | "ar" | "fi", T>) => pickLang(lang, map);
   const [slug, setSlug] = React.useState("yourpage");
@@ -133,6 +141,7 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
 
   // Domain setup
   const [domain, setDomain] = React.useState("");
+  const [publishChoice, setPublishChoice] = React.useState<"custom" | "subdomain" | null>(defaultChoice);
   const [domainState, setDomainState] = React.useState<DomainState>({ status: "idle" });
   const [domainVerify, setDomainVerify] = React.useState<DomainVerify>({ status: "idle" });
   const [verifyEmail, setVerifyEmail] = React.useState("");
@@ -146,11 +155,12 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
     setEditUrl(null);
     setAvailability({ status: "idle" });
     setDomain("");
+    setPublishChoice(defaultChoice);
     setDomainState({ status: "idle" });
     setDomainVerify({ status: "idle" });
     setVerifyEmail("");
     setVerifyEmailStatus({ status: "idle" });
-  }, [open, answers]);
+  }, [open, answers, defaultChoice]);
 
   const safeSlug = React.useMemo(() => sanitizeSlug(slug), [slug]);
   const validation = React.useMemo(() => validateSlug(safeSlug), [safeSlug]);
@@ -200,6 +210,16 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
 
   const liveUrl = `${base.replace(/\/$/, "")}/${safeSlug || "yourpage"}`;
   const suggestedSubdomain = `https://${safeSlug || "yourpage"}.donepage.co`;
+
+  React.useEffect(() => {
+    if (!open) return;
+    if (publishChoice === "subdomain") {
+      setDomain(suggestedSubdomain);
+    }
+    if (publishChoice === "custom") {
+      setDomain("");
+    }
+  }, [open, publishChoice, suggestedSubdomain]);
 
   // Debounced availability check (only when slug is valid)
   React.useEffect(() => {
@@ -815,6 +835,56 @@ export function PublishModal({ open, onClose, answers, onOpenPricing }: PublishM
             })}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <div className="text-sm font-semibold text-gray-900">
+            {t({
+              en: "Choose how you want to publish",
+              fa: "روش انتشار را انتخاب کنید",
+              ar: "اختر طريقة النشر",
+              fi: "Valitse julkaisun tapa",
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              variant={publishChoice === "subdomain" ? "default" : "outline"}
+              onClick={() => setPublishChoice("subdomain")}
+            >
+              {t({
+                en: "Donepage subdomain",
+                fa: "ساب‌دامین Donepage",
+                ar: "نطاق فرعي Donepage",
+                fi: "Donepage-alidomain",
+              })}
+            </Button>
+            <Button
+              variant={publishChoice === "custom" ? "default" : "outline"}
+              onClick={() => setPublishChoice("custom")}
+            >
+              {t({
+                en: "Custom domain",
+                fa: "دامنه اختصاصی",
+                ar: "نطاق مخصص",
+                fi: "Oma domain",
+              })}
+            </Button>
+          </div>
+          <div className="mt-3 text-xs text-gray-600">
+            {t({
+              en: "Payment is required before publishing. Choose a plan to continue.",
+              fa: "قبل از انتشار باید پرداخت انجام شود.",
+              ar: "يلزم الدفع قبل النشر.",
+              fi: "Maksu vaaditaan ennen julkaisua.",
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/pricing">
+                {t({ en: "Go to Payment", fa: "رفتن به پرداخت", ar: "اذهب للدفع", fi: "Siirry maksuun" })}
+              </Link>
+            </Button>
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-5 xl:grid-cols-2">
           {/* Quick Publish */}

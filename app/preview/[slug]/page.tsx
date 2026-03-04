@@ -11,6 +11,8 @@ import {
 } from "@/app/lib/answers-store";
 import PreviewClient from "./preview-client";
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
+import { getProjectById } from "@/app/lib/project-store";
+import ProjectPreviewClient from "@/app/preview/project-preview-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +37,22 @@ export default async function PreviewPage({
   const { slug: rawSlug } = await params;
   const sp = await searchParams;
   const slug = sanitizeSlug(rawSlug);
+
+  const project = await getProjectById(slug);
+  if (project && sp.token && project.accessToken === sp.token) {
+    const revisionsRemaining = Math.max(0, project.revisionsAllowed - project.revisionsUsed);
+    const portalUrl = `/portal?token=${encodeURIComponent(project.accessToken)}`;
+    return (
+      <ProjectPreviewClient
+        projectId={project.id}
+        token={project.accessToken}
+        plan={project.plan}
+        revisionsRemaining={revisionsRemaining}
+        portalUrl={portalUrl}
+        answers={project.answers as QuestionnaireAnswers}
+      />
+    );
+  }
 
   const mode = sp.mode || "draft";
   const parsedV = sp.v ? Number(sp.v) : null;

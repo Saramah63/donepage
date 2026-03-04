@@ -31,7 +31,7 @@ export default function PricingPage() {
             Pricing
           </h1>
           <p className="mt-3 text-gray-700 dark:text-gray-200">
-            Choose a package to launch quickly with Donepage.
+            Hybrid delivery: instant AI draft plus human polish by plan SLA.
           </p>
         </div>
 
@@ -45,9 +45,8 @@ export default function PricingPage() {
                 <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">€99</span>
               </div>
               <ul className="mt-5 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                <li>1 landing page</li>
-                <li>1 revision</li>
-                <li>Delivered in 5 business days</li>
+                <li>Instant AI Draft (immediate)</li>
+                <li>Human polish + 1 revision (delivered within 5 business days)</li>
               </ul>
               <Button
                 className="mt-6 h-11 w-full bg-blue-600 !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
@@ -75,11 +74,10 @@ export default function PricingPage() {
               </div>
               <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-100">€249</p>
               <ul className="mt-4 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                <li>1 landing page</li>
-                <li>3 revisions</li>
+                <li>Instant AI Draft (immediate)</li>
+                <li>Priority human polish + 3 revisions (typically within 2 business days)</li>
                 <li>Domain connection</li>
                 <li>Basic SEO</li>
-                <li>Priority delivery</li>
               </ul>
               <Button
                 className="mt-6 h-11 w-full bg-blue-600 !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
