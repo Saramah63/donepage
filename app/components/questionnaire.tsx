@@ -4,6 +4,8 @@
 import * as React from "react";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
+import Link from "next/link";
+import { ThemeToggle } from "@/app/components/theme-toggle";
 
 export type QuestionnaireAnswers = {
   businessName?: string;
@@ -1333,6 +1335,14 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
       className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 text-gray-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-gray-100"
       dir={uiLang === "fa" || uiLang === "ar" ? "rtl" : "ltr"}
     >
+      <div className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-xl dark:border-gray-700 dark:bg-slate-950/80">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+          <Link href="/" className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            Donepage
+          </Link>
+          <ThemeToggle />
+        </div>
+      </div>
       <div
         className="pointer-events-none absolute inset-0 bg-grid-gray-100 [mask-image:linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,255,255,0.45),rgba(255,255,255,0.85))]"
         aria-hidden="true"
@@ -1344,7 +1354,7 @@ export function Questionnaire({ initialAnswers, onChange, onGenerate, onComplete
         <div className="mx-auto w-full max-w-3xl">
           <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-md dark:border-gray-700 dark:bg-slate-900/70">
             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-600" />
-            <span className="text-sm font-semibold text-gray-900">{landingTag}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{landingTag}</span>
           </div>
 
           <h1 className="mt-5 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">

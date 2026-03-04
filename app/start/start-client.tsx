@@ -225,7 +225,7 @@ export default function StartClient() {
 
   return (
     <div>
-      <Questionnaire onGenerate={handleGenerate} />
+      <Questionnaire initialAnswers={{ language: "English" }} onGenerate={handleGenerate} />
       {submitting ? <div className="sr-only">Submitting</div> : null}
     </div>
   );

@@ -3,9 +3,11 @@ import Stripe from "stripe";
 
 export const runtime = "nodejs";
 
-type LegacyPlan = "starter" | "business" | "pro";
-type NewPlan = "launch" | "growth";
-type AnyPlan = LegacyPlan | NewPlan;
+type Plan = "launch" | "growth" | "hosting";
+
+type Body = {
+  plan?: Plan;
+};
 
 function getAppUrl() {
   return (
@@ -14,97 +16,63 @@ function getAppUrl() {
   ).replace(/\/+$/, "");
 }
 
-function getPriceId(plan: AnyPlan) {
-  if (plan === "launch") return process.env.STRIPE_LAUNCH_PRICE_ID;
-  if (plan === "growth") return process.env.STRIPE_GROWTH_PRICE_ID;
-  if (plan === "starter") return process.env.STRIPE_PRICE_STARTER;
-  if (plan === "business") return process.env.STRIPE_PRICE_BUSINESS;
-  if (plan === "pro") return process.env.STRIPE_PRICE_PRO;
+function getPriceId(plan: Plan) {
+  if (plan === "launch") return process.env.STRIPE_PRICE_LAUNCH;
+  if (plan === "growth") return process.env.STRIPE_PRICE_GROWTH;
+  if (plan === "hosting") return process.env.STRIPE_PRICE_HOSTING;
   return undefined;
-}
-
-function buildUrls(plan: AnyPlan) {
-  return buildUrlsWithParams(plan, null, null);
-}
-
-function buildUrlsWithParams(
-  plan: AnyPlan,
-  orderId?: string | null,
-  token?: string | null
-) {
-  const app = getAppUrl();
-  if (plan === "launch" || plan === "growth") {
-    const extras = new URLSearchParams();
-    if (orderId) extras.set("order", orderId);
-    if (token) extras.set("token", token);
-    const suffix = extras.toString() ? `&${extras.toString()}` : "";
-    return {
-      success: `${app}/start?paid=1&plan=${plan}&session_id={CHECKOUT_SESSION_ID}${suffix}`,
-      cancel: `${app}/?cancelled=1`,
-    };
-  }
-  return {
-    success: `${app}/generator?paid=1&plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel: `${app}/generator?canceled=1`,
-  };
-}
-
-async function createSession(plan: AnyPlan, opts?: { orderId?: string | null; token?: string | null }) {
-  const secret = process.env.STRIPE_SECRET_KEY;
-  if (!secret) throw new Error("Missing STRIPE_SECRET_KEY");
-  const priceId = getPriceId(plan);
-  if (!priceId) throw new Error(`Missing Stripe price id for plan: ${plan}`);
-
-  const stripe = new Stripe(secret);
-  const urls = buildUrlsWithParams(plan, opts?.orderId, opts?.token);
-  return await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: [{ price: priceId, quantity: 1 }],
-    metadata: {
-      plan,
-      orderId: opts?.orderId || "",
-    },
-    success_url: urls.success,
-    cancel_url: urls.cancel,
-  });
-}
-
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const plan = (searchParams.get("plan") || "").toLowerCase() as AnyPlan;
-    const orderId = (searchParams.get("order") || "").trim() || null;
-    const token = (searchParams.get("token") || "").trim() || null;
-    if (!["launch", "growth", "starter", "business", "pro"].includes(plan)) {
-      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-    }
-    const session = await createSession(plan, { orderId, token });
-    if (!session.url) {
-      return NextResponse.json({ error: "Checkout session has no URL" }, { status: 500 });
-    }
-    return NextResponse.redirect(session.url, 303);
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "Checkout failed" }, { status: 500 });
-  }
 }
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => null)) as {
-      plan?: AnyPlan;
-      orderId?: string;
-      token?: string;
-    } | null;
-    const plan = (body?.plan || "").toLowerCase() as AnyPlan;
-    if (!["launch", "growth", "starter", "business", "pro"].includes(plan)) {
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) {
+      return NextResponse.json({ error: "Missing STRIPE_SECRET_KEY" }, { status: 500 });
+    }
+
+    const body = (await req.json().catch(() => null)) as Body | null;
+    const plan = (body?.plan || "").toLowerCase() as Plan;
+    if (!plan || !["launch", "growth", "hosting"].includes(plan)) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
-    const session = await createSession(plan, {
-      orderId: (body?.orderId || "").trim() || null,
-      token: (body?.token || "").trim() || null,
+
+    const priceId = getPriceId(plan);
+    if (!priceId) {
+      return NextResponse.json(
+        { error: `Missing price id for plan: ${plan}` },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(secret);
+    const appUrl = getAppUrl();
+
+    const session = await stripe.checkout.sessions.create({
+      mode: plan === "hosting" ? "subscription" : "payment",
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/pricing?canceled=1`,
+      metadata: { plan },
+      subscription_data:
+        plan === "hosting"
+          ? {
+              metadata: { plan },
+            }
+          : undefined,
     });
+
+    if (!session.url) {
+      return NextResponse.json(
+        { error: "Checkout session has no URL" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ url: session.url });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "Checkout failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: e?.message ?? "Checkout failed" },
+      { status: 500 }
+    );
   }
 }

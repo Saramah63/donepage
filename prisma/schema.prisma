@@ -106,3 +106,16 @@ model QualificationSession {
   @@index([leadType, createdAt])
   @@index([nextAction, createdAt])
 }
+
+model Order {
+  id              String   @id @default(cuid())
+  stripeSessionId String   @unique
+  plan            String
+  email           String?
+  status          String
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([plan])
+  @@index([status])
+}
