@@ -11,39 +11,39 @@
   --font-body: "Avenir Next", "Avenir", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-display: "Georgia", "Times New Roman", "Times", serif;
 
-  --bg: #ffffff;
-  --surface: #f8fafc;
-  --text: #0f172a;
-  --muted: #334155;
-  --border: #e2e8f0;
-  --accent: #2563eb;
-  --accent-foreground: #ffffff;
+  --bg: 255 255 255;
+  --surface: 248 250 252;
+  --text: 15 23 42;
+  --muted: 71 85 105;
+  --border: 226 232 240;
+  --accent: 37 99 235;
+  --accent-foreground: 255 255 255;
 
-  --background: var(--bg);
-  --foreground: var(--text);
+  --background: rgb(var(--bg));
+  --foreground: rgb(var(--text));
 
-  --card: var(--bg);
-  --card-foreground: var(--text);
+  --card: rgb(var(--bg));
+  --card-foreground: rgb(var(--text));
 
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
+  --primary: rgb(var(--accent));
+  --primary-foreground: rgb(var(--accent-foreground));
 
-  --secondary: var(--surface);
-  --secondary-foreground: var(--text);
+  --secondary: rgb(var(--surface));
+  --secondary-foreground: rgb(var(--text));
 
-  --muted: var(--surface);
-  --muted-foreground: var(--muted);
+  --muted: rgb(var(--surface));
+  --muted-foreground: rgb(var(--muted));
 
-  --accent: var(--accent);
-  --accent-foreground: var(--accent-foreground);
+  --accent: rgb(var(--accent));
+  --accent-foreground: rgb(var(--accent-foreground));
 
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
 
-  --border: var(--border);
+  --border: rgb(var(--border));
   --input: transparent;
   --input-background: #f3f3f5;
   --switch-background: #cbced4;
@@ -63,48 +63,48 @@
 
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: var(--accent-foreground);
-  --sidebar-accent: var(--surface);
-  --sidebar-accent-foreground: var(--text);
-  --sidebar-border: var(--border);
+  --sidebar-primary: rgb(var(--accent));
+  --sidebar-primary-foreground: rgb(var(--accent-foreground));
+  --sidebar-accent: rgb(var(--surface));
+  --sidebar-accent-foreground: rgb(var(--text));
+  --sidebar-border: rgb(var(--border));
   --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
-  --bg: #0b1120;
-  --surface: #0f172a;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --border: #1f2937;
-  --accent: #3b82f6;
-  --accent-foreground: #ffffff;
+  --bg: 11 17 32;
+  --surface: 15 23 42;
+  --text: 248 250 252;
+  --muted: 148 163 184;
+  --border: 31 41 55;
+  --accent: 59 130 246;
+  --accent-foreground: 255 255 255;
 
-  --background: var(--bg);
-  --foreground: var(--text);
+  --background: rgb(var(--bg));
+  --foreground: rgb(var(--text));
 
-  --card: var(--surface);
-  --card-foreground: var(--text);
+  --card: rgb(var(--surface));
+  --card-foreground: rgb(var(--text));
 
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
+  --primary: rgb(var(--accent));
+  --primary-foreground: rgb(var(--accent-foreground));
 
-  --secondary: var(--surface);
-  --secondary-foreground: var(--text);
+  --secondary: rgb(var(--surface));
+  --secondary-foreground: rgb(var(--text));
 
-  --muted: var(--surface);
-  --muted-foreground: var(--muted);
+  --muted: rgb(var(--surface));
+  --muted-foreground: rgb(var(--muted));
 
-  --accent: var(--accent);
-  --accent-foreground: var(--accent-foreground);
+  --accent: rgb(var(--accent));
+  --accent-foreground: rgb(var(--accent-foreground));
 
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
 
-  --border: var(--border);
+  --border: rgb(var(--border));
   --input: oklch(0.269 0 0);
 
   --ring: oklch(0.439 0 0);
@@ -117,11 +117,11 @@
 
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: var(--accent-foreground);
-  --sidebar-accent: var(--surface);
-  --sidebar-accent-foreground: var(--text);
-  --sidebar-border: var(--border);
+  --sidebar-primary: rgb(var(--accent));
+  --sidebar-primary-foreground: rgb(var(--accent-foreground));
+  --sidebar-accent: rgb(var(--surface));
+  --sidebar-accent-foreground: rgb(var(--text));
+  --sidebar-border: rgb(var(--border));
   --sidebar-ring: oklch(0.439 0 0);
 }
 
@@ -254,8 +254,8 @@ body {
 
 .engine-glow {
   box-shadow:
-    0 0 20px rgba(14, 165, 233, 0.35),
-    0 0 40px rgba(214, 180, 74, 0.28);
+    0 0 20px rgba(37, 99, 235, 0.25),
+    0 0 40px rgba(37, 99, 235, 0.18);
 }
 
 .mesh-hero {
@@ -263,9 +263,9 @@ body {
   inset: -20% -10% auto -10%;
   height: 120%;
   background:
-    radial-gradient(600px 300px at 10% 10%, rgba(214, 180, 74, 0.22), transparent 60%),
-    radial-gradient(500px 280px at 85% 20%, rgba(14, 165, 233, 0.22), transparent 60%),
-    radial-gradient(520px 320px at 50% 80%, rgba(2, 132, 199, 0.18), transparent 60%);
+    radial-gradient(600px 300px at 10% 10%, rgba(37, 99, 235, 0.12), transparent 60%),
+    radial-gradient(500px 280px at 85% 20%, rgba(148, 163, 184, 0.12), transparent 60%),
+    radial-gradient(520px 320px at 50% 80%, rgba(37, 99, 235, 0.08), transparent 60%);
   filter: blur(14px);
   animation: meshShift 10s ease-in-out infinite;
   pointer-events: none;
@@ -298,15 +298,15 @@ body {
   pointer-events: none;
   z-index: 0;
   background-image:
-    radial-gradient(circle at 12% 18%, rgba(14, 165, 233, 0.08), transparent 40%),
-    radial-gradient(circle at 85% 22%, rgba(214, 180, 74, 0.1), transparent 42%),
+    radial-gradient(circle at 12% 18%, rgba(37, 99, 235, 0.06), transparent 40%),
+    radial-gradient(circle at 85% 22%, rgba(148, 163, 184, 0.08), transparent 42%),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
 }
 
 .dark .section-tone::before {
   background-image:
-    radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.12), transparent 42%),
-    radial-gradient(circle at 85% 22%, rgba(217, 119, 6, 0.14), transparent 45%),
+    radial-gradient(circle at 12% 18%, rgba(59, 130, 246, 0.16), transparent 42%),
+    radial-gradient(circle at 85% 22%, rgba(148, 163, 184, 0.12), transparent 45%),
     linear-gradient(to bottom, rgba(15, 23, 42, 0.28), rgba(15, 23, 42, 0));
 }
 
@@ -367,8 +367,8 @@ body {
 
 .gold-shadow {
   box-shadow:
-    0 12px 40px rgba(233, 208, 138, 0.28),
-    0 6px 18px rgba(14, 165, 233, 0.12);
+    0 12px 40px rgba(37, 99, 235, 0.18),
+    0 6px 18px rgba(37, 99, 235, 0.08);
 }
 
 .pulse-gold {
@@ -380,8 +380,8 @@ body {
   inset: -10% 0 auto 0;
   height: 60%;
   background:
-    radial-gradient(380px 220px at 50% 0%, rgba(214, 180, 74, 0.28), transparent 70%),
-    radial-gradient(520px 260px at 50% 30%, rgba(14, 165, 233, 0.2), transparent 70%);
+    radial-gradient(380px 220px at 50% 0%, rgba(37, 99, 235, 0.16), transparent 70%),
+    radial-gradient(520px 260px at 50% 30%, rgba(148, 163, 184, 0.12), transparent 70%);
   filter: blur(6px);
   animation: spotlight 5s ease-in-out infinite;
   pointer-events: none;

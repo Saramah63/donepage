@@ -495,7 +495,7 @@ export function LandingPagePreview({
   return (
     <div
       id="landing-root"
-      className="donepage-surface-theme min-h-screen bg-white text-gray-900 dark:bg-slate-950 dark:text-gray-100"
+      className="donepage-surface-theme min-h-screen bg-[rgb(var(--bg))] text-[rgb(var(--text))]"
       dir={isRTL ? "rtl" : "ltr"}
     >
       {mediaPreview ? (
@@ -504,13 +504,13 @@ export function LandingPagePreview({
           onClick={() => setMediaPreview(null)}
         >
           <div
-            className="relative w-full max-w-2xl rounded-2xl bg-white p-4 text-gray-900 shadow-2xl dark:bg-slate-900 dark:text-gray-100"
+            className="relative w-full max-w-2xl rounded-2xl bg-[rgb(var(--bg))] p-4 text-[rgb(var(--text))] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setMediaPreview(null)}
-              className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700"
+              className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-1 text-xs font-semibold text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface))]"
             >
               <X className="h-3.5 w-3.5" />
               {pickLang(lang, { en: "Close", fa: "بستن", ar: "إغلاق", fi: "Sulje" })}
@@ -541,7 +541,7 @@ export function LandingPagePreview({
       ) : null}
       {/* ACTION BAR */}
       {mode === "preview" && (
-        <div className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl dark:border-gray-800 dark:bg-slate-950/80">
+        <div className="fixed top-0 left-0 right-0 z-50 border-b border-[rgb(var(--border))] bg-[rgb(var(--bg))]/90 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500">
@@ -580,7 +580,7 @@ export function LandingPagePreview({
           </div>
           {publishHint ? (
             <div className="mx-auto max-w-7xl px-4 pb-3">
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-medium text-[var(--accent)]">
+              <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-xs font-medium text-[rgb(var(--accent))]">
                 {publishHint === "custom"
                   ? "Custom domain selected. Open Publish and enter your domain."
                   : "Donepage subdomain selected. Open Publish to use the suggested subdomain."}
@@ -597,30 +597,31 @@ export function LandingPagePreview({
           </div>
         ) : null}
         {/* HERO */}
+        // Visual QA checklist:
+        // - Hero content centered and balanced
+        // - CTA visible in first viewport
+        // - Body text readable in daylight
+        // - No heavy dark gradients by default
+        // - Cards consistent (border + shadow-sm + rounded-2xl)
         <section
           id="hero"
           className={[
-            "section-tone section-tone-hero relative flex items-center justify-center overflow-hidden px-4 bg-[var(--bg)]",
-            mode === "preview" ? "min-h-[calc(100vh-4rem)] py-12" : "min-h-screen py-12",
+            "section-tone section-tone-hero relative flex items-center justify-center overflow-hidden px-4 bg-[rgb(var(--bg))]",
+            mode === "preview" ? "min-h-[calc(100vh-4rem)] py-16 md:py-24" : "min-h-screen py-16 md:py-24",
           ].join(" ")}
         >
-          <div className="mesh-hero" aria-hidden="true" />
-          <div className="hero-spotlight" aria-hidden="true" />
-          <div className="noise-film" aria-hidden="true" />
-          <div className="pointer-events-none absolute -left-16 top-0 h-44 w-44 rounded-full bg-amber-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -right-16 top-10 h-56 w-56 rounded-full bg-slate-300/30 blur-3xl dark:bg-amber-900/30" />
-
-          <div className="mx-auto grid w-full max-w-5xl gap-10 md:grid-cols-2 md:items-center md:gap-12">
-            <div className="mx-auto w-full max-w-2xl text-center md:mx-0 md:text-left">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-white/80 px-4 py-2 text-xs font-semibold text-amber-800 dark:border-amber-700/70 dark:bg-slate-900/85 dark:text-amber-200">
-                <Sparkles className="h-4 w-4" />
-                {heroBusinessName}
-              </div>
+          <div className="mx-auto w-full max-w-7xl px-6">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="w-full max-w-xl text-center">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-xs font-semibold text-[rgb(var(--muted))]">
+                  <Sparkles className="h-4 w-4 text-[rgb(var(--accent))]" />
+                  {heroBusinessName}
+                </div>
 
               <EditableText
                 as="h1"
                 value={heroHeadline}
-                className="mx-auto max-w-xl text-4xl font-semibold leading-[1.06] tracking-[-0.02em] text-gray-900 dark:text-gray-100 sm:text-5xl lg:text-6xl md:mx-0"
+                className="mx-auto max-w-xl text-5xl font-semibold leading-tight tracking-tight text-[rgb(var(--text))]"
                 onChange={editable ? (v) => edit("heroHeadline", v) : undefined}
                 placeholder="Headline"
               />
@@ -628,11 +629,11 @@ export function LandingPagePreview({
               <EditableText
                 as="p"
                 value={heroSubheadline}
-                className="mx-auto mt-5 max-w-3xl text-base text-gray-600 dark:text-gray-300 sm:text-lg md:mx-0"
+                className="mx-auto mt-4 max-w-3xl text-lg text-[rgb(var(--muted))]"
                 onChange={editable ? (v) => edit("heroSubheadline", v) : undefined}
                 placeholder="Subheadline"
               />
-              <p className="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+              <p className="mt-3 text-sm font-medium text-[rgb(var(--muted))]">
                 {pickLang(lang, {
                   en: "Designed for clarity, trust, and conversion from first visit.",
                   fa: "برای وضوح، اعتماد و تبدیل از اولین بازدید طراحی شده است.",
@@ -641,8 +642,12 @@ export function LandingPagePreview({
                 })}
               </p>
 
-              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:items-start">
-                <Button size="lg" asChild>
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+                <Button
+                  size="lg"
+                  asChild
+                  className="bg-blue-600 text-white px-6 py-3 rounded-xl shadow hover:bg-blue-700"
+                >
                   <a href={heroPrimaryHref}>
                     {editable ? (
                       <span
@@ -675,50 +680,50 @@ export function LandingPagePreview({
                 </Button>
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-3 md:justify-start">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                 {heroBadges.map((badge, idx) => (
                   <div
                     key={`${badge}-${idx}`}
-                    className="flex items-center gap-2 rounded-full border border-amber-200 bg-white/85 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm dark:border-amber-700/70 dark:bg-slate-900/90 dark:text-slate-200"
+                    className="flex items-center gap-2 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--muted))] shadow-sm"
                   >
-                    <CheckCircle className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+                    <CheckCircle className="h-4 w-4 text-[rgb(var(--accent))]" />
                     {badge}
                   </div>
                 ))}
               </div>
 
-              <div className="mx-auto mt-8 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-3 md:mx-0">
-                <div className="rounded-xl border border-amber-200 bg-white/90 px-3 py-3 dark:border-amber-700/70 dark:bg-slate-900/90">
-                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{solutionCount}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300">
+              <div className="mx-auto mt-8 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-[rgb(var(--border))] bg-white px-3 py-3 shadow-sm">
+                  <div className="text-lg font-semibold text-[rgb(var(--text))]">{solutionCount}</div>
+                  <div className="text-xs text-[rgb(var(--muted))]">
                     {pickLang(lang, { en: "Solutions", fa: "راهکار", ar: "حلول", fi: "Ratkaisut" })}
                   </div>
                 </div>
-                <div className="rounded-xl border border-amber-200 bg-white/90 px-3 py-3 dark:border-amber-700/70 dark:bg-slate-900/90">
-                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{packageCount}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300">
+                <div className="rounded-2xl border border-[rgb(var(--border))] bg-white px-3 py-3 shadow-sm">
+                  <div className="text-lg font-semibold text-[rgb(var(--text))]">{packageCount}</div>
+                  <div className="text-xs text-[rgb(var(--muted))]">
                     {pickLang(lang, { en: "Packages", fa: "پکیج", ar: "باقات", fi: "Paketit" })}
                   </div>
                 </div>
-                <div className="rounded-xl border border-amber-200 bg-white/90 px-3 py-3 dark:border-amber-700/70 dark:bg-slate-900/90">
-                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{portfolioItems.length}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300">
+                <div className="rounded-2xl border border-[rgb(var(--border))] bg-white px-3 py-3 shadow-sm">
+                  <div className="text-lg font-semibold text-[rgb(var(--text))]">{portfolioItems.length}</div>
+                  <div className="text-xs text-[rgb(var(--muted))]">
                     {pickLang(lang, { en: "Portfolio", fa: "نمونه‌کار", ar: "معرض الأعمال", fi: "Portfolio" })}
                   </div>
                 </div>
               </div>
             </div>
 
-            <Card className="reveal-up mx-auto w-full max-w-xl border-[var(--border)] bg-[var(--bg)] shadow-sm">
+            <Card className="reveal-up justify-self-center w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-sm">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <div className="flex items-center justify-between text-sm font-semibold text-[rgb(var(--text))]">
                   {pickLang(lang, {
                     en: "Performance Snapshot",
                     fa: "نمای سریع",
                     ar: "لمحة سريعة",
                     fi: "Pikatilanne",
                   })}
-                  <span className="rounded-full border border-amber-300 bg-amber-100/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100">
+                  <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--muted))]">
                     {pickLang(lang, { en: "Live", fa: "زنده", ar: "مباشر", fi: "Live" })}
                   </span>
                 </div>
@@ -728,28 +733,28 @@ export function LandingPagePreview({
                     return (
                     <div
                       key={`${s.label}-${idx}`}
-                      className="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 dark:border-amber-700/60 dark:bg-slate-800"
+                      className="rounded-xl border border-gray-200 bg-white px-4 py-3"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="text-xl font-bold text-slate-900 dark:text-amber-100">{s.value}</div>
+                        <div className="text-xl font-bold text-[rgb(var(--text))]">{s.value}</div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                          <span className="text-xs font-semibold text-[rgb(var(--accent))]">
                             {rate}%
                           </span>
-                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-amber-200 dark:bg-slate-700">
+                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[rgb(var(--surface))]">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400"
+                            className="h-full rounded-full bg-[rgb(var(--accent))]"
                             style={{ width: `${rate}%` }}
                           />
                           </div>
                         </div>
                       </div>
-                      <div className="mt-1 text-xs text-slate-700 dark:text-slate-200">{s.label}</div>
+                      <div className="mt-1 text-xs text-[rgb(var(--muted))]">{s.label}</div>
                     </div>
                     );
                   })}
                 </div>
-                <div className="mt-4 rounded-xl border border-amber-200 bg-white/90 p-3 text-xs text-slate-700 dark:border-amber-700/60 dark:bg-slate-800/90 dark:text-slate-200">
+                <div className="mt-4 rounded-xl border border-gray-200 bg-[rgb(var(--surface))] p-3 text-xs text-[rgb(var(--muted))]">
                   {pickLang(lang, {
                     en: "Structured for professional positioning, premium trust signals, and clean conversion flow.",
                     fa: "ساختاربندی‌شده برای جایگاه حرفه‌ای، سیگنال‌های اعتماد ممتاز و جریان تبدیل شفاف.",
@@ -764,7 +769,7 @@ export function LandingPagePreview({
 
         {/* ABOUT */}
         {answers.includeAbout === "yes" && content.about && (
-          <section className="section-tone section-tone-about px-4 py-20 bg-white dark:bg-slate-950">
+          <section className="section-tone section-tone-about px-4 py-20 bg-[rgb(var(--surface))]">
             <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.1fr_0.9fr] md:items-center">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-200">
@@ -828,17 +833,17 @@ export function LandingPagePreview({
         )}
 
         {/* VALUE / BENEFITS */}
-        <section id="why-choose-us" className="section-tone section-tone-value px-4 py-20 bg-[var(--surface)]">
+        <section id="why-choose-us" className="section-tone section-tone-value px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.value.title}</h2>
-              <p className="mt-3 text-gray-600 dark:text-gray-300">{content.value.description}</p>
+              <h2 className="text-3xl font-bold tracking-[-0.01em] text-[rgb(var(--text))]">{content.value.title}</h2>
+              <p className="mt-3 text-[rgb(var(--muted))]">{content.value.description}</p>
             </div>
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
               {content.value.benefits.map((b, idx) => (
                 <Card
                   key={`${b.title}-${idx}`}
-                  className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
+                  className="reveal-up card-lift border-[rgb(var(--border))] bg-white rounded-2xl shadow-sm"
                 >
                   <CardContent className="pt-6">
                     <EditableText
@@ -863,7 +868,7 @@ export function LandingPagePreview({
         </section>
 
         {/* SERVICES */}
-        <section id="services" className="section-tone section-tone-services px-4 py-20 bg-[var(--bg)]">
+        <section id="services" className="section-tone section-tone-services px-4 py-16 md:py-24 bg-[rgb(var(--bg))]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.services.title}</h2>
@@ -874,7 +879,7 @@ export function LandingPagePreview({
               {coreOfferings.map((offer, idx) => (
                 <Card
                   key={`${offer.name}-${idx}`}
-                  className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
+                  className="reveal-up card-lift border-[rgb(var(--border))] bg-[rgb(var(--bg))] shadow-sm"
                 >
                   <CardContent className="pt-6">
                     <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">{offer.name}</div>
@@ -882,7 +887,7 @@ export function LandingPagePreview({
                     <div className="mt-4 grid gap-2 text-sm text-gray-700 dark:text-gray-200">
                       {offer.features.map((f, fIdx) => (
                         <div key={`${f}-${fIdx}`} className="flex items-start gap-2">
-                          <CheckCircle className="mt-0.5 h-4 w-4 text-amber-600 dark:text-amber-300" />
+                    <CheckCircle className="mt-0.5 h-4 w-4 text-[rgb(var(--accent))]" />
                           {f}
                         </div>
                       ))}
@@ -916,15 +921,15 @@ export function LandingPagePreview({
                   {packageItems.map((pkg, idx) => (
                     <Card
                       key={`${pkg.name}-${idx}`}
-                    className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
+                    className="reveal-up card-lift border-[rgb(var(--border))] bg-[rgb(var(--bg))] shadow-sm"
                     >
                       <CardContent className="pt-6">
-                        <div className="text-xl font-semibold text-slate-900 dark:text-amber-100">{pkg.name}</div>
+                    <div className="text-xl font-semibold text-[rgb(var(--text))]">{pkg.name}</div>
                         {pkg.description ? (
                           <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{pkg.description}</p>
                         ) : null}
                         {pkg.metric ? (
-                          <div className="mt-4 inline-flex items-center rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-semibold text-amber-900 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100">
+                        <div className="mt-4 inline-flex items-center rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1 text-xs font-semibold text-[rgb(var(--muted))]">
                             {pkg.metric}
                           </div>
                         ) : null}
@@ -932,7 +937,7 @@ export function LandingPagePreview({
                           <Button
                             asChild
                             size="sm"
-                            className="bg-amber-600 text-white hover:bg-amber-500 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                            className="bg-[rgb(var(--accent))] text-[rgb(var(--accent-foreground))] hover:opacity-90"
                           >
                             <a href="#contact">
                               {pickLang(lang, {
@@ -955,7 +960,7 @@ export function LandingPagePreview({
 
         {/* PROCESS */}
         {content.steps?.steps?.length ? (
-          <section className="section-tone section-tone-process px-4 py-20 bg-[var(--surface)]">
+          <section className="section-tone section-tone-process px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
             <div className="mx-auto max-w-6xl">
               <div className="max-w-2xl">
                 <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
@@ -969,10 +974,10 @@ export function LandingPagePreview({
               {content.steps.steps.map((item: any, idx: number) => (
                 <Card
                   key={`${item.no}-${idx}`}
-                  className="reveal-up card-lift border-amber-200 bg-white/90 shadow-lg shadow-amber-500/10 dark:border-amber-700/60 dark:bg-slate-900/90"
+                  className="reveal-up card-lift border-[rgb(var(--border))] bg-[rgb(var(--bg))] shadow-sm"
                 >
                   <CardContent className="pt-6">
-                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-600 text-sm font-bold text-white dark:bg-amber-500 dark:text-slate-950">
+                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgb(var(--accent))] text-sm font-bold text-white">
                         {item.no}
                       </div>
                       <div className="mt-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -990,7 +995,7 @@ export function LandingPagePreview({
         ) : null}
 
         {/* TRUST / STATS */}
-        <section className="section-tone section-tone-trust px-4 py-20 bg-[var(--bg)]">
+        <section className="section-tone section-tone-trust px-4 py-16 md:py-24 bg-[rgb(var(--bg))]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.trust.title}</h2>
@@ -1000,7 +1005,7 @@ export function LandingPagePreview({
               {content.trust.stats.map((s, idx) => (
                 <div
                   key={`${s.label}-${idx}`}
-                  className="card-lift rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-6 text-center shadow-sm"
+                  className="card-lift rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-6 text-center shadow-sm"
                 >
                   <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{s.value}</div>
                   <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">{s.label}</div>
@@ -1008,12 +1013,12 @@ export function LandingPagePreview({
               ))}
             </div>
             {content.trust.guarantee ? (
-              <div className="mt-10 rounded-2xl border border-amber-200/70 bg-amber-50/70 p-6 dark:border-amber-700/60 dark:bg-amber-950/25">
-                <div className="flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+              <div className="mt-10 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[rgb(var(--text))]">
                   <ShieldCheck className="h-4 w-4" />
                   {content.trust.guarantee.title}
                 </div>
-                <p className="mt-2 text-sm text-amber-900/80 dark:text-amber-100/90">
+                <p className="mt-2 text-sm text-[rgb(var(--muted))]">
                   {content.trust.guarantee.description}
                 </p>
               </div>
@@ -1022,7 +1027,7 @@ export function LandingPagePreview({
         </section>
 
         {/* PORTFOLIO */}
-        <section id="portfolio" className="section-tone section-tone-portfolio px-4 py-20 bg-[var(--surface)]">
+        <section id="portfolio" className="section-tone section-tone-portfolio px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.portfolio.title}</h2>
@@ -1032,7 +1037,7 @@ export function LandingPagePreview({
               {portfolioItems.map((item, idx) => (
                 <Card
                   key={`${item.title}-${idx}`}
-                  className="reveal-up card-lift border-[var(--border)] bg-[var(--bg)] shadow-sm"
+                  className="reveal-up card-lift border-[rgb(var(--border))] bg-[rgb(var(--bg))] shadow-sm"
                 >
                   <CardContent className="pt-6">
                     {"imageUrl" in item && (item as any).imageUrl ? (
@@ -1067,7 +1072,7 @@ export function LandingPagePreview({
                     ) : null}
                     <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{item.title}</div>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{item.description}</p>
-                    <div className="mt-4 inline-flex items-center rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100">
+                    <div className="mt-4 inline-flex items-center rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1 text-xs font-semibold text-[rgb(var(--muted))]">
                       {item.metric}
                     </div>
                   </CardContent>
@@ -1078,7 +1083,7 @@ export function LandingPagePreview({
         </section>
 
         {faqItems.length > 0 ? (
-          <section className="section-tone px-4 py-20 bg-white dark:bg-slate-950">
+        <section className="section-tone px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
             <div className="mx-auto max-w-5xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
                 FAQ
@@ -1087,7 +1092,7 @@ export function LandingPagePreview({
                 {faqItems.map((item, idx) => (
                   <div
                     key={`${item.question}-${idx}`}
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-5 shadow-sm"
+                  className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-5 shadow-sm"
                   >
                     <EditableText
                       as="div"
@@ -1111,8 +1116,8 @@ export function LandingPagePreview({
         ) : null}
 
         {/* CTA */}
-        <section className="section-tone section-tone-cta px-4 py-20 bg-[var(--bg)]">
-          <div className="mx-auto max-w-5xl rounded-3xl border border-[var(--border)] bg-[var(--bg)] px-6 py-10 text-center shadow-sm">
+        <section className="section-tone section-tone-cta px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
+          <div className="mx-auto max-w-5xl rounded-2xl border border-[rgb(var(--border))] bg-white px-6 py-10 text-center shadow-sm">
             <EditableText
               as="h2"
               value={content.cta.headline}
@@ -1131,7 +1136,7 @@ export function LandingPagePreview({
               <Button
                 size="lg"
                 asChild
-                className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                className="bg-blue-600 text-white px-6 py-3 rounded-xl shadow hover:bg-blue-700"
               >
                 <a href={ctaPrimaryHref}>
                   {editable ? (
@@ -1168,7 +1173,7 @@ export function LandingPagePreview({
         </section>
 
         {/* CONTACT */}
-        <section id="contact" className="px-4 py-20 bg-[var(--surface)]">
+        <section id="contact" className="px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <EditableText
@@ -1255,7 +1260,7 @@ export function LandingPagePreview({
           </div>
         </section>
 
-        <footer className="bg-gray-900 py-10 text-center text-gray-400 dark:bg-black">
+        <footer className="bg-[rgb(var(--surface))] py-10 text-center text-[rgb(var(--muted))]">
           © 2026 {hero.businessName} · Built with Donepage
         </footer>
       </div>
@@ -1293,21 +1298,21 @@ function ContactCard({
   disabledText?: string;
 }) {
   return (
-    <Card className="text-center border-amber-200 bg-white/90 dark:border-amber-700/60 dark:bg-slate-900">
+    <Card className="text-center border-[rgb(var(--border))] bg-[rgb(var(--bg))] shadow-sm">
       <CardContent className="pt-8">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-600 text-white dark:bg-amber-500 dark:text-slate-950">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgb(var(--accent))] text-[rgb(var(--accent-foreground))]">
           {icon}
         </div>
         <h3 className="font-semibold dark:text-gray-100">{title}</h3>
 
         {href ? (
-          <Button asChild className="mt-4 w-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400">
+          <Button asChild className="mt-4 w-full bg-[rgb(var(--accent))] text-[rgb(var(--accent-foreground))] hover:opacity-90">
             <a href={href} target="_blank" rel="noreferrer" className="text-white dark:text-slate-950">
               {label}
             </a>
           </Button>
         ) : (
-          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:border-gray-700 dark:bg-slate-800 dark:text-gray-300">
+          <div className="mt-4 rounded-xl border border-gray-200 bg-[rgb(var(--surface))] px-3 py-2 text-xs text-[rgb(var(--muted))]">
             {disabledText || "Not set"}
           </div>
         )}

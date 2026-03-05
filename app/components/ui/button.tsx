@@ -11,13 +11,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90",
+          "bg-[rgb(var(--accent))] text-[rgb(var(--accent-foreground))] hover:opacity-90",
         destructive: "bg-red-600 text-white hover:bg-red-700",
         outline:
-          "border border-[var(--border)] bg-transparent text-[var(--text)] hover:bg-[var(--surface)]",
-        secondary: "bg-[var(--surface)] text-[var(--text)] hover:opacity-90",
-        ghost: "text-[var(--text)] hover:bg-[var(--surface)]",
-        link: "text-[var(--accent)] underline-offset-4 hover:underline",
+          "border border-[rgb(var(--border))] bg-transparent text-[rgb(var(--text))] hover:bg-[rgb(var(--surface))]",
+        secondary: "bg-[rgb(var(--surface))] text-[rgb(var(--text))] hover:opacity-90",
+        ghost: "text-[rgb(var(--text))] hover:bg-[rgb(var(--surface))]",
+        link: "text-[rgb(var(--accent))] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-11 px-5",

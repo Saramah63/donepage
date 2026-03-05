@@ -86,6 +86,35 @@ function polishText(value: string, lang: ReturnType<typeof getLang>, mode: "titl
   return out;
 }
 
+function isLowQualityHeadline(value: string) {
+  const v = (value || "").trim();
+  if (v.length < 6) return true;
+  if (/([a-zA-Z])\1{2,}/.test(v)) return true; // repeated letters
+  if (/(.)\1{4,}/.test(v)) return true;
+  if (/[^a-zA-Z0-9\s.,!?'"-]/.test(v)) return true;
+  return false;
+}
+
+function fallbackHeadline(answers: QuestionnaireAnswers, lang: ReturnType<typeof getLang>) {
+  const offer = polishText(safeTrim(answers.primaryOffer), lang, "title");
+  const audience = safeTrim(String(answers.targetAudience || "")).replace(/-/g, " ");
+  if (offer && audience) {
+    return pickLang(lang, {
+      en: `${offer} for ${polishText(audience, lang, "title")}`,
+      fa: offer,
+      ar: offer,
+      fi: offer,
+    });
+  }
+  if (offer) return offer;
+  return pickLang(lang, {
+    en: "Professional solutions for growing businesses",
+    fa: "راهکارهای حرفه‌ای برای رشد کسب‌وکارها",
+    ar: "حلول احترافية لتنمية الأعمال",
+    fi: "Ammatilliset ratkaisut kasvaville yrityksille",
+  });
+}
+
 function parseJsonMap(value?: string): Record<string, string> {
   if (!value) return {};
   try {
@@ -660,15 +689,19 @@ export function generateContentAdvanced(answers: QuestionnaireAnswers) {
   const offer = polishText(safeTrim(answers.primaryOffer), lang, "title");
   const audience = safeTrim(String(answers.targetAudience || "")).replace(/-/g, " ");
 
-  if (offer) {
-    const smartHeadline = pickLang(lang, {
-      en: audience ? `${offer} for ${polishText(audience, lang, "title")}` : offer,
-      fa: offer,
-      ar: offer,
-      fi: offer,
-    });
-    base.meta.headline = smartHeadline;
-  }
+  const smartHeadline =
+    offer
+      ? pickLang(lang, {
+          en: audience ? `${offer} for ${polishText(audience, lang, "title")}` : offer,
+          fa: offer,
+          ar: offer,
+          fi: offer,
+        })
+      : "";
+  const safeHeadline = !smartHeadline || isLowQualityHeadline(smartHeadline)
+    ? fallbackHeadline(answers, lang)
+    : smartHeadline;
+  base.meta.headline = safeHeadline;
 
   // Prefer user-written strategic text when provided.
   const subheadlineParts = [
