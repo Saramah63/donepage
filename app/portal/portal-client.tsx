@@ -7,6 +7,7 @@ import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import PublishGateModal from "@/app/components/publish-gate-modal";
+import type { DraftContent } from "@/app/lib/draft-content";
 
 type Project = {
   id: string;
@@ -21,6 +22,7 @@ type Project = {
   previewUrl: string;
   publishedUrl?: string | null;
   domain?: string | null;
+  draftContent?: DraftContent | null;
   basicSeo: boolean;
   priorityDelivery: boolean;
   humanEtaDate: string;

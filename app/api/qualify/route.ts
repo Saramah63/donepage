@@ -83,9 +83,10 @@ export async function POST(req: Request) {
       redFlags,
     });
 
-    if (prisma) {
+    const prismaAny = prisma as any;
+    if (prismaAny?.qualificationSession) {
       const consent = Boolean(body.consentToStore);
-      await prisma.qualificationSession.create({
+      await prismaAny.qualificationSession.create({
         data: {
           slug,
           industry: body.context.industry,

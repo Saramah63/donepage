@@ -23,8 +23,9 @@ export async function GET(req: Request) {
       );
     }
 
-    const safeCountQualification = prisma.qualificationSession.count().catch(() => 0);
-    const safeRecentQualifications = prisma.qualificationSession
+    const prismaAny = prisma as any;
+    const safeCountQualification = prismaAny?.qualificationSession?.count().catch(() => 0) ?? 0;
+    const safeRecentQualifications = prismaAny?.qualificationSession
       .findMany({
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -54,7 +55,7 @@ export async function GET(req: Request) {
           createdAt: true,
         },
       }),
-      safeRecentQualifications,
+      safeRecentQualifications ?? [],
     ]);
 
     return NextResponse.json({

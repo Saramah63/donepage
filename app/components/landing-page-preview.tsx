@@ -300,7 +300,11 @@ export function LandingPagePreview({
     if (draftOverrides.contactTitle) base.contact.title = draftOverrides.contactTitle;
     if (draftOverrides.contactSubtitle) base.contact.subtitle = draftOverrides.contactSubtitle;
     if (draftOverrides.benefits && draftOverrides.benefits.length > 0) {
-      base.value.benefits = draftOverrides.benefits;
+      base.value.benefits = draftOverrides.benefits.map((b, i) => ({
+        title: b.title,
+        description: b.description,
+        tone: base.value.benefits?.[i]?.tone || "blue",
+      }));
     }
     return base;
   }, [answers, draftOverrides]);
