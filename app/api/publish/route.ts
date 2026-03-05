@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProjectById, updateProject } from "@/app/lib/project-store";
+import { smartPublishCheck } from "@/app/lib/draft-validate";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,19 @@ export async function POST(req: Request) {
 
     if (project.paymentStatus !== "paid") {
       return NextResponse.json({ error: "Payment required" }, { status: 402 });
+    }
+
+    const validation = smartPublishCheck(project.draftContent as any);
+    if (validation.status === "blocking") {
+      return NextResponse.json(
+        {
+          error: "Draft validation failed",
+          code: "DRAFT_INVALID",
+          issues: validation.issues,
+          status: validation.status,
+        },
+        { status: 400 }
+      );
     }
 
     let finalTarget: "subdomain" | "custom_domain" = publishTarget;

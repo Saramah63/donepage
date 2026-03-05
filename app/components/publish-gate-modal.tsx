@@ -13,6 +13,8 @@ import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { CheckCircle, CreditCard, Globe, Rocket } from "lucide-react";
 import { toast } from "sonner";
+import type { DraftContent } from "@/app/lib/draft-content";
+import type { SmartPublishIssue, SmartPublishStatus } from "@/app/lib/draft-validate";
 
 type Project = {
   id: string;
@@ -31,6 +33,7 @@ type Props = {
   onClose: () => void;
   project: Project;
   token: string;
+  draftContent?: DraftContent | null;
   onPublished?: (url: string) => void;
 };
 
@@ -44,6 +47,7 @@ export default function PublishGateModal({
   onClose,
   project,
   token,
+  draftContent,
   onPublished,
 }: Props) {
   const [step, setStep] = React.useState(1);
@@ -55,6 +59,9 @@ export default function PublishGateModal({
   const [publishedUrl, setPublishedUrl] = React.useState<string | null>(
     project.publishedUrl || null
   );
+  const [checkStatus, setCheckStatus] = React.useState<SmartPublishStatus>("pass");
+  const [checkIssues, setCheckIssues] = React.useState<SmartPublishIssue[]>([]);
+  const [checking, setChecking] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -63,10 +70,37 @@ export default function PublishGateModal({
     setDomain(project.domain || "");
     setPublishing(false);
     setPublishedUrl(project.publishedUrl || null);
+    setCheckStatus("pass");
+    setCheckIssues([]);
+    setChecking(false);
   }, [open, project]);
 
   const isPaid = project.paymentStatus === "paid";
   const canProceedPayment = isPaid;
+  React.useEffect(() => {
+    if (!open || step !== 3) return;
+    const run = async () => {
+      setChecking(true);
+      try {
+        const res = await fetch("/api/publish/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: project.id, token }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setCheckStatus(data.status || "pass");
+          setCheckIssues(Array.isArray(data.issues) ? data.issues : []);
+        } else {
+          setCheckStatus("warning");
+          setCheckIssues([]);
+        }
+      } finally {
+        setChecking(false);
+      }
+    };
+    run();
+  }, [open, step, project.id, token]);
 
   const subdomainUrl = `https://${project.id}.donepage.co`;
   const customDomainUrl = domain ? `https://${domain.replace(/^https?:\/\//, "")}` : "";
@@ -78,6 +112,7 @@ export default function PublishGateModal({
 
   const canPublish =
     isPaid &&
+    checkStatus !== "blocking" &&
     (publishTarget === "subdomain" ||
       (publishTarget === "custom_domain" &&
         project.plan === "growth" &&
@@ -103,6 +138,10 @@ export default function PublishGateModal({
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data?.code === "DRAFT_INVALID") {
+          toast.error("Draft needs fixes before publish.");
+          return;
+        }
         if (data?.code === "DNS_NOT_VERIFIED") {
           toast.error("DNS not verified yet. Publish to subdomain now or verify DNS.");
           return;
@@ -126,12 +165,12 @@ export default function PublishGateModal({
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">Publish your landing page</DialogTitle>
-          <DialogDescription className="text-center">
-            You’re almost live. Complete the steps below to publish your page.
-            <div className="mt-2 text-xs text-gray-500">
-              The preview you see is a draft. Publishing will make your page publicly accessible.
-            </div>
-          </DialogDescription>
+        <DialogDescription className="text-center">
+          You’re almost live. Complete the steps below to publish your page.
+          <span className="mt-2 block text-xs text-gray-500">
+            The preview you see is a draft. Publishing will make your page publicly accessible.
+          </span>
+        </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -303,6 +342,38 @@ export default function PublishGateModal({
               <div className="text-sm text-gray-600">
                 Once you click publish, your landing page will become publicly accessible.
               </div>
+              {checking ? (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                  Running Smart Publish Check…
+                </div>
+              ) : checkStatus !== "pass" ? (
+                <div
+                  className={[
+                    "rounded-xl border p-3 text-sm",
+                    checkStatus === "blocking"
+                      ? "border-red-200 bg-red-50 text-red-900"
+                      : "border-amber-200 bg-amber-50 text-amber-900",
+                  ].join(" ")}
+                >
+                  <div className="font-semibold">
+                    {checkStatus === "blocking"
+                      ? "Fix these before publishing:"
+                      : "We recommend improving these before publishing:"}
+                  </div>
+                  <ul className="mt-2 list-disc pl-5">
+                    {checkIssues.map((issue, idx) => (
+                      <li key={`${issue.type}-${idx}`}>
+                        {issue.message}
+                        {issue.suggestion ? ` — ${issue.suggestion}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+                  Smart Publish Check passed.
+                </div>
+              )}
               <div className="text-sm text-gray-600">
                 Target:{" "}
                 <span className="font-semibold">

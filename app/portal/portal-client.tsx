@@ -266,6 +266,7 @@ export default function PortalClient() {
           onClose={() => setShowPublish(false)}
           token={token}
           project={project}
+          draftContent={project.draftContent}
           onPublished={(url) => {
             setPublishedUrl(url);
             fetchProject();

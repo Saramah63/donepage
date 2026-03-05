@@ -20,6 +20,7 @@ export type ProjectRecord = {
   id: string;
   plan: ProjectPlan;
   status: ProjectStatus;
+  templateId: "A" | "B" | "C";
   paymentStatus: "unpaid" | "paid";
   publishStatus: "draft" | "approved" | "publishing" | "published";
   publishTarget?: "subdomain" | "custom_domain" | null;
@@ -70,6 +71,7 @@ function nowIso() {
 function normalizeProject(input: ProjectRecord): ProjectRecord {
   return {
     ...input,
+    templateId: (input as any).templateId || "A",
     paymentStatus: (input as any).paymentStatus || "unpaid",
     publishStatus: (input as any).publishStatus || "draft",
     publishTarget: (input as any).publishTarget ?? null,
@@ -86,6 +88,7 @@ export function getPlanConfig(plan: ProjectPlan) {
 export async function createProject(input: {
   plan: ProjectPlan;
   status: ProjectStatus;
+  templateId?: "A" | "B" | "C";
   paymentStatus: "unpaid" | "paid";
   publishStatus: "draft" | "approved" | "publishing" | "published";
   publishTarget?: "subdomain" | "custom_domain" | null;
@@ -108,6 +111,7 @@ export async function createProject(input: {
       data: {
         plan: input.plan,
         status: input.status,
+        templateId: input.templateId ?? "A",
         paymentStatus: input.paymentStatus,
         publishStatus: input.publishStatus,
         publishTarget: input.publishTarget ?? null,
@@ -132,6 +136,7 @@ export async function createProject(input: {
     id,
     plan: input.plan,
     status: input.status,
+    templateId: input.templateId ?? "A",
     paymentStatus: input.paymentStatus,
     publishStatus: input.publishStatus,
     publishTarget: input.publishTarget ?? null,

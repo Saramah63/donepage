@@ -2,11 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { LandingPagePreview } from "@/app/components/landing-page-preview";
+import { TemplateRenderer } from "@/app/components/landing-page-templates";
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
 import { Button } from "@/app/components/ui/button";
 import PublishGateModal from "@/app/components/publish-gate-modal";
-import type { DraftContent, DraftOverrides, DraftBenefit, DraftFaqItem } from "@/app/lib/draft-content";
+import ImproveCopyModal from "@/app/components/improve-copy-modal";
+import TemplateChooserModal from "@/app/components/template-chooser-modal";
+import type { DraftContent, DraftBenefit, DraftFaqItem } from "@/app/lib/draft-content";
+import { draftToOverrides } from "@/app/lib/draft-content";
 
 type Project = {
   id: string;
@@ -15,6 +18,7 @@ type Project = {
   publishStatus: "draft" | "approved" | "publishing" | "published";
   publishTarget?: "subdomain" | "custom_domain" | null;
   dnsStatus: "not_started" | "pending" | "verified";
+  templateId?: "A" | "B" | "C";
   previewUrl: string;
   publishedUrl?: string | null;
   domain?: string | null;
@@ -38,11 +42,35 @@ export default function ProjectPreviewClient({
   answers: QuestionnaireAnswers;
 }) {
   const [showPublish, setShowPublish] = React.useState(false);
-  const [overrides, setOverrides] = React.useState<DraftOverrides>(
-    project.draftContent?.overrides || {}
+  const [showImprove, setShowImprove] = React.useState(false);
+  const [showTemplates, setShowTemplates] = React.useState(false);
+  const [activeTemplate, setActiveTemplate] = React.useState<"A" | "B" | "C">(
+    project.templateId || "A"
+  );
+  const [savedTemplate, setSavedTemplate] = React.useState<"A" | "B" | "C">(
+    project.templateId || "A"
+  );
+  const [draft, setDraft] = React.useState<DraftContent>(() => ({
+    answers: (project.draftContent?.answers || answers) as QuestionnaireAnswers,
+    hero: project.draftContent?.hero,
+    benefits: project.draftContent?.benefits,
+    cta: project.draftContent?.cta,
+    contact: project.draftContent?.contact,
+    faq: project.draftContent?.faq,
+  }));
+  const overrides = React.useMemo(
+    () => draftToOverrides(draft, project.draftContent?.overrides),
+    [draft, project.draftContent?.overrides]
   );
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState<string | null>(null);
+  const pendingRef = React.useRef(
+    new Map<
+      string,
+      { section: string; field: string; value: any; index?: number }
+    >()
+  );
+  const [saveNonce, setSaveNonce] = React.useState(0);
 
   React.useEffect(() => {
     window.dispatchEvent(
@@ -50,92 +78,111 @@ export default function ProjectPreviewClient({
     );
   }, [project.id]);
 
-  const baseAnswers = (project.draftContent?.answers || answers) as QuestionnaireAnswers;
+  React.useEffect(() => {
+    setDraft({
+      answers: (project.draftContent?.answers || answers) as QuestionnaireAnswers,
+      hero: project.draftContent?.hero,
+      benefits: project.draftContent?.benefits,
+      cta: project.draftContent?.cta,
+      contact: project.draftContent?.contact,
+      faq: project.draftContent?.faq,
+    });
+    const nextTemplate = project.templateId || "A";
+    setActiveTemplate(nextTemplate);
+    setSavedTemplate(nextTemplate);
+  }, [project.id, project.draftContent, answers]);
 
-  const updateOverride = (field: string, value: string, index?: number) => {
-    setOverrides((prev) => {
-      const next = { ...prev };
-      if (field.startsWith("benefits.")) {
-        const list = (prev.benefits ? [...prev.benefits] : []) as DraftBenefit[];
-        const idx = typeof index === "number" ? index : 0;
-        list[idx] = {
-          title: field.endsWith(".title") ? value : list[idx]?.title || "",
-          description: field.endsWith(".description") ? value : list[idx]?.description || "",
-        };
-        next.benefits = list;
-        return next;
+  const baseAnswers = (draft.answers || answers) as QuestionnaireAnswers;
+
+  const queueUpdate = (section: string, field: string, value: any, index?: number) => {
+    const key = `${section}:${field}:${index ?? ""}`;
+    pendingRef.current.set(key, { section, field, value, index });
+    setSaveNonce((n) => n + 1);
+  };
+
+  const updateDraft = (section: string, field: string, value: any, index?: number) => {
+    setDraft((prev) => {
+      const next: DraftContent = { ...prev };
+      if (section === "hero") {
+        next.hero = { ...(next.hero || {}) };
+        (next.hero as any)[field] = value;
+      } else if (section === "cta") {
+        next.cta = { ...(next.cta || {}) };
+        (next.cta as any)[field] = value;
+      } else if (section === "contact") {
+        next.contact = { ...(next.contact || {}) };
+        (next.contact as any)[field] = value;
+      } else if (section === "benefits") {
+        const list = (next.benefits || []).slice() as DraftBenefit[];
+        if (field === "items" && Array.isArray(value)) {
+          next.benefits = value;
+        } else {
+          const idx = typeof index === "number" ? index : 0;
+          list[idx] = {
+            title: field === "title" ? value : list[idx]?.title || "",
+            description: field === "description" ? value : list[idx]?.description || "",
+          };
+          next.benefits = list;
+        }
+      } else if (section === "faq") {
+        const list = (next.faq || []).slice() as DraftFaqItem[];
+        if (field === "items" && Array.isArray(value)) {
+          next.faq = value;
+        } else {
+          const idx = typeof index === "number" ? index : 0;
+          list[idx] = {
+            question: field === "question" ? value : list[idx]?.question || "",
+            answer: field === "answer" ? value : list[idx]?.answer || "",
+          };
+          next.faq = list;
+        }
       }
-      if (field.startsWith("faq.")) {
-        const list = (prev.faq ? [...prev.faq] : []) as DraftFaqItem[];
-        const idx = typeof index === "number" ? index : 0;
-        list[idx] = {
-          question: field.endsWith(".question") ? value : list[idx]?.question || "",
-          answer: field.endsWith(".answer") ? value : list[idx]?.answer || "",
-        };
-        next.faq = list;
-        return next;
-      }
-      (next as any)[field] = value;
       return next;
     });
 
+    queueUpdate(section, field, value, index);
     window.dispatchEvent(
       new CustomEvent("dp_draft_edited", { detail: { projectId: project.id, field } })
     );
   };
 
   React.useEffect(() => {
+    if (pendingRef.current.size === 0) return;
     const handler = setTimeout(async () => {
       setSaving(true);
+      const updates = Array.from(pendingRef.current.values());
+      pendingRef.current.clear();
       try {
-        await fetch("/api/draft/update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectId: project.id,
-            token,
-            patch: { overrides },
-          }),
-        });
+        for (const update of updates) {
+          await fetch("/api/draft/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectId: project.id,
+              token,
+              ...update,
+            }),
+          });
+        }
         setSavedAt(new Date().toLocaleTimeString());
       } finally {
         setSaving(false);
       }
     }, 800);
     return () => clearTimeout(handler);
-  }, [overrides, project.id, token]);
+  }, [saveNonce, project.id, token]);
 
   const resetSection = (section: "hero" | "benefits" | "cta" | "contact" | "faq") => {
-    setOverrides((prev) => {
-      const next = { ...prev };
-      if (section === "hero") {
-        delete next.heroHeadline;
-        delete next.heroSubheadline;
-        delete next.heroPrimaryCTA;
-        delete next.heroSecondaryCTA;
-      }
-      if (section === "benefits") {
-        delete next.benefits;
-      }
-      if (section === "cta") {
-        delete next.ctaHeadline;
-        delete next.ctaSubheadline;
-        delete next.ctaButtonText;
-        delete next.ctaButtonUrl;
-      }
-      if (section === "contact") {
-        delete next.contactTitle;
-        delete next.contactSubtitle;
-        delete next.contactEmail;
-        delete next.contactPhone;
-        delete next.contactWhatsApp;
-        delete next.contactBookingLink;
-      }
-      if (section === "faq") {
-        delete next.faq;
-      }
+    setDraft((prev) => {
+      const next: DraftContent = { ...prev };
+      if (section === "hero") delete next.hero;
+      if (section === "benefits") delete next.benefits;
+      if (section === "cta") delete next.cta;
+      if (section === "contact") delete next.contact;
+      if (section === "faq") delete next.faq;
       return next;
     });
+    queueUpdate(section, "__reset__", null);
   };
 
   const formatDate = (dateStr: string) => {
@@ -162,6 +209,12 @@ export default function ProjectPreviewClient({
             </div>
           </div>
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowImprove(true)}>
+              Improve My Page
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowTemplates(true)}>
+              Try another layout
+            </Button>
             <Button size="sm" onClick={() => setShowPublish(true)}>
               Publish
             </Button>
@@ -174,13 +227,14 @@ export default function ProjectPreviewClient({
 
       <div className="mx-auto flex w-full max-w-7xl gap-6 px-4 py-6">
         <div className="min-w-0 flex-1">
-          <LandingPagePreview
+          <TemplateRenderer
             answers={baseAnswers}
             onEdit={() => {}}
             mode="export"
             slug={project.id}
             overrides={overrides}
-            onInlineEdit={updateOverride}
+            onInlineEdit={updateDraft}
+            templateId={activeTemplate}
           />
         </div>
 
@@ -219,8 +273,8 @@ export default function ProjectPreviewClient({
                 <label className="block">
                   CTA link
                   <input
-                    value={overrides.ctaButtonUrl || ""}
-                    onChange={(e) => updateOverride("ctaButtonUrl", e.target.value)}
+                    value={draft.cta?.buttonLink || ""}
+                    onChange={(e) => updateDraft("cta", "buttonLink", e.target.value)}
                     placeholder="https://..."
                     className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-950 dark:text-gray-100"
                   />
@@ -228,8 +282,8 @@ export default function ProjectPreviewClient({
                 <label className="block">
                   Contact email
                   <input
-                    value={overrides.contactEmail || ""}
-                    onChange={(e) => updateOverride("contactEmail", e.target.value)}
+                    value={draft.contact?.email || ""}
+                    onChange={(e) => updateDraft("contact", "email", e.target.value)}
                     placeholder="hello@domain.com"
                     className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-950 dark:text-gray-100"
                   />
@@ -237,18 +291,45 @@ export default function ProjectPreviewClient({
                 <label className="block">
                   Booking link
                   <input
-                    value={overrides.contactBookingLink || ""}
-                    onChange={(e) => updateOverride("contactBookingLink", e.target.value)}
-                    placeholder="cal.com/..."
+                    value={draft.contact?.bookingLink || ""}
+                    onChange={(e) => updateDraft("contact", "bookingLink", e.target.value)}
+                    placeholder="https://cal.com/..."
                     className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-950 dark:text-gray-100"
                   />
                 </label>
                 <label className="block">
                   WhatsApp link
                   <input
-                    value={overrides.contactWhatsApp || ""}
-                    onChange={(e) => updateOverride("contactWhatsApp", e.target.value)}
-                    placeholder="wa.me/..."
+                    value={draft.contact?.whatsapp || ""}
+                    onChange={(e) => updateDraft("contact", "whatsapp", e.target.value)}
+                    placeholder="https://wa.me/..."
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-950 dark:text-gray-100"
+                  />
+                </label>
+                <label className="block">
+                  Phone
+                  <input
+                    value={draft.contact?.phone || ""}
+                    onChange={(e) => updateDraft("contact", "phone", e.target.value)}
+                    placeholder="+358..."
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-950 dark:text-gray-100"
+                  />
+                </label>
+                <label className="block">
+                  Telegram
+                  <input
+                    value={draft.contact?.telegram || ""}
+                    onChange={(e) => updateDraft("contact", "telegram", e.target.value)}
+                    placeholder="https://t.me/..."
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-950 dark:text-gray-100"
+                  />
+                </label>
+                <label className="block">
+                  Instagram
+                  <input
+                    value={draft.contact?.instagram || ""}
+                    onChange={(e) => updateDraft("contact", "instagram", e.target.value)}
+                    placeholder="https://instagram.com/..."
                     className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-slate-950 dark:text-gray-100"
                   />
                 </label>
@@ -258,13 +339,49 @@ export default function ProjectPreviewClient({
                   size="sm"
                   variant="outline"
                   onClick={() =>
-                    setOverrides((prev) => ({
-                      ...prev,
-                      faq: [...(prev.faq || []), { question: "FAQ question", answer: "FAQ answer" }],
-                    }))
+                    updateDraft("faq", "items", [
+                      ...(draft.faq || []),
+                      { question: "FAQ question", answer: "FAQ answer" },
+                    ])
                   }
                 >
                   Add FAQ item
+                </Button>
+              </div>
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    updateDraft("benefits", "items", [
+                      ...(draft.benefits || []),
+                      { title: "Benefit title", description: "Benefit description" },
+                    ])
+                  }
+                >
+                  Add benefit
+                </Button>
+              </div>
+              <div className="mt-2 grid gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!draft.faq || draft.faq.length === 0}
+                  onClick={() =>
+                    updateDraft("faq", "items", (draft.faq || []).slice(0, -1))
+                  }
+                >
+                  Remove last FAQ
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!draft.benefits || draft.benefits.length === 0}
+                  onClick={() =>
+                    updateDraft("benefits", "items", (draft.benefits || []).slice(0, -1))
+                  }
+                >
+                  Remove last benefit
                 </Button>
               </div>
             </div>
@@ -277,9 +394,50 @@ export default function ProjectPreviewClient({
         onClose={() => setShowPublish(false)}
         token={token}
         project={project}
+        draftContent={draft}
         onPublished={(url) => {
           window.dispatchEvent(new CustomEvent("dp_published", { detail: { projectId: project.id } }));
           if (url) window.location.href = url;
+        }}
+      />
+
+      <ImproveCopyModal
+        open={showImprove}
+        onClose={() => setShowImprove(false)}
+        projectId={project.id}
+        token={token}
+        original={{
+          headline: draft.hero?.headline || "",
+          subheadline: draft.hero?.subheadline || "",
+          benefits: draft.benefits || [],
+          ctaText: draft.hero?.ctaText || draft.cta?.buttonText || "",
+        }}
+        onApply={(patch) => {
+          if (patch.headline) updateDraft("hero", "headline", patch.headline);
+          if (patch.subheadline) updateDraft("hero", "subheadline", patch.subheadline);
+          if (patch.ctaText) updateDraft("hero", "ctaText", patch.ctaText);
+          if (patch.benefits) updateDraft("benefits", "items", patch.benefits);
+          setShowImprove(false);
+        }}
+      />
+
+      <TemplateChooserModal
+        open={showTemplates}
+        onClose={() => {
+          setActiveTemplate(savedTemplate);
+          setShowTemplates(false);
+        }}
+        current={activeTemplate}
+        onPreview={(id) => setActiveTemplate(id)}
+        onUse={async (id) => {
+          setActiveTemplate(id);
+          await fetch("/api/template/set", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectId: project.id, token, templateId: id }),
+          });
+          setSavedTemplate(id);
+          setShowTemplates(false);
         }}
       />
     </div>

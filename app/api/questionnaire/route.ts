@@ -7,6 +7,7 @@ import {
   type ProjectPlan,
 } from "@/app/lib/project-store";
 import type { DraftContent } from "@/app/lib/draft-content";
+import { generateContentAdvanced } from "@/app/components/content-advanced";
 
 export const runtime = "nodejs";
 
@@ -48,8 +49,46 @@ export async function POST(req: Request) {
 
     const base = getBaseUrl(req);
 
+    const generated = generateContentAdvanced(answers as any);
+    const email = String((answers as any)?.contactEmail || "").trim();
+    const booking = String((answers as any)?.bookingLink || "").trim();
+    const ctaLink = email ? `mailto:${email}` : booking ? `https://${booking.replace(/^https?:\/\//, "")}` : "";
     const draftContent: DraftContent = {
       answers: answers as any,
+      hero: {
+        headline: generated.meta.headline,
+        subheadline: generated.meta.subheadline,
+        ctaText: generated.meta.primaryCTA,
+        ctaLink,
+      },
+      benefits: generated.value?.benefits?.slice(0, 6) ?? [],
+      cta: {
+        title: generated.cta.headline,
+        buttonText: generated.cta.buttonText,
+        buttonLink: ctaLink,
+      },
+      contact: {
+        email: email || "",
+        phone: String((answers as any)?.contactPhone || "").trim(),
+        whatsapp: generated.contact?.chat?.href || "",
+        bookingLink: booking ? `https://${booking.replace(/^https?:\/\//, "")}` : "",
+      },
+      faq: [
+        {
+          question: "How fast is delivery?",
+          answer:
+            plan === "growth"
+              ? "Instant draft is ready immediately. Human polish typically takes 2 business days."
+              : "Instant draft is ready immediately. Human polish is delivered within 5 business days.",
+        },
+        {
+          question: "Can I request changes later?",
+          answer:
+            plan === "growth"
+              ? "Yes. You have 3 revisions included with Growth."
+              : "Yes. You have 1 revision included with Launch.",
+        },
+      ],
       overrides: {},
     };
 

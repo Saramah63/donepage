@@ -38,8 +38,9 @@ interface LandingPagePreviewProps {
   slug?: string;
   autoOpenPublish?: boolean;
   publishHint?: "custom" | "subdomain" | null;
+  templateId?: "A" | "B" | "C";
   overrides?: DraftOverrides;
-  onInlineEdit?: (field: string, value: string, index?: number) => void;
+  onInlineEdit?: (section: string, field: string, value: string, index?: number) => void;
 }
 
 function parsePackageLines(raw: string) {
@@ -84,35 +85,84 @@ function normalizeUrl(url?: string) {
   return `https://${v}`;
 }
 
-function EditableText({
+function EditableField({
   as: Tag,
   value,
   className,
-  onChange,
   placeholder,
+  onSave,
+  max,
+  multiline,
 }: {
   as: keyof JSX.IntrinsicElements;
   value: string;
   className?: string;
-  onChange?: (value: string) => void;
   placeholder?: string;
+  onSave?: (value: string) => void;
+  max: number;
+  multiline?: boolean;
 }) {
-  if (!onChange) {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(value);
+
+  React.useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  if (!onSave) {
     return <Tag className={className}>{value}</Tag>;
   }
+
+  if (!editing) {
+    return (
+      <Tag
+        className={`${className} cursor-text`}
+        onClick={() => setEditing(true)}
+        data-placeholder={placeholder || ""}
+      >
+        {value || placeholder}
+      </Tag>
+    );
+  }
+
   return (
-    <Tag
-      className={className}
-      contentEditable
-      suppressContentEditableWarning
-      data-placeholder={placeholder || ""}
-      onBlur={(e) => {
-        const next = e.currentTarget.textContent || "";
-        onChange(next.trim());
-      }}
-    >
-      {value}
-    </Tag>
+    <div className="space-y-2">
+      {multiline ? (
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.slice(0, max))}
+          className={`${className} w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500/30`}
+          rows={3}
+        />
+      ) : (
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.slice(0, max))}
+          className={`${className} w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500/30`}
+        />
+      )}
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setDraft(value);
+            setEditing(false);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => {
+            onSave(draft.trim());
+            setEditing(false);
+          }}
+        >
+          Save
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -209,6 +259,7 @@ export function LandingPagePreview({
   slug = "landing",
   autoOpenPublish = false,
   publishHint = null,
+  templateId = "A",
   overrides,
   onInlineEdit,
 }: LandingPagePreviewProps) {
@@ -264,10 +315,19 @@ export function LandingPagePreview({
   const waHref = draftOverrides.contactWhatsApp
     ? normalizeUrl(draftOverrides.contactWhatsApp)
     : content.contact?.chat?.href || emailHref || "";
+  const phoneHref = draftOverrides.contactPhone
+    ? `tel:${draftOverrides.contactPhone}`
+    : "";
+  const telegramHref = draftOverrides.contactTelegram
+    ? normalizeUrl(draftOverrides.contactTelegram)
+    : "";
+  const instagramHref = draftOverrides.contactInstagram
+    ? normalizeUrl(draftOverrides.contactInstagram)
+    : "";
   const goal = (answers.primaryGoal || "").toLowerCase();
   const heroPrimaryHref =
-    draftOverrides.ctaButtonUrl
-      ? normalizeUrl(draftOverrides.ctaButtonUrl)
+    draftOverrides.heroPrimaryUrl
+      ? normalizeUrl(draftOverrides.heroPrimaryUrl)
       :
     goal === "packages"
       ? "#packages"
@@ -405,10 +465,14 @@ export function LandingPagePreview({
     imageUrl?: string;
   }>;
   const heroStats = content.trust.stats.slice(0, 3);
+  const isTemplateA = templateId === "A";
+  const isTemplateB = templateId === "B";
+  const isTemplateC = templateId === "C";
+  const sectionPadding = isTemplateC ? "py-12 md:py-16" : "py-16 md:py-24";
 
   const editable = Boolean(onInlineEdit);
-  const edit = (field: string, value: string, index?: number) =>
-    onInlineEdit?.(field, value, index);
+  const edit = (section: string, field: string, value: string, index?: number) =>
+    onInlineEdit?.(section, field, value, index);
   const faqItems = draftOverrides.faq ?? [];
   const packageCount = packageItems.length;
   const solutionCount = coreOfferings.length > 0 ? coreOfferings.length : offerings.length;
@@ -597,41 +661,52 @@ export function LandingPagePreview({
           </div>
         ) : null}
         {/* HERO */}
-        // Visual QA checklist:
-        // - Hero content centered and balanced
-        // - CTA visible in first viewport
-        // - Body text readable in daylight
-        // - No heavy dark gradients by default
-        // - Cards consistent (border + shadow-sm + rounded-2xl)
+        {/* Visual QA checklist:
+            - Hero content centered and balanced
+            - CTA visible in first viewport
+            - Body text readable in daylight
+            - No heavy dark gradients by default
+            - Cards consistent (border + shadow-sm + rounded-2xl)
+        */}
         <section
           id="hero"
           className={[
             "section-tone section-tone-hero relative flex items-center justify-center overflow-hidden px-4 bg-[rgb(var(--bg))]",
-            mode === "preview" ? "min-h-[calc(100vh-4rem)] py-16 md:py-24" : "min-h-screen py-16 md:py-24",
+            mode === "preview" ? "min-h-[calc(100vh-4rem)]" : "min-h-screen",
+            sectionPadding,
+            isTemplateC ? "border-b border-[rgb(var(--border))]" : "",
           ].join(" ")}
         >
           <div className="mx-auto w-full max-w-7xl px-6">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="w-full max-w-xl text-center">
+            <div
+              className={[
+                "grid gap-12 items-center",
+                isTemplateB ? "grid-cols-1 text-center" : "lg:grid-cols-2",
+              ].join(" ")}
+            >
+              <div className={isTemplateB ? "mx-auto w-full max-w-2xl text-center" : "w-full max-w-xl text-center"}>
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-xs font-semibold text-[rgb(var(--muted))]">
                   <Sparkles className="h-4 w-4 text-[rgb(var(--accent))]" />
                   {heroBusinessName}
                 </div>
 
-              <EditableText
+              <EditableField
                 as="h1"
                 value={heroHeadline}
                 className="mx-auto max-w-xl text-5xl font-semibold leading-tight tracking-tight text-[rgb(var(--text))]"
-                onChange={editable ? (v) => edit("heroHeadline", v) : undefined}
+                onSave={editable ? (v) => edit("hero", "headline", v) : undefined}
                 placeholder="Headline"
+                max={80}
               />
 
-              <EditableText
+              <EditableField
                 as="p"
                 value={heroSubheadline}
                 className="mx-auto mt-4 max-w-3xl text-lg text-[rgb(var(--muted))]"
-                onChange={editable ? (v) => edit("heroSubheadline", v) : undefined}
+                onSave={editable ? (v) => edit("hero", "subheadline", v) : undefined}
                 placeholder="Subheadline"
+                max={200}
+                multiline
               />
               <p className="mt-3 text-sm font-medium text-[rgb(var(--muted))]">
                 {pickLang(lang, {
@@ -649,36 +724,36 @@ export function LandingPagePreview({
                   className="bg-blue-600 text-white px-6 py-3 rounded-xl shadow hover:bg-blue-700"
                 >
                   <a href={heroPrimaryHref}>
-                    {editable ? (
-                      <span
-                        contentEditable
-                        suppressContentEditableWarning
-                        onBlur={(e) => edit("heroPrimaryCTA", e.currentTarget.textContent || "")}
-                      >
-                        {heroPrimaryCTA}
-                      </span>
-                    ) : (
-                      heroPrimaryCTA
-                    )}
+                    {heroPrimaryCTA}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </a>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
                   <a href={heroSecondaryHref}>
-                    {editable ? (
-                      <span
-                        contentEditable
-                        suppressContentEditableWarning
-                        onBlur={(e) => edit("heroSecondaryCTA", e.currentTarget.textContent || "")}
-                      >
-                        {heroSecondaryCTA}
-                      </span>
-                    ) : (
-                      heroSecondaryCTA
-                    )}
+                    {heroSecondaryCTA}
                   </a>
                 </Button>
               </div>
+              {editable ? (
+                <div className="mt-3 grid gap-3 text-xs text-[rgb(var(--muted))]">
+                  <EditableField
+                    as="div"
+                    value={heroPrimaryCTA}
+                    className="text-xs font-medium text-[rgb(var(--text))]"
+                    onSave={(v) => edit("hero", "ctaText", v)}
+                    placeholder="CTA text"
+                    max={40}
+                  />
+                  <EditableField
+                    as="div"
+                    value={draftOverrides.heroPrimaryUrl || ""}
+                    className="text-xs text-[rgb(var(--muted))]"
+                    onSave={(v) => edit("hero", "ctaLink", v)}
+                    placeholder="https://your-link.com"
+                    max={500}
+                  />
+                </div>
+              ) : null}
 
               <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                 {heroBadges.map((badge, idx) => (
@@ -691,6 +766,9 @@ export function LandingPagePreview({
                   </div>
                 ))}
               </div>
+              {isTemplateC ? (
+                <div className="mx-auto mt-6 h-2 w-24 rounded-full bg-[rgb(var(--accent))]" />
+              ) : null}
 
               <div className="mx-auto mt-8 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-[rgb(var(--border))] bg-white px-3 py-3 shadow-sm">
@@ -714,58 +792,121 @@ export function LandingPagePreview({
               </div>
             </div>
 
-            <Card className="reveal-up justify-self-center w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-sm">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between text-sm font-semibold text-[rgb(var(--text))]">
-                  {pickLang(lang, {
-                    en: "Performance Snapshot",
-                    fa: "نمای سریع",
-                    ar: "لمحة سريعة",
-                    fi: "Pikatilanne",
-                  })}
-                  <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--muted))]">
-                    {pickLang(lang, { en: "Live", fa: "زنده", ar: "مباشر", fi: "Live" })}
-                  </span>
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3 md:grid-cols-1">
-                  {heroStats.map((s, idx) => {
-                    const rate = 70 + idx * 10;
-                    return (
-                    <div
-                      key={`${s.label}-${idx}`}
-                      className="rounded-xl border border-gray-200 bg-white px-4 py-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="text-xl font-bold text-[rgb(var(--text))]">{s.value}</div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-[rgb(var(--accent))]">
-                            {rate}%
-                          </span>
-                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[rgb(var(--surface))]">
-                          <div
-                            className="h-full rounded-full bg-[rgb(var(--accent))]"
-                            style={{ width: `${rate}%` }}
-                          />
+            {isTemplateB ? null : (
+              <Card className="reveal-up justify-self-center w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between text-sm font-semibold text-[rgb(var(--text))]">
+                    {pickLang(lang, {
+                      en: "Performance Snapshot",
+                      fa: "نمای سریع",
+                      ar: "لمحة سريعة",
+                      fi: "Pikatilanne",
+                    })}
+                    <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--muted))]">
+                      {pickLang(lang, { en: "Live", fa: "زنده", ar: "مباشر", fi: "Live" })}
+                    </span>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3 md:grid-cols-1">
+                    {heroStats.map((s, idx) => {
+                      const rate = 70 + idx * 10;
+                      return (
+                        <div
+                          key={`${s.label}-${idx}`}
+                          className="rounded-xl border border-gray-200 bg-white px-4 py-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-xl font-bold text-[rgb(var(--text))]">{s.value}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-[rgb(var(--accent))]">
+                                {rate}%
+                              </span>
+                              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[rgb(var(--surface))]">
+                                <div
+                                  className="h-full rounded-full bg-[rgb(var(--accent))]"
+                                  style={{ width: `${rate}%` }}
+                                />
+                              </div>
+                            </div>
                           </div>
+                          <div className="mt-1 text-xs text-[rgb(var(--muted))]">{s.label}</div>
                         </div>
-                      </div>
-                      <div className="mt-1 text-xs text-[rgb(var(--muted))]">{s.label}</div>
-                    </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 rounded-xl border border-gray-200 bg-[rgb(var(--surface))] p-3 text-xs text-[rgb(var(--muted))]">
-                  {pickLang(lang, {
-                    en: "Structured for professional positioning, premium trust signals, and clean conversion flow.",
-                    fa: "ساختاربندی‌شده برای جایگاه حرفه‌ای، سیگنال‌های اعتماد ممتاز و جریان تبدیل شفاف.",
-                    ar: "مهيكل لتموضع احترافي وإشارات ثقة قوية وتدفق تحويل واضح.",
-                    fi: "Rakennettu ammattimaiseen positiointiin, vahvoihin luottamussignaaleihin ja selkeään konversiovirtaan.",
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 rounded-xl border border-gray-200 bg-[rgb(var(--surface))] p-3 text-xs text-[rgb(var(--muted))]">
+                    {pickLang(lang, {
+                      en: "Structured for professional positioning, premium trust signals, and clean conversion flow.",
+                      fa: "ساختاربندی‌شده برای جایگاه حرفه‌ای، سیگنال‌های اعتماد ممتاز و جریان تبدیل شفاف.",
+                      ar: "مهيكل لتموضع احترافي وإشارات ثقة قوية وتدفق تحويل واضح.",
+                      fi: "Rakennettu ammattimaiseen positiointiin, vahvoihin luottamussignaaleihin ja selkeään konversiovirtaan.",
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
+        </div>
         </section>
+
+        {isTemplateB ? (
+          <section className={`px-4 ${sectionPadding} bg-[rgb(var(--surface))]`}>
+            <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-[1.1fr_0.9fr] md:items-center">
+              <div>
+                <h3 className="text-2xl font-semibold text-[rgb(var(--text))]">Proof snapshot</h3>
+                <p className="mt-2 text-[rgb(var(--muted))]">
+                  {pickLang(lang, {
+                    en: "A quick look at the signals that build credibility and conversion.",
+                    fa: "نمایی سریع از سیگنال‌هایی که اعتماد و تبدیل ایجاد می‌کنند.",
+                    ar: "نظرة سريعة على الإشارات التي تعزز الثقة والتحويل.",
+                    fi: "Pikakatsaus signaaleihin, jotka rakentavat luottamusta ja konversiota.",
+                  })}
+                </p>
+              </div>
+              <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between text-sm font-semibold text-[rgb(var(--text))]">
+                    {pickLang(lang, {
+                      en: "Performance Snapshot",
+                      fa: "نمای سریع",
+                      ar: "لمحة سريعة",
+                      fi: "Pikatilanne",
+                    })}
+                    <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--muted))]">
+                      {pickLang(lang, { en: "Live", fa: "زنده", ar: "مباشر", fi: "Live" })}
+                    </span>
+                  </div>
+                  <div className="mt-4 grid gap-3">
+                    {heroStats.map((s, idx) => {
+                      const rate = 70 + idx * 10;
+                      return (
+                        <div
+                          key={`${s.label}-${idx}`}
+                          className="rounded-xl border border-gray-200 bg-white px-4 py-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-xl font-bold text-[rgb(var(--text))]">{s.value}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-[rgb(var(--accent))]">
+                                {rate}%
+                              </span>
+                              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[rgb(var(--surface))]">
+                                <div
+                                  className="h-full rounded-full bg-[rgb(var(--accent))]"
+                                  style={{ width: `${rate}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-1 text-xs text-[rgb(var(--muted))]">{s.label}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        ) : null}
 
         {/* ABOUT */}
         {answers.includeAbout === "yes" && content.about && (
@@ -833,32 +974,35 @@ export function LandingPagePreview({
         )}
 
         {/* VALUE / BENEFITS */}
-        <section id="why-choose-us" className="section-tone section-tone-value px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
+        <section id="why-choose-us" className={`section-tone section-tone-value px-4 ${sectionPadding} bg-[rgb(var(--surface))]`}>
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-[rgb(var(--text))]">{content.value.title}</h2>
               <p className="mt-3 text-[rgb(var(--muted))]">{content.value.description}</p>
             </div>
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
+            <div className={`mt-8 grid gap-6 ${isTemplateB ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
               {content.value.benefits.map((b, idx) => (
                 <Card
                   key={`${b.title}-${idx}`}
                   className="reveal-up card-lift border-[rgb(var(--border))] bg-white rounded-2xl shadow-sm"
                 >
                   <CardContent className="pt-6">
-                    <EditableText
+                    <EditableField
                       as="div"
                       value={b.title}
-                      className="text-lg font-semibold text-gray-900 dark:text-gray-100"
-                      onChange={editable ? (v) => edit("benefits.title", v, idx) : undefined}
+                      className="text-lg font-semibold text-[rgb(var(--text))]"
+                      onSave={editable ? (v) => edit("benefits", "title", v, idx) : undefined}
                       placeholder="Benefit title"
+                      max={60}
                     />
-                    <EditableText
+                    <EditableField
                       as="p"
                       value={b.description}
-                      className="mt-2 text-sm text-gray-600 dark:text-gray-300"
-                      onChange={editable ? (v) => edit("benefits.description", v, idx) : undefined}
+                      className="mt-2 text-sm text-[rgb(var(--muted))]"
+                      onSave={editable ? (v) => edit("benefits", "description", v, idx) : undefined}
                       placeholder="Benefit description"
+                      max={140}
+                      multiline
                     />
                   </CardContent>
                 </Card>
@@ -868,7 +1012,7 @@ export function LandingPagePreview({
         </section>
 
         {/* SERVICES */}
-        <section id="services" className="section-tone section-tone-services px-4 py-16 md:py-24 bg-[rgb(var(--bg))]">
+        <section id="services" className={`section-tone section-tone-services px-4 ${sectionPadding} bg-[rgb(var(--bg))]`}>
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.services.title}</h2>
@@ -960,7 +1104,7 @@ export function LandingPagePreview({
 
         {/* PROCESS */}
         {content.steps?.steps?.length ? (
-          <section className="section-tone section-tone-process px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
+          <section className={`section-tone section-tone-process px-4 ${sectionPadding} bg-[rgb(var(--surface))]`}>
             <div className="mx-auto max-w-6xl">
               <div className="max-w-2xl">
                 <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
@@ -995,7 +1139,7 @@ export function LandingPagePreview({
         ) : null}
 
         {/* TRUST / STATS */}
-        <section className="section-tone section-tone-trust px-4 py-16 md:py-24 bg-[rgb(var(--bg))]">
+        <section className={`section-tone section-tone-trust px-4 ${sectionPadding} bg-[rgb(var(--bg))]`}>
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.trust.title}</h2>
@@ -1027,7 +1171,7 @@ export function LandingPagePreview({
         </section>
 
         {/* PORTFOLIO */}
-        <section id="portfolio" className="section-tone section-tone-portfolio px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
+        <section id="portfolio" className={`section-tone section-tone-portfolio px-4 ${sectionPadding} bg-[rgb(var(--surface))]`}>
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">{content.portfolio.title}</h2>
@@ -1083,7 +1227,7 @@ export function LandingPagePreview({
         </section>
 
         {faqItems.length > 0 ? (
-        <section className="section-tone px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
+        <section className={`section-tone px-4 ${sectionPadding} bg-[rgb(var(--surface))]`}>
             <div className="mx-auto max-w-5xl">
               <h2 className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100">
                 FAQ
@@ -1094,19 +1238,22 @@ export function LandingPagePreview({
                     key={`${item.question}-${idx}`}
                   className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-5 shadow-sm"
                   >
-                    <EditableText
+                    <EditableField
                       as="div"
                       value={item.question}
-                      className="text-base font-semibold text-gray-900 dark:text-gray-100"
-                      onChange={editable ? (v) => edit("faq.question", v, idx) : undefined}
+                      className="text-base font-semibold text-[rgb(var(--text))]"
+                      onSave={editable ? (v) => edit("faq", "question", v, idx) : undefined}
                       placeholder="Question"
+                      max={120}
                     />
-                    <EditableText
+                    <EditableField
                       as="p"
                       value={item.answer}
-                      className="mt-2 text-sm text-gray-600 dark:text-gray-300"
-                      onChange={editable ? (v) => edit("faq.answer", v, idx) : undefined}
+                      className="mt-2 text-sm text-[rgb(var(--muted))]"
+                      onSave={editable ? (v) => edit("faq", "answer", v, idx) : undefined}
                       placeholder="Answer"
+                      max={300}
+                      multiline
                     />
                   </div>
                 ))}
@@ -1116,22 +1263,19 @@ export function LandingPagePreview({
         ) : null}
 
         {/* CTA */}
-        <section className="section-tone section-tone-cta px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
+        <section className={`section-tone section-tone-cta px-4 ${sectionPadding} bg-[rgb(var(--surface))]`}>
           <div className="mx-auto max-w-5xl rounded-2xl border border-[rgb(var(--border))] bg-white px-6 py-10 text-center shadow-sm">
-            <EditableText
+            <EditableField
               as="h2"
               value={content.cta.headline}
-              className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100"
-              onChange={editable ? (v) => edit("ctaHeadline", v) : undefined}
+              className="text-3xl font-bold tracking-[-0.01em] text-[rgb(var(--text))]"
+              onSave={editable ? (v) => edit("cta", "title", v) : undefined}
               placeholder="CTA headline"
+              max={100}
             />
-            <EditableText
-              as="p"
-              value={content.cta.subheadline}
-              className="mx-auto mt-4 max-w-2xl text-gray-600 dark:text-gray-300"
-              onChange={editable ? (v) => edit("ctaSubheadline", v) : undefined}
-              placeholder="CTA subheadline"
-            />
+            <p className="mx-auto mt-4 max-w-2xl text-[rgb(var(--muted))]">
+              {content.cta.subheadline}
+            </p>
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button
                 size="lg"
@@ -1139,33 +1283,30 @@ export function LandingPagePreview({
                 className="bg-blue-600 text-white px-6 py-3 rounded-xl shadow hover:bg-blue-700"
               >
                 <a href={ctaPrimaryHref}>
-                  {editable ? (
-                    <span
-                      contentEditable
-                      suppressContentEditableWarning
-                      onBlur={(e) => edit("ctaButtonText", e.currentTarget.textContent || "")}
-                    >
-                      {content.cta.buttonText}
-                    </span>
-                  ) : (
-                    content.cta.buttonText
-                  )}
+                  {content.cta.buttonText}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </a>
               </Button>
               <QualificationTrigger slug={slug} context={qualificationContext} />
             </div>
             {editable ? (
-              <div className="mt-3 text-xs text-gray-500">
-                CTA link:{" "}
-                <span
-                  contentEditable
-                  suppressContentEditableWarning
-                  className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
-                  onBlur={(e) => edit("ctaButtonUrl", e.currentTarget.textContent || "")}
-                >
-                  {draftOverrides.ctaButtonUrl || "https://"}
-                </span>
+              <div className="mt-4 grid gap-3 text-xs text-[rgb(var(--muted))]">
+                <EditableField
+                  as="div"
+                  value={content.cta.buttonText}
+                  className="text-xs font-medium text-[rgb(var(--text))]"
+                  onSave={(v) => edit("cta", "buttonText", v)}
+                  placeholder="Button text"
+                  max={40}
+                />
+                <EditableField
+                  as="div"
+                  value={draftOverrides.ctaButtonUrl || ""}
+                  className="text-xs text-[rgb(var(--muted))]"
+                  onSave={(v) => edit("cta", "buttonLink", v)}
+                  placeholder="https://your-link.com"
+                  max={500}
+                />
               </div>
             ) : null}
             <div className="mt-3 text-xs text-gray-500 dark:text-gray-300">{content.cta.subtext}</div>
@@ -1173,23 +1314,13 @@ export function LandingPagePreview({
         </section>
 
         {/* CONTACT */}
-        <section id="contact" className="px-4 py-16 md:py-24 bg-[rgb(var(--surface))]">
+        <section id="contact" className={`px-4 ${sectionPadding} bg-[rgb(var(--surface))]`}>
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
-              <EditableText
-                as="h2"
-                value={content.contact.title}
-                className="text-3xl font-bold tracking-[-0.01em] text-gray-900 dark:text-gray-100"
-                onChange={editable ? (v) => edit("contactTitle", v) : undefined}
-                placeholder="Contact title"
-              />
-              <EditableText
-                as="p"
-                value={content.contact.subtitle}
-                className="mt-3 text-gray-600 dark:text-gray-300"
-                onChange={editable ? (v) => edit("contactSubtitle", v) : undefined}
-                placeholder="Contact subtitle"
-              />
+            <h2 className="text-3xl font-bold tracking-[-0.01em] text-[rgb(var(--text))]">
+              {content.contact.title}
+            </h2>
+            <p className="mt-3 text-[rgb(var(--muted))]">{content.contact.subtitle}</p>
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -1220,41 +1351,77 @@ export function LandingPagePreview({
                 disabledText={content.contact.chat.disabledText}
               />
             </div>
+            {(draftOverrides.contactPhone ||
+              draftOverrides.contactTelegram ||
+              draftOverrides.contactInstagram) && (
+              <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-[rgb(var(--muted))]">
+                {draftOverrides.contactPhone ? (
+                  <a className="underline" href={phoneHref}>
+                    {draftOverrides.contactPhone}
+                  </a>
+                ) : null}
+                {draftOverrides.contactTelegram ? (
+                  <a className="underline" href={telegramHref}>
+                    Telegram
+                  </a>
+                ) : null}
+                {draftOverrides.contactInstagram ? (
+                  <a className="underline" href={instagramHref}>
+                    Instagram
+                  </a>
+                ) : null}
+              </div>
+            )}
             {editable ? (
-              <div className="mt-6 grid gap-3 text-xs text-gray-600 dark:text-gray-300 md:grid-cols-2">
-                <div>
-                  Email:{" "}
-                  <span
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
-                    onBlur={(e) => edit("contactEmail", e.currentTarget.textContent || "")}
-                  >
-                    {draftOverrides.contactEmail || "email@example.com"}
-                  </span>
-                </div>
-                <div>
-                  Booking link:{" "}
-                  <span
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
-                    onBlur={(e) => edit("contactBookingLink", e.currentTarget.textContent || "")}
-                  >
-                    {draftOverrides.contactBookingLink || "https://"}
-                  </span>
-                </div>
-                <div>
-                  WhatsApp:{" "}
-                  <span
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="rounded-md border border-dashed border-gray-300 px-2 py-0.5"
-                    onBlur={(e) => edit("contactWhatsApp", e.currentTarget.textContent || "")}
-                  >
-                    {draftOverrides.contactWhatsApp || "wa.me/"}
-                  </span>
-                </div>
+              <div className="mt-6 grid gap-3 text-xs text-[rgb(var(--muted))] md:grid-cols-2">
+                <EditableField
+                  as="div"
+                  value={draftOverrides.contactEmail || ""}
+                  className="text-xs"
+                  onSave={(v) => edit("contact", "email", v)}
+                  placeholder="Email"
+                  max={120}
+                />
+                <EditableField
+                  as="div"
+                  value={draftOverrides.contactBookingLink || ""}
+                  className="text-xs"
+                  onSave={(v) => edit("contact", "bookingLink", v)}
+                  placeholder="Booking link (https://...)"
+                  max={200}
+                />
+                <EditableField
+                  as="div"
+                  value={draftOverrides.contactWhatsApp || ""}
+                  className="text-xs"
+                  onSave={(v) => edit("contact", "whatsapp", v)}
+                  placeholder="WhatsApp (https://...)"
+                  max={200}
+                />
+                <EditableField
+                  as="div"
+                  value={draftOverrides.contactPhone || ""}
+                  className="text-xs"
+                  onSave={(v) => edit("contact", "phone", v)}
+                  placeholder="Phone"
+                  max={40}
+                />
+                <EditableField
+                  as="div"
+                  value={draftOverrides.contactTelegram || ""}
+                  className="text-xs"
+                  onSave={(v) => edit("contact", "telegram", v)}
+                  placeholder="Telegram (https://...)"
+                  max={200}
+                />
+                <EditableField
+                  as="div"
+                  value={draftOverrides.contactInstagram || ""}
+                  className="text-xs"
+                  onSave={(v) => edit("contact", "instagram", v)}
+                  placeholder="Instagram (https://...)"
+                  max={200}
+                />
               </div>
             ) : null}
           </div>

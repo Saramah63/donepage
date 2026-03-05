@@ -124,6 +124,7 @@ model Project {
   id               String   @id @default(cuid())
   plan             String
   status           String
+  templateId       String   @default("A")
   paymentStatus    String   @default("unpaid")
   publishStatus    String   @default("draft")
   publishTarget    String?
