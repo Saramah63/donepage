@@ -12,6 +12,7 @@ type ProjectRow = {
   previewUrl: string;
   publishedUrl: string | null;
   revisionsCount: number;
+  latestRevisionMessage?: string | null;
   revisions?: Array<{ id: string; message: string; createdAt: string }>;
   events?: Array<{ id: string; message: string; type: string; createdAt: string; metadata?: any }>;
   createdAt: string;
@@ -119,85 +120,85 @@ export default function ProjectsTable({ token }: { token: string }) {
             <tr className="border-b">
               <th className="py-2">Client email</th>
               <th className="py-2">Plan</th>
-              <th className="py-2">Payment</th>
               <th className="py-2">Status</th>
+              <th className="py-2">Payment</th>
               <th className="py-2">Preview</th>
-              <th className="py-2">Live</th>
               <th className="py-2">Revisions</th>
-              <th className="py-2">Created</th>
+              <th className="py-2">Latest revision</th>
               <th className="py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((p) => (
               <React.Fragment key={p.id}>
-                <tr className="border-b align-top">
+                <tr
+                  className={`border-b align-top ${
+                    p.revisionsCount > 0 ? "bg-amber-50/60" : ""
+                  }`}
+                >
                   <td className="py-2">{p.email || "—"}</td>
                   <td className="py-2 capitalize">{p.plan}</td>
-                  <td className="py-2">{p.paymentStatus}</td>
                   <td className="py-2">{p.status}</td>
+                  <td className="py-2">{p.paymentStatus}</td>
                   <td className="py-2">
                     <a className="text-blue-700 underline" href={p.previewUrl} target="_blank" rel="noreferrer">
                       View preview
                     </a>
                   </td>
                   <td className="py-2">
-                    {p.publishedUrl ? (
-                      <a className="text-blue-700 underline" href={p.publishedUrl} target="_blank" rel="noreferrer">
-                        Open live
-                      </a>
+                    {p.revisionsCount > 0 ? (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                        {p.revisionsCount} requested
+                      </span>
                     ) : (
-                      <span className="text-gray-500">Not published</span>
+                      <span className="text-gray-500">0</span>
                     )}
                   </td>
-                  <td className="py-2">{p.revisionsCount}</td>
-                  <td className="py-2">{fmtDate(p.createdAt)}</td>
+                  <td className="py-2 text-xs text-gray-600">
+                    {p.latestRevisionMessage || "—"}
+                  </td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-2">
                       <a
-                        className="rounded-md border px-2 py-1 text-xs"
-                        href={`/admin/projects/${p.id}?token=${encodeURIComponent(token)}#revisions`}
-                      >
-                        View revisions
-                      </a>
-                      <a
-                        className="rounded-md border px-2 py-1 text-xs"
-                        href={`/admin/projects/${p.id}?token=${encodeURIComponent(token)}#activity`}
-                      >
-                        View activity
-                      </a>
-                      <a
-                        className="rounded-md border px-2 py-1 text-xs"
+                        className="rounded-md border px-2 py-1 text-xs font-semibold"
                         href={p.previewUrl}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Open preview
+                        Open Editor
                       </a>
-                      <button
+                      <a
                         className="rounded-md border px-2 py-1 text-xs"
-                        onClick={() => adminPost("/api/admin/mark-paid", p.id)}
+                        href={`/admin/projects/${p.id}?token=${encodeURIComponent(token)}#revisions`}
                       >
-                        Mark Paid
-                      </button>
-                      <button
-                        className="rounded-md border px-2 py-1 text-xs"
-                        onClick={() => adminPost("/api/admin/verify-dns", p.id)}
-                      >
-                        Mark DNS Verified
-                      </button>
+                        View Revisions
+                      </a>
                       <button
                         className="rounded-md border px-2 py-1 text-xs"
                         onClick={() => adminPost("/api/admin/project/publish", p.id)}
                       >
                         Publish
                       </button>
+                      {p.publishedUrl ? (
+                        <a
+                          className="rounded-md border px-2 py-1 text-xs"
+                          href={p.publishedUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open Live Page
+                        </a>
+                      ) : (
+                        <span className="rounded-md border px-2 py-1 text-xs text-gray-500">
+                          Open Live Page
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
                 {expandedId === p.id ? (
                   <tr className="border-b bg-gray-50">
-                    <td colSpan={9} className="py-3 text-xs text-gray-700">
+                    <td colSpan={8} className="py-3 text-xs text-gray-700">
                       <div className="grid gap-3 md:grid-cols-2">
                         <div>
                           <div className="mb-1 font-semibold">Revisions</div>
@@ -235,7 +236,7 @@ export default function ProjectsTable({ token }: { token: string }) {
             ))}
             {filtered.length === 0 ? (
               <tr>
-                <td className="py-4 text-gray-500" colSpan={9}>
+                <td className="py-4 text-gray-500" colSpan={8}>
                   No projects found.
                 </td>
               </tr>

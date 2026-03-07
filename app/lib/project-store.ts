@@ -57,6 +57,19 @@ export type ProjectEvent = {
   createdAt: string;
 };
 
+export type RevisionSuggestion = {
+  id: string;
+  revisionRequestId: string;
+  projectId: string;
+  section: string;
+  field: string;
+  originalValue?: string | null;
+  suggestedValue: string;
+  reason: string;
+  status: "pending" | "accepted" | "dismissed";
+  createdAt: string;
+};
+
 const memoryProjects = new Map<string, ProjectRecord>();
 const memoryRevisions = new Map<string, RevisionRequest[]>();
 const memoryEvents = new Map<string, ProjectEvent[]>();
@@ -66,11 +79,15 @@ const PROJECT_TOKEN_PREFIX = "project:token:";
 const PROJECT_INDEX_KEY = "project:index";
 const REVISION_PREFIX = "project:revisions:";
 const EVENT_PREFIX = "project:events:";
+const SUGGESTION_PREFIX = "project:suggestions:";
+const SUGGESTION_BY_ID_PREFIX = "project:suggestion:";
 
 const projectKey = (id: string) => `${PROJECT_KEY_PREFIX}${id}`;
 const tokenKey = (token: string) => `${PROJECT_TOKEN_PREFIX}${token}`;
 const revisionsKey = (projectId: string) => `${REVISION_PREFIX}${projectId}`;
 const eventsKey = (projectId: string) => `${EVENT_PREFIX}${projectId}`;
+const suggestionsKey = (projectId: string) => `${SUGGESTION_PREFIX}${projectId}`;
+const suggestionKey = (id: string) => `${SUGGESTION_BY_ID_PREFIX}${id}`;
 
 function makeToken() {
   return crypto.randomBytes(24).toString("base64url");
@@ -344,6 +361,104 @@ export async function listProjectEvents(projectId: string, limit = 20) {
   const list = await getKV<ProjectEvent[]>(eventsKey(projectId));
   const out = list ?? memoryEvents.get(projectId) ?? [];
   return out.slice(0, limit);
+}
+
+export async function addRevisionSuggestion(input: {
+  revisionRequestId: string;
+  projectId: string;
+  section: string;
+  field: string;
+  originalValue?: string | null;
+  suggestedValue: string;
+  reason: string;
+  status?: "pending" | "accepted" | "dismissed";
+}) {
+  const prismaAny = prisma as any;
+  if (prismaAny?.revisionSuggestion) {
+    return (await prismaAny.revisionSuggestion.create({
+      data: {
+        revisionRequestId: input.revisionRequestId,
+        projectId: input.projectId,
+        section: input.section,
+        field: input.field,
+        originalValue: input.originalValue ?? null,
+        suggestedValue: input.suggestedValue,
+        reason: input.reason,
+        status: input.status ?? "pending",
+      },
+    })) as RevisionSuggestion;
+  }
+
+  const record: RevisionSuggestion = {
+    id: crypto.randomUUID(),
+    revisionRequestId: input.revisionRequestId,
+    projectId: input.projectId,
+    section: input.section,
+    field: input.field,
+    originalValue: input.originalValue ?? null,
+    suggestedValue: input.suggestedValue,
+    reason: input.reason,
+    status: input.status ?? "pending",
+    createdAt: nowIso(),
+  };
+
+  const list =
+    (await getKV<RevisionSuggestion[]>(suggestionsKey(input.projectId))) ??
+    [];
+  const nextList = [record, ...list];
+  try {
+    await setKV(suggestionsKey(input.projectId), nextList);
+    await setKV(suggestionKey(record.id), record);
+  } catch {
+    // KV fallback handled in persistent-kv
+  }
+  return record;
+}
+
+export async function listRevisionSuggestions(projectId: string) {
+  const prismaAny = prisma as any;
+  if (prismaAny?.revisionSuggestion) {
+    return (await prismaAny.revisionSuggestion.findMany({
+      where: { projectId },
+      orderBy: { createdAt: "desc" },
+    })) as RevisionSuggestion[];
+  }
+  const list = await getKV<RevisionSuggestion[]>(suggestionsKey(projectId));
+  return list ?? [];
+}
+
+export async function getRevisionSuggestionById(id: string) {
+  const prismaAny = prisma as any;
+  if (prismaAny?.revisionSuggestion) {
+    return (await prismaAny.revisionSuggestion.findUnique({ where: { id } })) as
+      | RevisionSuggestion
+      | null;
+  }
+  const fromKV = await getKV<RevisionSuggestion>(suggestionKey(id));
+  if (fromKV) return fromKV;
+  return null;
+}
+
+export async function updateRevisionSuggestionStatus(id: string, status: "pending" | "accepted" | "dismissed") {
+  const prismaAny = prisma as any;
+  if (prismaAny?.revisionSuggestion) {
+    return (await prismaAny.revisionSuggestion.update({
+      where: { id },
+      data: { status },
+    })) as RevisionSuggestion;
+  }
+  const record = await getKV<RevisionSuggestion>(suggestionKey(id));
+  if (!record) return null;
+  const next = { ...record, status };
+  try {
+    await setKV(suggestionKey(id), next);
+    const list = (await getKV<RevisionSuggestion[]>(suggestionsKey(record.projectId))) ?? [];
+    const updated = list.map((item) => (item.id === id ? next : item));
+    await setKV(suggestionsKey(record.projectId), updated);
+  } catch {
+    // ignore KV errors
+  }
+  return next;
 }
 
 export function makeAccessToken() {

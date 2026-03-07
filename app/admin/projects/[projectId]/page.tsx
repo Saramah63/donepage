@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { hasAdminToken } from "@/app/lib/admin-auth";
-import { getProjectById, listProjectEvents, listRevisions } from "@/app/lib/project-store";
+import { getProjectById, listProjectEvents, listRevisions, listRevisionSuggestions } from "@/app/lib/project-store";
 import type { DraftContent } from "@/app/lib/draft-content";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +55,7 @@ export default async function AdminProjectDetailPage({
   }
 
   const revisions = await listRevisions(project.id);
+  const suggestions = await listRevisionSuggestions(project.id);
   const events = await listProjectEvents(project.id, 50);
   const draft = project.draftContent as DraftContent | null;
   const previewUrl =
@@ -148,6 +149,73 @@ export default async function AdminProjectDetailPage({
             ))
           ) : (
             <div className="text-gray-500">No revision requests yet.</div>
+          )}
+        </div>
+      </section>
+
+      <section id="ai-suggestions" className="mt-6 rounded-xl border p-4">
+        <h2 className="text-xl font-semibold">AI Revision Suggestions</h2>
+        <div className="mt-3 space-y-3 text-sm">
+          {suggestions.length > 0 ? (
+            suggestions.map((s) => (
+              <div key={s.id} className="rounded-lg border p-3">
+                {(() => {
+                  const benefitMatch = s.field.match(/benefits\\[(\\d+)\\]\\.(title|description)/);
+                  const faqMatch = s.field.match(/faq\\[(\\d+)\\]\\.(question|answer)/);
+                  const prefillSection = s.section;
+                  const prefillField = benefitMatch
+                    ? benefitMatch[2]
+                    : faqMatch
+                    ? faqMatch[2]
+                    : s.field;
+                  const prefillIndex = benefitMatch
+                    ? benefitMatch[1]
+                    : faqMatch
+                    ? faqMatch[1]
+                    : "";
+                  const prefillUrl = `${previewUrl}&prefillSection=${encodeURIComponent(prefillSection)}&prefillField=${encodeURIComponent(prefillField)}&prefillValue=${encodeURIComponent(s.suggestedValue)}${prefillIndex ? `&prefillIndex=${prefillIndex}` : ""}`;
+                  return (
+                    <>
+                <div className="text-xs text-gray-500">Status: {s.status}</div>
+                <div className="mt-1 font-semibold">
+                  {s.section} · {s.field}
+                </div>
+                <div className="mt-2">
+                  <div className="text-xs text-gray-500">Current</div>
+                  <div className="rounded-md border px-2 py-1">{s.originalValue || "—"}</div>
+                </div>
+                <div className="mt-2">
+                  <div className="text-xs text-gray-500">Suggested</div>
+                  <div className="rounded-md border px-2 py-1">{s.suggestedValue}</div>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">{s.reason}</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <form action={`/api/revision-suggestion/apply?token=${encodeURIComponent(token)}`} method="post">
+                    <input type="hidden" name="projectId" value={project.id} />
+                    <input type="hidden" name="suggestionId" value={s.id} />
+                    <button className="rounded-md border px-3 py-1 text-xs">Accept suggestion</button>
+                  </form>
+                  <a
+                    className="rounded-md border px-3 py-1 text-xs"
+                    href={prefillUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Edit before applying
+                  </a>
+                  <form action={`/api/revision-suggestion/dismiss?token=${encodeURIComponent(token)}`} method="post">
+                    <input type="hidden" name="projectId" value={project.id} />
+                    <input type="hidden" name="suggestionId" value={s.id} />
+                    <button className="rounded-md border px-3 py-1 text-xs">Dismiss</button>
+                  </form>
+                </div>
+                    </>
+                  );
+                })()}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-500">No AI suggestions yet.</div>
           )}
         </div>
       </section>

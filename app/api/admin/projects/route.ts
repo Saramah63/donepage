@@ -47,6 +47,7 @@ export async function GET(req: Request) {
       previewUrl: p.previewUrl || `/preview/${p.id}?token=${encodeURIComponent(p.accessToken)}`,
       publishedUrl: p.publishedUrl || null,
       revisionsCount: revisionsList[idx]?.length || 0,
+      latestRevisionMessage: revisionsList[idx]?.[0]?.message || null,
       revisions: (revisionsList[idx] || []).slice(0, 5),
       events: (eventsList[idx] || []).slice(0, 5),
       createdAt: p.createdAt,

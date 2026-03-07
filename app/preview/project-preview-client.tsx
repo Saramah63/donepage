@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { TemplateRenderer } from "@/app/components/landing-page-templates";
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
 import { Button } from "@/app/components/ui/button";
@@ -41,6 +42,7 @@ export default function ProjectPreviewClient({
   portalUrl: string;
   answers: QuestionnaireAnswers;
 }) {
+  const searchParams = useSearchParams();
   const [showPublish, setShowPublish] = React.useState(false);
   const [showImprove, setShowImprove] = React.useState(false);
   const [showTemplates, setShowTemplates] = React.useState(false);
@@ -71,6 +73,7 @@ export default function ProjectPreviewClient({
     >()
   );
   const [saveNonce, setSaveNonce] = React.useState(0);
+  const prefillAppliedRef = React.useRef(false);
 
   React.useEffect(() => {
     window.dispatchEvent(
@@ -145,6 +148,18 @@ export default function ProjectPreviewClient({
       new CustomEvent("dp_draft_edited", { detail: { projectId: project.id, field } })
     );
   };
+
+  React.useEffect(() => {
+    if (prefillAppliedRef.current) return;
+    const section = searchParams.get("prefillSection") || "";
+    const field = searchParams.get("prefillField") || "";
+    const value = searchParams.get("prefillValue");
+    const indexParam = searchParams.get("prefillIndex");
+    const index = indexParam ? Number(indexParam) : undefined;
+    if (!section || !field || value === null) return;
+    prefillAppliedRef.current = true;
+    updateDraft(section, field, value, Number.isFinite(index as number) ? index : undefined);
+  }, [searchParams, updateDraft]);
 
   React.useEffect(() => {
     if (pendingRef.current.size === 0) return;

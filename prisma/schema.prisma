@@ -145,6 +145,7 @@ model Project {
   updatedAt        DateTime @updatedAt
 
   revisions RevisionRequest[]
+  suggestions RevisionSuggestion[]
   events    ProjectEvent[]
 
   @@index([plan])
@@ -159,8 +160,29 @@ model RevisionRequest {
   createdAt DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  suggestions RevisionSuggestion[]
 
   @@index([projectId])
+  @@index([createdAt])
+}
+
+model RevisionSuggestion {
+  id                 String   @id @default(cuid())
+  revisionRequestId  String
+  projectId          String
+  section            String
+  field              String
+  originalValue      String?
+  suggestedValue     String
+  reason             String
+  status             String   @default("pending")
+  createdAt          DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revision RevisionRequest @relation(fields: [revisionRequestId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([revisionRequestId])
   @@index([createdAt])
 }
 
