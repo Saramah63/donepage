@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { updateProject } from "@/app/lib/project-store";
+import { createEvent, updateProject } from "@/app/lib/project-store";
 
 export const runtime = "nodejs";
 
@@ -21,8 +21,15 @@ export async function POST(req: Request) {
     if (!isAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    const body = (await req.json().catch(() => null)) as Body | null;
-    const projectId = (body?.projectId || "").trim();
+    const ctype = req.headers.get("content-type") || "";
+    let projectId = "";
+    if (ctype.includes("application/json")) {
+      const body = (await req.json().catch(() => null)) as Body | null;
+      projectId = (body?.projectId || "").trim();
+    } else {
+      const fd = await req.formData();
+      projectId = String(fd.get("projectId") || "").trim();
+    }
     if (!projectId) {
       return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
     }
@@ -30,6 +37,11 @@ export async function POST(req: Request) {
     if (!updated) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    await createEvent({
+      projectId,
+      type: "payment_received",
+      message: "Payment marked as received by admin.",
+    });
     return NextResponse.json({ ok: true, project: updated });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Failed" }, { status: 500 });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProjectById, updateProject } from "@/app/lib/project-store";
+import { createEvent, getProjectById, updateProject } from "@/app/lib/project-store";
 import { smartPublishCheck } from "@/app/lib/draft-validate";
 
 export const runtime = "nodejs";
@@ -90,6 +90,13 @@ export async function POST(req: Request) {
       publishedUrl,
       publishTarget: finalTarget,
       domain: domain || project.domain || null,
+    });
+
+    await createEvent({
+      projectId,
+      type: "page_published",
+      message: "Landing page published.",
+      metadata: { publishedUrl, publishTarget: finalTarget },
     });
 
     return NextResponse.json({

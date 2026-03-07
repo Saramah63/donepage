@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { addBusinessDays, formatYmdISO } from "@/app/lib/business-days";
 import {
   createProject,
+  createEvent,
   getPlanConfig,
   makeAccessToken,
   type ProjectPlan,
@@ -110,6 +111,13 @@ export async function POST(req: Request) {
       humanEtaDate,
       accessToken: token,
       answers,
+    });
+
+    await createEvent({
+      projectId: project.id,
+      type: "project_created",
+      message: "Project created from questionnaire submission.",
+      metadata: { plan },
     });
 
     const previewUrl = `${base}/preview/${project.id}?token=${encodeURIComponent(token)}`;

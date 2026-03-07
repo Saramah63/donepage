@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   addRevisionRequest,
+  createEvent,
   getProjectById,
   updateProject,
 } from "@/app/lib/project-store";
@@ -39,6 +40,13 @@ export async function POST(req: Request) {
       projectId,
       message,
       section: section || null,
+    });
+
+    await createEvent({
+      projectId,
+      type: "revision_requested",
+      message: "Revision requested by client.",
+      metadata: { section: section || null },
     });
 
     await updateProject(projectId, {

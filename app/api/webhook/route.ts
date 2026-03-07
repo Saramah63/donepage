@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/app/lib/prisma";
+import { createEvent } from "@/app/lib/project-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const plan = (session.metadata?.plan as string | undefined) || "unknown";
+      const projectId = (session.metadata?.projectId as string | undefined) || "";
       const email = session.customer_details?.email || session.customer_email || null;
 
       const prismaAny = prisma as any;
@@ -63,6 +65,15 @@ export async function POST(req: Request) {
           },
         });
       }
+
+      if (projectId) {
+        await createEvent({
+          projectId,
+          type: "payment_received",
+          message: "Payment received via Stripe checkout.",
+          metadata: { plan, email },
+        });
+      }
     }
 
     if (event.type === "invoice.paid") {
@@ -72,6 +83,7 @@ export async function POST(req: Request) {
         (invoice.metadata?.plan as string | undefined) ??
         getPlanFromPriceId(priceId) ??
         "hosting";
+      const projectId = (invoice.metadata?.projectId as string | undefined) || "";
 
       const prismaAny = prisma as any;
       if (prismaAny?.order) {
@@ -85,6 +97,15 @@ export async function POST(req: Request) {
             },
           })
           .catch(() => {});
+      }
+
+      if (projectId) {
+        await createEvent({
+          projectId,
+          type: "payment_received",
+          message: "Subscription payment received.",
+          metadata: { plan, email: invoice.customer_email || null },
+        });
       }
     }
 

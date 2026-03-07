@@ -7,6 +7,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -56,11 +57,11 @@ model VerificationToken {
 }
 
 model KeyValueStore {
-  key       String   @id
+  key       String    @id
   value     Json
   expiresAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([expiresAt])
 }
@@ -78,7 +79,7 @@ model ContactMessage {
 }
 
 model QualificationSession {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   slug               String
   industry           String
   fitScore           Int
@@ -94,13 +95,13 @@ model QualificationSession {
   answers            Json
   context            Json
   email              String?
-  consentToStore     Boolean  @default(false)
+  consentToStore     Boolean   @default(false)
   ipHash             String?
   userAgent          String?
-  status             String   @default("completed")
-  startedAt          DateTime @default(now())
+  status             String    @default("completed")
+  startedAt          DateTime  @default(now())
   completedAt        DateTime?
-  createdAt          DateTime @default(now())
+  createdAt          DateTime  @default(now())
 
   @@index([slug, createdAt])
   @@index([leadType, createdAt])
@@ -143,7 +144,8 @@ model Project {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  revisions        RevisionRequest[]
+  revisions RevisionRequest[]
+  events    ProjectEvent[]
 
   @@index([plan])
   @@index([status])
@@ -154,6 +156,20 @@ model RevisionRequest {
   projectId String
   message   String
   section   String?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
+}
+
+model ProjectEvent {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String
+  message   String
+  metadata  Json?
   createdAt DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

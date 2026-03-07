@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProjectById, updateProject } from "@/app/lib/project-store";
+import { createEvent, getProjectById, updateProject } from "@/app/lib/project-store";
 import type { DraftContent } from "@/app/lib/draft-content";
 import {
   sanitizeBenefit,
@@ -156,6 +156,12 @@ export async function POST(req: Request) {
     }
 
     const updated = await updateProject(projectId, { draftContent: next });
+    await createEvent({
+      projectId,
+      type: "draft_updated",
+      message: `Draft updated: ${section}.${field}`,
+      metadata: { section, field },
+    });
     return NextResponse.json({
       ok: true,
       section,

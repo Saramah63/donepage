@@ -48,17 +48,29 @@ export type RevisionRequest = {
   createdAt: string;
 };
 
+export type ProjectEvent = {
+  id: string;
+  projectId: string;
+  type: string;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+};
+
 const memoryProjects = new Map<string, ProjectRecord>();
 const memoryRevisions = new Map<string, RevisionRequest[]>();
+const memoryEvents = new Map<string, ProjectEvent[]>();
 
 const PROJECT_KEY_PREFIX = "project:";
 const PROJECT_TOKEN_PREFIX = "project:token:";
 const PROJECT_INDEX_KEY = "project:index";
 const REVISION_PREFIX = "project:revisions:";
+const EVENT_PREFIX = "project:events:";
 
 const projectKey = (id: string) => `${PROJECT_KEY_PREFIX}${id}`;
 const tokenKey = (token: string) => `${PROJECT_TOKEN_PREFIX}${token}`;
 const revisionsKey = (projectId: string) => `${REVISION_PREFIX}${projectId}`;
+const eventsKey = (projectId: string) => `${EVENT_PREFIX}${projectId}`;
 
 function makeToken() {
   return crypto.randomBytes(24).toString("base64url");
@@ -199,6 +211,18 @@ export async function getProjectByToken(token: string) {
   return null;
 }
 
+export async function listProjects() {
+  const prismaAny = prisma as any;
+  if (prismaAny?.project) {
+    return (await prismaAny.project.findMany({
+      orderBy: { createdAt: "desc" },
+    })) as ProjectRecord[];
+  }
+  const ids = (await getKV<string[]>(PROJECT_INDEX_KEY)) ?? [];
+  const items = await Promise.all(ids.map((id) => getKV<ProjectRecord>(projectKey(id))));
+  return items.filter(Boolean).map((p) => normalizeProject(p as ProjectRecord));
+}
+
 export async function updateProject(id: string, patch: Partial<ProjectRecord>) {
   const prismaAny = prisma as any;
   if (prismaAny?.project) {
@@ -267,6 +291,59 @@ export async function listRevisions(projectId: string) {
   const list = await getKV<RevisionRequest[]>(revisionsKey(projectId));
   if (list) return list;
   return memoryRevisions.get(projectId) ?? [];
+}
+
+export async function createEvent(input: {
+  projectId: string;
+  type: string;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+}) {
+  const prismaAny = prisma as any;
+  if (prismaAny?.projectEvent) {
+    return (await prismaAny.projectEvent.create({
+      data: {
+        projectId: input.projectId,
+        type: input.type,
+        message: input.message,
+        metadata: input.metadata ?? null,
+      },
+    })) as ProjectEvent;
+  }
+  const record: ProjectEvent = {
+    id: crypto.randomUUID(),
+    projectId: input.projectId,
+    type: input.type,
+    message: input.message,
+    metadata: input.metadata ?? null,
+    createdAt: nowIso(),
+  };
+  const list =
+    (await getKV<ProjectEvent[]>(eventsKey(input.projectId))) ??
+    memoryEvents.get(input.projectId) ??
+    [];
+  const nextList = [record, ...list];
+  memoryEvents.set(input.projectId, nextList);
+  try {
+    await setKV(eventsKey(input.projectId), nextList);
+  } catch {
+    // KV fallback handled in persistent-kv
+  }
+  return record;
+}
+
+export async function listProjectEvents(projectId: string, limit = 20) {
+  const prismaAny = prisma as any;
+  if (prismaAny?.projectEvent) {
+    return (await prismaAny.projectEvent.findMany({
+      where: { projectId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    })) as ProjectEvent[];
+  }
+  const list = await getKV<ProjectEvent[]>(eventsKey(projectId));
+  const out = list ?? memoryEvents.get(projectId) ?? [];
+  return out.slice(0, limit);
 }
 
 export function makeAccessToken() {

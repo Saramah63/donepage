@@ -35,6 +35,14 @@ type Revision = {
   createdAt: string;
 };
 
+type ProjectEvent = {
+  id: string;
+  type: string;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+};
+
 function formatDate(dateStr: string) {
   if (!dateStr) return "";
   const [y, m, d] = dateStr.split("-").map((v) => Number(v));
@@ -54,6 +62,7 @@ export default function PortalClient() {
   const [token, setToken] = React.useState(tokenParam);
   const [project, setProject] = React.useState<Project | null>(null);
   const [revisions, setRevisions] = React.useState<Revision[]>([]);
+  const [events, setEvents] = React.useState<ProjectEvent[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [message, setMessage] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -97,6 +106,24 @@ export default function PortalClient() {
   React.useEffect(() => {
     fetchProject();
   }, [fetchProject]);
+
+  const fetchEvents = React.useCallback(async () => {
+    if (!project) return;
+    try {
+      const res = await fetch(
+        `/api/project/events?projectId=${encodeURIComponent(project.id)}&token=${encodeURIComponent(token)}`
+      );
+      const data = await res.json();
+      if (!res.ok) return;
+      setEvents((data.events || []) as ProjectEvent[]);
+    } catch {
+      // ignore
+    }
+  }, [project, token]);
+
+  React.useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   const requestRevision = async () => {
     if (!project) return;
@@ -196,6 +223,30 @@ export default function PortalClient() {
               {project.plan === "growth"
                 ? "Domain connection is included in Growth. We'll connect your domain during publish."
                 : "Custom domain connection is available as an add-on for Launch."}
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-slate-900/70 dark:text-gray-200">
+              <div className="text-base font-semibold">Activity</div>
+              <div className="mt-3 space-y-3">
+                {events.length > 0 ? (
+                  events.map((e) => (
+                    <div key={e.id} className="flex items-start gap-3">
+                      <div className="mt-1 h-2.5 w-2.5 rounded-full bg-blue-500" />
+                      <div>
+                        <div>{e.message}</div>
+                        <div className="text-xs text-gray-500">{fmtDate(e.createdAt)}</div>
+                        {e.metadata ? (
+                          <div className="mt-1 text-xs text-gray-500">
+                            {JSON.stringify(e.metadata)}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500">No activity yet.</div>
+                )}
+              </div>
             </div>
 
             <div id="revision" className="mt-8">

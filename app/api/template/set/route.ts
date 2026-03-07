@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProjectById, updateProject } from "@/app/lib/project-store";
+import { createEvent, getProjectById, updateProject } from "@/app/lib/project-store";
 
 export const runtime = "nodejs";
 
@@ -29,6 +29,12 @@ export async function POST(req: Request) {
     }
 
     const updated = await updateProject(projectId, { templateId });
+    await createEvent({
+      projectId,
+      type: "template_changed",
+      message: `Template changed to ${templateId}.`,
+      metadata: { templateId },
+    });
     return NextResponse.json({ ok: true, project: updated });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Failed" }, { status: 500 });

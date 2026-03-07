@@ -21,8 +21,15 @@ export async function POST(req: Request) {
     if (!isAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    const body = (await req.json().catch(() => null)) as Body | null;
-    const projectId = (body?.projectId || "").trim();
+    const ctype = req.headers.get("content-type") || "";
+    let projectId = "";
+    if (ctype.includes("application/json")) {
+      const body = (await req.json().catch(() => null)) as Body | null;
+      projectId = (body?.projectId || "").trim();
+    } else {
+      const fd = await req.formData();
+      projectId = String(fd.get("projectId") || "").trim();
+    }
     if (!projectId) {
       return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
     }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { hasAdminToken } from "@/app/lib/admin-auth";
 import { computeOrderStats, getOrderById, listOrders, type OrderRecord } from "@/app/lib/order-store";
+import ProjectsTable from "@/app/admin/projects-table";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -209,6 +210,8 @@ export default async function AdminPage({
           ) : null}
         </section>
       ) : null}
+
+      <ProjectsTable token={token} />
     </main>
   );
 }
