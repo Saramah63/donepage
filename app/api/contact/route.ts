@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { prisma } from "@/app/lib/prisma";
+import { sendMail } from "@/app/lib/mail";
 
 export const runtime = "nodejs";
-
-function buildTransport() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  return nodemailer.createTransport({
-    host: "smtp.resend.com",
-    port: 465,
-    secure: true,
-    auth: { user: "resend", pass: apiKey },
-  });
-}
 
 export async function POST(req: Request) {
   try {
@@ -57,8 +46,7 @@ export async function POST(req: Request) {
     let deliveryWarning: string | null = null;
 
     try {
-      const transport = buildTransport();
-      if (!from || !transport) {
+      if (!from) {
         deliveryWarning = "Email delivery is not configured. Message saved to inbox database.";
       } else {
         const subject = reason ? `Donepage Contact (${reason})` : "Donepage Contact";
@@ -70,14 +58,18 @@ export async function POST(req: Request) {
           "",
           message,
         ].join("\n");
-        const info = await transport.sendMail({
+        const result = await sendMail({
           from,
           to,
           subject,
           text,
           replyTo: fromEmail || undefined,
         });
-        messageId = info.messageId;
+        if (result.ok) {
+          messageId = result.messageId;
+        } else {
+          deliveryWarning = "Email delivery is not configured. Message saved to inbox database.";
+        }
       }
     } catch (e: any) {
       deliveryWarning =

@@ -7,20 +7,9 @@ import {
   updateProject,
 } from "@/app/lib/project-store";
 import { generateRevisionSuggestionAI } from "@/app/lib/revision-suggestions";
-import nodemailer from "nodemailer";
+import { sendMail } from "@/app/lib/mail";
 
 export const runtime = "nodejs";
-
-function buildTransport() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  return nodemailer.createTransport({
-    host: "smtp.resend.com",
-    port: 465,
-    secure: true,
-    auth: { user: "resend", pass: apiKey },
-  });
-}
 
 type Body = {
   projectId?: string;
@@ -97,50 +86,56 @@ export async function POST(req: Request) {
     }
 
     try {
-      console.log("REVISION: sending revision email");
-      const clientEmail =
-        (project as any)?.answers?.contactEmail ||
-        (project as any)?.draftContent?.contact?.email ||
-        "not provided";
-      const base = (process.env.NEXT_PUBLIC_APP_URL || "https://donepage.co").replace(/\/$/, "");
-      const rawPreviewUrl =
-        project.previewUrl || `/preview/${project.id}?token=${encodeURIComponent(project.accessToken)}`;
-      const previewUrl = rawPreviewUrl.startsWith("http") ? rawPreviewUrl : `${base}${rawPreviewUrl}`;
-      const editUrl = `${base}/preview/${project.id}?token=${encodeURIComponent(project.accessToken)}`;
+  console.log("REVISION: sending revision email");
+  const clientEmail =
+    (project as any)?.answers?.contactEmail ||
+    (project as any)?.draftContent?.contact?.email ||
+    "not provided";
 
-      const from = process.env.EMAIL_FROM;
-      const to = process.env.CONTACT_TO || process.env.ADMIN_EMAIL || "saramah63@gmail.com";
-      const transport = buildTransport();
+  const base = (process.env.NEXT_PUBLIC_APP_URL || "https://donepage.co").replace(/\/$/, "");
+  const rawPreviewUrl =
+    project.previewUrl || `/preview/${project.id}?token=${encodeURIComponent(project.accessToken)}`;
+  const previewUrl = rawPreviewUrl.startsWith("http") ? rawPreviewUrl : `${base}${rawPreviewUrl}`;
+  const editUrl = `${base}/preview/${project.id}?token=${encodeURIComponent(project.accessToken)}`;
 
-      if (!from || !transport) {
-        console.error("REVISION: revision email failed", "Email transport not configured");
-      } else {
-        const subject = "Revision Request — Donepage";
-        const text = [
-          `Client email: ${clientEmail}`,
-          `Plan: ${project.plan}`,
-          `Section: ${section || "-"}`,
-          "",
-          message,
-          "",
-          `Preview URL: ${previewUrl}`,
-          `Direct edit URL: ${editUrl}`,
-        ].join("\n");
-        const html = `
-          <p><strong>Client email:</strong> ${clientEmail}</p>
-          <p><strong>Plan:</strong> ${project.plan}</p>
-          <p><strong>Section:</strong> ${section || "-"}</p>
-          <p><strong>Message:</strong> ${message}</p>
-          <p><strong>Preview URL:</strong> ${previewUrl}</p>
-          <p><strong>Direct edit URL:</strong> ${editUrl}</p>
-        `;
-        const info = await transport.sendMail({ from, to, subject, text, html });
-        console.log("REVISION: revision email sent", info?.messageId || "ok");
-      }
-    } catch (error) {
-      console.error("REVISION: revision email failed", error);
-      // Do not block revision request if email fails
+  const from = process.env.EMAIL_FROM || "Donepage <onboarding@resend.dev>";
+  const to = process.env.ADMIN_EMAIL || process.env.CONTACT_TO || "saramah63@gmail.com";
+  if (!from) {
+    console.error("REVISION: revision email failed", "Email from not configured");
+  } else {
+    const subject = "Revision Request — Donepage";
+    const text = [
+      `Client email: ${clientEmail}`,
+      `Plan: ${project.plan}`,
+      `Section: ${section || "-"}`,
+      "",
+      message,
+      "",
+      `Preview URL: ${previewUrl}`,
+      `Direct edit URL: ${editUrl}`,
+      "",
+      `AI suggestion ready: ${suggestionReady ? "Yes" : "No"}`,
+    ].join("\n");
+
+    const html = `
+      <p><strong>Client email:</strong> ${clientEmail}</p>
+      <p><strong>Plan:</strong> ${project.plan}</p>
+      <p><strong>Section:</strong> ${section || "-"}</p>
+      <p><strong>Message:</strong> ${message}</p>
+      <p><strong>Preview URL:</strong> <a href="${previewUrl}">${previewUrl}</a></p>
+      <p><strong>Direct edit URL:</strong> <a href="${editUrl}">${editUrl}</a></p>
+      <p><strong>AI suggestion ready:</strong> ${suggestionReady ? "Yes" : "No"}</p>
+    `;
+    const result = await sendMail({ from, to, subject, text, html });
+    if (result.ok) {
+      console.log("REVISION: revision email sent", result.messageId || "ok");
+    } else {
+      console.error("REVISION: revision email failed", result.error);
     }
+  }
+} catch (error) {
+  console.error("REVISION: revision email failed", error);
+}
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
