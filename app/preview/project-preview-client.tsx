@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { TemplateRenderer } from "@/app/components/landing-page-templates";
 import type { QuestionnaireAnswers } from "@/app/components/questionnaire";
 import { Button } from "@/app/components/ui/button";
 import PublishGateModal from "@/app/components/publish-gate-modal";
@@ -11,6 +10,7 @@ import ImproveCopyModal from "@/app/components/improve-copy-modal";
 import TemplateChooserModal from "@/app/components/template-chooser-modal";
 import type { DraftContent, DraftBenefit, DraftFaqItem } from "@/app/lib/draft-content";
 import { draftToOverrides } from "@/app/lib/draft-content";
+import { DraftPreviewSurface } from "@/app/components/draft-preview-surface";
 
 type Project = {
   id: string;
@@ -56,14 +56,11 @@ export default function ProjectPreviewClient({
     answers: (project.draftContent?.answers || answers) as QuestionnaireAnswers,
     hero: project.draftContent?.hero,
     benefits: project.draftContent?.benefits,
+    trust: project.draftContent?.trust,
     cta: project.draftContent?.cta,
     contact: project.draftContent?.contact,
     faq: project.draftContent?.faq,
   }));
-  const overrides = React.useMemo(
-    () => draftToOverrides(draft, project.draftContent?.overrides),
-    [draft, project.draftContent?.overrides]
-  );
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState<string | null>(null);
   const pendingRef = React.useRef(
@@ -86,6 +83,7 @@ export default function ProjectPreviewClient({
       answers: (project.draftContent?.answers || answers) as QuestionnaireAnswers,
       hero: project.draftContent?.hero,
       benefits: project.draftContent?.benefits,
+      trust: project.draftContent?.trust,
       cta: project.draftContent?.cta,
       contact: project.draftContent?.contact,
       faq: project.draftContent?.faq,
@@ -242,14 +240,11 @@ export default function ProjectPreviewClient({
 
       <div className="mx-auto flex w-full max-w-7xl gap-6 px-4 py-6">
         <div className="min-w-0 flex-1">
-          <TemplateRenderer
-            answers={baseAnswers}
-            onEdit={() => {}}
-            mode="export"
-            slug={project.id}
-            overrides={overrides}
-            onInlineEdit={updateDraft}
+          <DraftPreviewSurface
+            draft={draft}
+            editable
             templateId={activeTemplate}
+            onInlineEdit={updateDraft}
           />
         </div>
 

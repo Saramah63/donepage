@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { sendMail } from "@/app/lib/mail";
+import { getVerifiedEmailFromCookie, normalizeEmail } from "@/app/lib/email-verification";
 
 export const runtime = "nodejs";
 
@@ -21,9 +22,20 @@ export async function POST(req: Request) {
     const name = (body?.name ?? "").trim();
     const company = (body?.company ?? "").trim();
     const reason = (body?.reason ?? "").trim();
+    const normalizedFromEmail = normalizeEmail(fromEmail);
 
     if (!message) {
       return NextResponse.json({ error: "Missing message" }, { status: 400 });
+    }
+
+    if (reason === "custom_proposal") {
+      const verifiedEmail = await getVerifiedEmailFromCookie();
+      if (!verifiedEmail || normalizeEmail(verifiedEmail) !== normalizedFromEmail) {
+        return NextResponse.json(
+          { error: "Please verify your email to continue." },
+          { status: 403 }
+        );
+      }
     }
 
     const from = process.env.EMAIL_FROM;
@@ -69,6 +81,22 @@ export async function POST(req: Request) {
           messageId = result.messageId;
         } else {
           deliveryWarning = "Email delivery is not configured. Message saved to inbox database.";
+        }
+
+        if (reason === "custom_proposal" && fromEmail) {
+          await sendMail({
+            from,
+            to: fromEmail,
+            subject: "We received your Donepage custom project request",
+            text: [
+              `Hi ${name || "there"},`,
+              "",
+              "Your custom project request has been received.",
+              "We’ll review it and get back to you shortly.",
+              "",
+              "Donepage",
+            ].join("\n"),
+          }).catch(() => {});
         }
       }
     } catch (e: any) {

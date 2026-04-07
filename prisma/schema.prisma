@@ -112,13 +112,36 @@ model Order {
   id              String   @id @default(cuid())
   stripeSessionId String   @unique
   plan            String
-  email           String?
+  email           String
+  clientName      String?
+  amount          Int
+  draftId         String?
   status          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([draftId])
+  @@index([email])
+  @@index([plan])
+  @@index([status])
+}
+
+model Lead {
+  id              String   @id @default(cuid())
+  email           String
+  draftId         String?
+  verified        Boolean  @default(false)
+  purchased       Boolean  @default(false)
+  followup30mSent Boolean  @default(false)
+  followup24hSent Boolean  @default(false)
+  followup3dSent  Boolean  @default(false)
   createdAt       DateTime @default(now())
 
   @@index([createdAt])
-  @@index([plan])
-  @@index([status])
+  @@index([draftId])
+  @@index([email])
+  @@index([purchased])
 }
 
 model Project {

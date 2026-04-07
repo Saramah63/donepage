@@ -17,8 +17,40 @@ function isAsset(pathname: string) {
   );
 }
 
+function unauthorized() {
+  return new NextResponse("Unauthorized", {
+    status: 401,
+    headers: {
+      "WWW-Authenticate": 'Basic realm="Admin Area"',
+    },
+  });
+}
+
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    const authHeader = req.headers.get("authorization");
+    const username = process.env.ADMIN_USER?.trim();
+    const password = process.env.ADMIN_PASS?.trim();
+
+    if (!username || !password) {
+      return unauthorized();
+    }
+
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+      return unauthorized();
+    }
+
+    const base64Credentials = authHeader.split(" ")[1] || "";
+    const decoded = atob(base64Credentials);
+    const [user, pass] = decoded.split(":");
+
+    if (user !== username || pass !== password) {
+      return unauthorized();
+    }
+  }
+
   if (isAsset(pathname)) return NextResponse.next();
 
   // Protect generator/edit routes with NextAuth

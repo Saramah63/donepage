@@ -494,8 +494,9 @@ export function LandingPagePreview({
       accounting: "b2b_services_manufacturing",
       other: "generic",
     };
+    const serviceKey = answers.serviceType || "consulting";
     return {
-      industry: map[answers.serviceType] ?? "generic",
+      industry: map[serviceKey] ?? "generic",
       language: answers.language,
       audience: answers.targetAudience,
       offerType: answers.primaryOffer,

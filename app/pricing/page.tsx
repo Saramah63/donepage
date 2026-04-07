@@ -1,17 +1,58 @@
 "use client";
 
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent } from "@/app/components/ui/card";
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PublicSiteHeader } from "@/app/components/public-site-header";
 
 type Plan = "launch" | "growth" | "hosting";
 
-const STRIPE_LINKS: Record<Plan, string> = {
-  launch: process.env.NEXT_PUBLIC_STRIPE_LINK_LAUNCH || "",
-  growth: process.env.NEXT_PUBLIC_STRIPE_LINK_GROWTH || "",
-  hosting: process.env.NEXT_PUBLIC_STRIPE_LINK_HOSTING || "",
-};
+const packages: Array<{
+  name: string;
+  price: string;
+  subtitle: string;
+  features: string[];
+  cta: string;
+  href: string;
+  plan: Plan;
+  popular?: boolean;
+}> = [
+  {
+    name: "Launch",
+    price: "EUR99",
+    subtitle: "For validating your offer",
+    features: ["AI draft (instant)", "Human polish (1 revision)", "Delivery within 72 hours"],
+    cta: "Start Launch — €99",
+    href: process.env.NEXT_PUBLIC_STRIPE_LINK_LAUNCH || "/start?plan=launch",
+    plan: "launch",
+  },
+  {
+    name: "Growth",
+    price: "EUR249",
+    subtitle: "For serious client acquisition",
+    features: [
+      "AI draft (instant)",
+      "Priority polish (3 revisions)",
+      "Delivery within 48 hours",
+      "Domain connection",
+      "Basic SEO",
+    ],
+    cta: "Upgrade to Growth — €249",
+    href: process.env.NEXT_PUBLIC_STRIPE_LINK_GROWTH || "/start?plan=growth",
+    plan: "growth",
+    popular: true,
+  },
+  {
+    name: "Hosting & Support",
+    price: "EUR19/month",
+    subtitle: "Post-launch support",
+    features: ["Hosting (Vercel)", "SSL & uptime", "Minor updates", "Email support"],
+    cta: "Add Hosting — €19/mo",
+    href: process.env.NEXT_PUBLIC_STRIPE_LINK_HOSTING || "/hosting",
+    plan: "hosting",
+  },
+];
 
 function firePurchaseIntent(plan: Plan) {
   if (typeof window === "undefined") return;
@@ -20,111 +61,70 @@ function firePurchaseIntent(plan: Plan) {
 
 export default function PricingPage() {
   return (
-    <main className="donepage-surface-theme relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 px-4 py-12 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 sm:py-16">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-slate-900/75">
-          <Link href="/" className="text-sm font-semibold text-gray-900 dark:text-gray-100">Donepage</Link>
-          <ThemeToggle />
-        </div>
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+    <main className="min-h-screen bg-[rgb(var(--bg))] px-4 py-12 text-[rgb(var(--text))] sm:px-6 sm:py-16">
+      <PublicSiteHeader />
+      <div className="mx-auto max-w-[1100px]">
+        <div className="h-12 sm:h-16" />
+
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="font-body text-xs font-semibold uppercase tracking-[0.24em] text-[#c7b276]">
             Pricing
-          </h1>
-          <p className="mt-3 text-gray-700 dark:text-gray-200">
-            Hybrid delivery: instant AI draft plus human polish by plan SLA.
+          </p>
+          <h1 className="mt-4 font-display text-5xl tracking-tight text-white">Simple plans. Clear outcomes.</h1>
+          <p className="mt-5 font-body text-lg leading-8 text-[rgb(var(--muted))]">
+            Pick the speed and support level that matches how seriously you want to acquire clients.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="card-lift border-gray-200 bg-white/90 shadow-xl shadow-blue-900/5 dark:border-gray-700 dark:bg-slate-900/85">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Launch
-                </h2>
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">€99</span>
-              </div>
-              <ul className="mt-5 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                <li>Instant AI Draft (immediate)</li>
-                <li>Human polish + 1 revision (delivered within 5 business days)</li>
-              </ul>
-              <Button
-                className="mt-6 h-11 w-full bg-blue-600 !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
-                asChild
-              >
-                <a
-                  href={STRIPE_LINKS.launch}
-                  onClick={() => firePurchaseIntent("launch")}
-                >
-                  Start Launch
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          {packages.map((pkg) => (
+            <Card
+              key={pkg.name}
+              className={`relative border ${
+                pkg.popular ? "border-[#c7b276]/35 bg-[linear-gradient(180deg,rgba(216,194,122,0.12),rgba(255,255,255,0.04))]" : "border-white/8 bg-white/[0.03]"
+              } shadow-none`}
+            >
+              <CardContent className="p-7">
+                <div className="flex min-h-[30px] items-start justify-between gap-3">
+                  <p className="font-body text-[11px] font-semibold uppercase tracking-[0.24em] text-[#c7b276]">
+                    {pkg.subtitle}
+                  </p>
+                  {pkg.popular ? (
+                    <span className="shrink-0 rounded-full border border-[#c7b276]/35 bg-[#c7b276]/12 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f4e5af]">
+                      Most Popular
+                    </span>
+                  ) : null}
+                </div>
+                <h2 className="font-display text-3xl text-white">{pkg.name}</h2>
+                <p className="mt-3 font-body text-2xl font-semibold text-white">{pkg.price}</p>
 
-          <Card className="card-lift border-blue-200 bg-white/95 shadow-xl shadow-blue-500/10 dark:border-blue-700 dark:bg-slate-900/90">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Growth
-                </h2>
-                <span className="rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white">
-                  Most Popular
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-100">€249</p>
-              <ul className="mt-4 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                <li>Instant AI Draft (immediate)</li>
-                <li>Priority human polish + 3 revisions (typically within 2 business days)</li>
-                <li>Domain connection</li>
-                <li>Basic SEO</li>
-              </ul>
-              <Button
-                className="mt-6 h-11 w-full bg-blue-600 !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400"
-                asChild
-              >
-                <a
-                  href={STRIPE_LINKS.growth}
-                  onClick={() => firePurchaseIntent("growth")}
-                >
-                  Start Growth
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
+                <ul className="mt-6 space-y-3">
+                  {pkg.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3 font-body text-sm leading-6 text-[#e7e7e7]">
+                      <Check className="mt-1 h-4 w-4 shrink-0 text-[#3ab79e]" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
 
-          <Card className="card-lift border-gray-200 bg-white/90 shadow-xl shadow-blue-900/5 dark:border-gray-700 dark:bg-slate-900/85">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Hosting &amp; Support
-                </h2>
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">€19/mo</span>
-              </div>
-              <ul className="mt-5 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                <li>Hosting on Vercel</li>
-                <li>SSL &amp; uptime</li>
-                <li>Minor updates</li>
-                <li>Email support</li>
-              </ul>
-              <Button
-                variant="outline"
-                className="mt-6 h-11 w-full"
-                asChild
-              >
-                <a
-                  href={STRIPE_LINKS.hosting}
-                  onClick={() => firePurchaseIntent("hosting")}
+                <Button
+                  asChild
+                  className="mt-8 h-12 w-full rounded-full bg-[rgb(var(--accent))] text-base font-semibold text-white transition duration-300 hover:bg-[#159077]"
                 >
-                  Request Hosting
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
+                  <a href={pkg.href} onClick={() => firePurchaseIntent(pkg.plan)}>
+                    {pkg.cta}
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        <div className="mt-10 text-center text-sm text-gray-600 dark:text-gray-300">
-          Need something custom? <Link href="/contact?reason=custom" className="font-semibold underline">Request a proposal</Link>.
+        <div className="mt-10 text-center font-body text-sm text-[rgb(var(--muted))]">
+          Need more than one page?{" "}
+          <Link href="/custom-projects" className="text-white underline underline-offset-4">
+            Request Custom Proposal
+          </Link>
         </div>
       </div>
     </main>

@@ -59,7 +59,7 @@ function pickLang<T>(lang: string, map: Record<ProposalLang, T>): T {
 }
 
 function inferTemplate(answers: QuestionnaireAnswers): ProposalTemplateId {
-  switch (answers.serviceType) {
+  switch (answers.serviceType || "consulting") {
     case "coaching":
       return "Coaching";
     case "development":

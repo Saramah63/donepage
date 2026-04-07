@@ -13,21 +13,21 @@ export function generateSEO(answers: QuestionnaireAnswers) {
     accounting: "Accounting & Finance",
   };
 
-  const service = serviceMap[answers.serviceType] ?? "Professional Services";
+  const service = serviceMap[answers.serviceType || ""] ?? "Professional Services";
+  const audience = String(answers.targetAudience || "clients").replace("-", " ");
+  const differentiator = String(answers.keyDifferentiator || "results").replace("-", " ");
 
-  const title = `${service} for ${answers.targetAudience.replace("-", " ")} | Donepage`;
-  const description = `Expert ${service.toLowerCase()} tailored for ${
-    answers.targetAudience
-  }. ${answers.keyDifferentiator.replace("-", " ")} approach.`;
+  const title = `${service} for ${audience} | Donepage`;
+  const description = `Expert ${service.toLowerCase()} tailored for ${audience}. ${differentiator} approach.`;
 
   return {
     title,
     description,
     keywords: [
       service,
-      answers.targetAudience,
-      answers.primaryGoal,
-      answers.keyDifferentiator,
+      audience,
+      answers.primaryGoal || "conversion",
+      differentiator,
       "landing page",
       "services",
     ].join(", "),

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addBusinessDays, formatYmdISO } from "@/app/lib/business-days";
+import { getVerifiedEmailFromCookie } from "@/app/lib/email-verification";
 import {
   createProject,
   createEvent,
@@ -8,7 +9,7 @@ import {
   type ProjectPlan,
 } from "@/app/lib/project-store";
 import type { DraftContent } from "@/app/lib/draft-content";
-import { generateContentAdvanced } from "@/app/components/content-advanced";
+import { buildInstantDraft } from "@/app/lib/instant-draft";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,76 @@ type Body = {
   plan?: ProjectPlan;
   answers?: Record<string, unknown>;
 };
+
+function textValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function mapAudience(input: string) {
+  const value = input.toLowerCase();
+  if (value.includes("enterprise") || value.includes("corporate")) return "enterprise";
+  if (value.includes("agency") || value.includes("company") || value.includes("business")) return "small-business";
+  if (value.includes("consultant") || value.includes("coach") || value.includes("freelancer")) return "freelancers";
+  return "individuals";
+}
+
+function mapGoal(input: string) {
+  const value = input.toLowerCase();
+  if (value.includes("buy")) return "packages";
+  if (value.includes("apply")) return "credibility";
+  if (value.includes("message")) return "leads";
+  return "calls";
+}
+
+function normalizeAnswers(input: Record<string, unknown>) {
+  const primaryOffer = textValue(input.primaryOffer);
+  const targetAudience = textValue(input.targetAudience);
+  const outcomeStatement = textValue(input.outcomeStatement);
+  const problemStatement = textValue(input.problemStatement);
+  const trustFactor = textValue(input.trustFactor);
+  const desiredAction = textValue(input.desiredAction);
+  const tone = textValue(input.tone);
+  const businessName = textValue(input.businessName);
+  const clientName = textValue(input.clientName);
+  const contactEmail = textValue(input.contactEmail);
+
+  return {
+    ...input,
+    language: textValue(input.language) || "English",
+    businessName,
+    clientName,
+    contactEmail,
+    primaryOffer,
+    targetAudience,
+    outcomeStatement,
+    problemStatement,
+    trustFactor,
+    desiredAction,
+    tone,
+    serviceType: "consulting",
+    targetAudienceType: mapAudience(targetAudience),
+    businessStage: "established",
+    primaryGoal: mapGoal(desiredAction),
+    primaryGoals: [mapGoal(desiredAction)],
+    experienceLevel: "expert",
+    pricingApproach: tone === "premium" ? "premium" : "competitive",
+    keyDifferentiator: "results",
+    includeAbout: "no",
+    proofLine: trustFactor,
+    niche: targetAudience,
+    processStep1: "Structured intake",
+    processStep2: "AI draft + expert refinement",
+    processStep3: "Launch-ready page",
+    ctaPrimaryLabel:
+      desiredAction === "send_message"
+        ? "Send a message"
+        : desiredAction === "buy"
+        ? "Buy now"
+        : desiredAction === "apply"
+        ? "Apply now"
+        : "Book a call",
+  };
+}
 
 function getBaseUrl(req: Request) {
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
@@ -43,6 +114,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing answers" }, { status: 400 });
     }
 
+    const verifiedEmail = await getVerifiedEmailFromCookie();
+    if (!verifiedEmail) {
+      return NextResponse.json({ error: "Email verification required." }, { status: 403 });
+    }
+    const normalizedAnswers = normalizeAnswers(answers);
+    (normalizedAnswers as any).contactEmail = verifiedEmail;
+
     const config = getPlanConfig(plan);
     const eta = addBusinessDays(new Date(), config.days, "Europe/Helsinki");
     const humanEtaDate = formatYmdISO(eta);
@@ -50,48 +128,21 @@ export async function POST(req: Request) {
 
     const base = getBaseUrl(req);
 
-    const generated = generateContentAdvanced(answers as any);
-    const email = String((answers as any)?.contactEmail || "").trim();
-    const booking = String((answers as any)?.bookingLink || "").trim();
+    const email = String((normalizedAnswers as any)?.contactEmail || "").trim();
+    const booking = String((normalizedAnswers as any)?.bookingLink || "").trim();
     const ctaLink = email ? `mailto:${email}` : booking ? `https://${booking.replace(/^https?:\/\//, "")}` : "";
-    const draftContent: DraftContent = {
-      answers: answers as any,
-      hero: {
-        headline: generated.meta.headline,
-        subheadline: generated.meta.subheadline,
-        ctaText: generated.meta.primaryCTA,
-        ctaLink,
-      },
-      benefits: generated.value?.benefits?.slice(0, 6) ?? [],
-      cta: {
-        title: generated.cta.headline,
-        buttonText: generated.cta.buttonText,
-        buttonLink: ctaLink,
-      },
-      contact: {
-        email: email || "",
-        phone: String((answers as any)?.contactPhone || "").trim(),
-        whatsapp: generated.contact?.chat?.href || "",
-        bookingLink: booking ? `https://${booking.replace(/^https?:\/\//, "")}` : "",
-      },
-      faq: [
-        {
-          question: "How fast is delivery?",
-          answer:
-            plan === "growth"
-              ? "Instant draft is ready immediately. Human polish typically takes 2 business days."
-              : "Instant draft is ready immediately. Human polish is delivered within 5 business days.",
-        },
-        {
-          question: "Can I request changes later?",
-          answer:
-            plan === "growth"
-              ? "Yes. You have 3 revisions included with Growth."
-              : "Yes. You have 1 revision included with Launch.",
-        },
-      ],
-      overrides: {},
-    };
+    const draftContent: DraftContent = buildInstantDraft({
+      offer: String((normalizedAnswers as any)?.primaryOffer || ""),
+      audience: String((normalizedAnswers as any)?.targetAudience || ""),
+      outcome: String((normalizedAnswers as any)?.outcomeStatement || ""),
+      problem: String((normalizedAnswers as any)?.problemStatement || ""),
+      trust: String((normalizedAnswers as any)?.trustFactor || ""),
+      cta: String((normalizedAnswers as any)?.desiredAction || ""),
+      tone: String((normalizedAnswers as any)?.tone || ""),
+      answers: normalizedAnswers as any,
+      plan,
+      ctaLink,
+    });
 
     const project = await createProject({
       plan,
@@ -99,18 +150,18 @@ export async function POST(req: Request) {
       paymentStatus: "unpaid",
       publishStatus: "draft",
       publishTarget: null,
-      dnsStatus: (answers as any)?.domain ? "pending" : "not_started",
+      dnsStatus: (normalizedAnswers as any)?.domain ? "pending" : "not_started",
       revisionsAllowed: config.revisionsAllowed,
       revisionsUsed: 0,
       previewUrl: "",
       publishedUrl: null,
-      domain: (answers as any)?.domain ?? null,
+      domain: (normalizedAnswers as any)?.domain ?? null,
       draftContent,
       basicSeo: config.basicSeo,
       priorityDelivery: config.priorityDelivery,
       humanEtaDate,
       accessToken: token,
-      answers,
+      answers: normalizedAnswers,
     });
 
     await createEvent({

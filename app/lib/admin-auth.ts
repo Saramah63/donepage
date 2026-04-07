@@ -16,3 +16,9 @@ export function hasAdminToken(token: string | null | undefined) {
   if (!expected) return false;
   return (token || "").trim() === expected;
 }
+
+export function hasAdminSecret(secret: string | null | undefined) {
+  const expected = process.env.ADMIN_SECRET?.trim();
+  if (!expected) return false;
+  return (secret || "").trim() === expected;
+}

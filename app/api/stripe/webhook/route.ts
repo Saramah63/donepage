@@ -1,73 +1,95 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import crypto from "crypto";
+import {
+  sendAdminOrderEmail,
+  sendCustomerOrderEmail,
+  upsertPaidOrderFromSession,
+} from "@/app/lib/payment-orders";
 
 export const runtime = "nodejs";
 
-function sign(value: string, tokenSecret: string) {
-  const h = crypto.createHmac("sha256", tokenSecret).update(value).digest("hex");
-  return `${value}.${h}`;
-}
-
 export async function POST(req: Request) {
-  try {
-    const stripeSecret = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecret) {
-      return NextResponse.json(
-        { error: "Missing STRIPE_SECRET_KEY" },
-        { status: 500 },
-      );
-    }
+  const secret = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    const tokenSecret = process.env.PLAN_TOKEN_SECRET;
-    if (!tokenSecret) {
-      return NextResponse.json(
-        { error: "Missing PLAN_TOKEN_SECRET" },
-        { status: 500 },
-      );
-    }
-
-    const stripe = new Stripe(stripeSecret); // apiVersion حذف شد
-
-    const body = (await req.json().catch(() => null)) as
-      | { session_id?: string }
-      | null;
-
-    const session_id = body?.session_id;
-
-    if (!session_id) {
-      return NextResponse.json({ error: "Missing session_id" }, { status: 400 });
-    }
-
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-
-    if (session.payment_status !== "paid") {
-      return NextResponse.json({ error: "Not paid" }, { status: 402 });
-    }
-
-    const plan = session.metadata?.plan;
-    if (plan !== "starter" && plan !== "business" && plan !== "pro") {
-      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-    }
-
-    const payload = `${plan}|${Date.now()}`;
-    const token = sign(payload, tokenSecret);
-
-    const res = NextResponse.json({ ok: true, plan });
-
-    res.cookies.set("dp_plan", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
+  if (!secret || !webhookSecret) {
+    console.error("STRIPE: webhook configuration missing", {
+      hasSecret: Boolean(secret),
+      hasWebhookSecret: Boolean(webhookSecret),
     });
-
-    return res;
-  } catch (e: any) {
     return NextResponse.json(
-      { error: e?.message ?? "Verify failed" },
-      { status: 500 },
+      { error: "Missing Stripe webhook configuration" },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const stripe = new Stripe(secret);
+    const payload = await req.text();
+    const signature = req.headers.get("stripe-signature");
+
+    if (!signature) {
+      console.error("STRIPE: missing stripe-signature header");
+      return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
+    }
+
+    const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    console.log("STRIPE: webhook event received", { eventType: event.type });
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const email =
+        session.customer_details?.email?.trim() ||
+        String(session.metadata?.client_email || "").trim() ||
+        session.customer_email?.trim() ||
+        null;
+      const plan = String(session.metadata?.plan || "").trim().toLowerCase();
+      const draftId = String(session.metadata?.draft_id || "").trim() || null;
+      const clientName =
+        session.customer_details?.name?.trim() ||
+        String(session.metadata?.client_name || "").trim() ||
+        null;
+
+      console.log("STRIPE: checkout.session.completed payload", {
+        eventType: event.type,
+        sessionId: session.id,
+        customerEmail: email,
+        clientName,
+        planMetadata: plan,
+        draftIdMetadata: draftId,
+      });
+
+      const order = await upsertPaidOrderFromSession(session);
+
+      console.log("STRIPE: order paid", {
+        stripeSessionId: session.id,
+        email: order.email,
+        plan: order.plan,
+        draftId: order.draftId,
+        status: order.status,
+      });
+
+      try {
+        const adminResult = await sendAdminOrderEmail(order);
+        console.log("STRIPE: admin order email", adminResult);
+      } catch (error) {
+        console.error("STRIPE: admin order email failed", error);
+      }
+
+      try {
+        const customerResult = await sendCustomerOrderEmail(order);
+        console.log("STRIPE: customer order email", customerResult);
+      } catch (error) {
+        console.error("STRIPE: customer order email failed", error);
+      }
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (error: any) {
+    console.error("STRIPE: webhook failed", error);
+    return NextResponse.json(
+      { error: error?.message ?? "Webhook failed" },
+      { status: 400 }
     );
   }
 }

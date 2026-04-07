@@ -1757,7 +1757,8 @@ function serviceOfferings(serviceType: QuestionnaireAnswers["serviceType"], lang
     ],
   } as const;
 
-  const list = ((base as any)[serviceType] ?? base.consulting) as Array<{
+  const serviceKey = serviceType || "consulting";
+  const list = ((base as any)[serviceKey] ?? base.consulting) as Array<{
     name: string;
     description: string;
     features: string[];
@@ -1846,7 +1847,8 @@ function portfolioByService(serviceType: QuestionnaireAnswers["serviceType"], la
     ],
   } as const;
 
-  const list = ((base as any)[serviceType] ?? base.consulting) as Array<{
+  const serviceKey = serviceType || "consulting";
+  const list = ((base as any)[serviceKey] ?? base.consulting) as Array<{
     title: string;
     description: string;
     metric: string;

@@ -16,6 +16,11 @@ export type DraftCta = {
   buttonLink?: string;
 };
 
+export type DraftTrust = {
+  title?: string;
+  body?: string;
+};
+
 export type DraftContact = {
   email?: string;
   phone?: string;
@@ -51,6 +56,7 @@ export type DraftContent = {
   answers: QuestionnaireAnswers;
   hero?: DraftHero;
   benefits?: DraftBenefit[];
+  trust?: DraftTrust;
   cta?: DraftCta;
   contact?: DraftContact;
   faq?: DraftFaqItem[];

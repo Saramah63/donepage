@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     }
 
     // minimal validation (prevent storing junk)
-    if (!answers.serviceType || !answers.targetAudience) {
+    if (!answers.primaryOffer || !answers.targetAudience) {
       return NextResponse.json({ error: "Invalid answers" }, { status: 400 });
     }
 

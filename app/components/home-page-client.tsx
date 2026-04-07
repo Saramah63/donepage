@@ -1,265 +1,340 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
-import { Card, CardContent } from "@/app/components/ui/card";
-import { ArrowRight, Check } from "lucide-react";
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PublicSiteHeader } from "@/app/components/public-site-header";
+import { SiteFooter } from "@/app/components/site-footer";
 
-const packages = [
+const pricingCards = [
   {
     name: "Launch",
     price: "€99",
+    label: "For validating your offer",
     features: [
-      "Instant AI Draft (immediate)",
-      "Human polish + 1 revision (within 5 business days)",
+      "AI draft (instant)",
+      "Human polish (1 revision)",
+      "Delivered within 72 hours",
     ],
-    cta: "Start Launch",
-    href: "STRIPE_LINK_LAUNCH",
-    popular: false,
+    cta: "Start Launch — €99",
+    href: process.env.NEXT_PUBLIC_STRIPE_LINK_LAUNCH || "/pricing",
+    plan: "launch" as const,
+    featured: false,
   },
   {
     name: "Growth",
     price: "€249",
+    label: "For getting real clients",
     features: [
-      "Instant AI Draft (immediate)",
-      "Priority human polish + 3 revisions (within 2 business days)",
+      "AI draft (instant)",
+      "Priority polish (3 revisions)",
+      "Delivered within 48 hours",
       "Domain connection",
       "Basic SEO",
     ],
-    cta: "Start Growth",
-    href: "STRIPE_LINK_GROWTH",
-    popular: true,
+    cta: "Upgrade to Growth — €249",
+    href: process.env.NEXT_PUBLIC_STRIPE_LINK_GROWTH || "/pricing",
+    plan: "growth" as const,
+    featured: true,
   },
   {
-    name: "Hosting & Support",
-    price: "€19/month",
-    features: ["Hosting on Vercel", "SSL & uptime", "Minor updates", "Email support"],
-    cta: "Request Hosting",
-    href: "STRIPE_LINK_HOSTING",
-    popular: false,
+    name: "Hosting",
+    price: "€19/mo",
+    label: "",
+    features: [
+      "Hosting (Vercel)",
+      "SSL & uptime",
+      "Minor updates",
+      "Email support",
+    ],
+    cta: "Add Hosting — €19/mo",
+    href: process.env.NEXT_PUBLIC_STRIPE_LINK_HOSTING || "/hosting",
+    plan: "hosting" as const,
+    featured: false,
   },
 ];
 
-const STRIPE_LINKS = {
-  STRIPE_LINK_LAUNCH: process.env.NEXT_PUBLIC_STRIPE_LINK_LAUNCH || "",
-  STRIPE_LINK_GROWTH: process.env.NEXT_PUBLIC_STRIPE_LINK_GROWTH || "",
-  STRIPE_LINK_HOSTING: process.env.NEXT_PUBLIC_STRIPE_LINK_HOSTING || "",
-} as const;
+const failurePoints = [
+  "Unclear positioning — people don’t understand your value",
+  "Weak offer — no reason to take action",
+  "Overcomplicated structure — visitors drop off",
+];
+
+const steps = [
+  {
+    title: "Structured intake",
+    text: "We extract your offer, audience, and positioning.",
+  },
+  {
+    title: "AI draft + expert refinement",
+    text: "We generate and refine a conversion-focused page.",
+  },
+  {
+    title: "Launch-ready page",
+    text: "Fast, clean, and designed to capture leads.",
+  },
+];
+
+const testimonial = {
+  eyebrow: "Trusted by real businesses",
+  quote:
+    "We’re extremely happy with the website delivered by Donepage. The result exceeded our expectations and truly reflects our company’s identity.",
+  body:
+    "The bilingual Finnish and English setup is a major advantage — making the site accessible and user-friendly.",
+  closing:
+    "Highly recommended for their quality, reliability, and excellent service.",
+  author: "Project Manager, Nordmaster Group",
+};
 
 function firePurchaseIntent(plan: "launch" | "growth" | "hosting") {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("dp_purchase_intent", { detail: { plan } }));
 }
 
-const faq = [
-  {
-    q: "Do I need hosting?",
-    a: "Only if you want us to run and maintain your site for you. You can also host it yourself.",
-  },
-  {
-    q: "Can I use my own domain?",
-    a: "Yes. Domain connection is included in Growth, and available as an add-on for other setups.",
-  },
-  { q: "How long does it take?", a: "Launch is delivered within 5 business days. Growth is prioritized within 2 business days." },
-  {
-    q: "What’s included in revisions?",
-    a: "Revisions include copy, section layout adjustments, and CTA refinements based on your brief.",
-  },
-  {
-    q: "Can I request changes later?",
-    a: "Yes. You can request updates any time, and ongoing requests are easiest with hosting support.",
-  },
-  {
-    q: "What if I need more pages?",
-    a: "Use the custom proposal route for multi-page work, integrations, or broader custom builds.",
-  },
-];
-
 export default function HomePageClient() {
   return (
-    <div id="top" className="donepage-surface-theme relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/40 to-cyan-50/40 text-gray-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-gray-100">
-      <div className="mesh-hero" aria-hidden="true" />
-      <div className="hero-spotlight" aria-hidden="true" />
-      <div className="noise-film" aria-hidden="true" />
-      <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
+    <div
+      id="top"
+      className="min-h-screen bg-[#0A0A0A] text-white"
+      style={{ fontFamily: '"Avenir Next", "Avenir", "Segoe UI", sans-serif' }}
+    >
+      <PublicSiteHeader />
 
-      <div className="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-gray-700 dark:bg-slate-900/85">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <header className="flex h-16 items-center justify-between">
-            <a href="#top" className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-              Donepage
-            </a>
-            <nav className="flex items-center gap-2 sm:gap-3">
-              <a
-                href="#how"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-slate-800"
-              >
-                How it works
-              </a>
-              <a
-                href="#pricing"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-slate-800"
-              >
-                Pricing
-              </a>
-              <a
-                href="#contact"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-slate-800"
-              >
-                Contact
-              </a>
-              <ThemeToggle className="ml-1" />
-            </nav>
-          </header>
-        </div>
-      </div>
+      <main className="mx-auto max-w-[1100px] px-4 pb-24 pt-24 sm:px-6 sm:pt-28">
+        <section className="reveal-up relative overflow-hidden rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] px-6 py-18 text-center shadow-[0_24px_120px_rgba(0,0,0,0.45)] sm:px-10 md:px-16 md:py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,189,106,0.16),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(18,122,102,0.14),transparent_28%)]" />
+          <div className="relative mx-auto max-w-4xl">
+            <h1
+              className="text-5xl leading-[1.02] tracking-tight text-white sm:text-6xl md:text-7xl"
+              style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+            >
+              <span className="luxury-gradient-text">
+                Get a landing page that actually brings you clients
+              </span>
+              <span> — in 72 hours.</span>
+            </h1>
 
-      <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-24 sm:px-6 sm:pt-28">
-        <section className="reveal-up mt-4 rounded-3xl border border-gray-200 bg-white/90 px-6 py-10 shadow-xl shadow-blue-900/5 backdrop-blur sm:mt-6 sm:px-10 sm:py-14 dark:border-gray-700 dark:bg-slate-900/85">
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-            <span className="luxury-gradient-text">Launch your landing page in days — not weeks.</span>
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-gray-700 dark:text-gray-200">
-            Answer a few questions. Get a conversion-ready page. No templates. No complexity.
+            <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-[#CFCFCF] sm:text-xl">
+              No templates. No guesswork.
+              <br className="hidden sm:block" />
+              Just a clear, high-converting page built around your offer.
+            </p>
+
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button
+                size="lg"
+                asChild
+                className="h-12 rounded-full bg-[#127A66] px-8 text-base font-semibold text-white shadow-[0_0_28px_rgba(18,122,102,0.28)] transition duration-300 hover:scale-[1.02] hover:bg-[#15907A] hover:opacity-100"
+              >
+                <Link href="/start" target="_blank" rel="noopener noreferrer">
+                  Start My Page
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="h-12 rounded-full border-white/12 bg-transparent px-8 text-base text-white transition duration-300 hover:scale-[1.02] hover:bg-white/[0.05] hover:opacity-100"
+              >
+                <a href="#pricing">See Pricing</a>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section className="reveal-up py-16 text-center">
+          <p className="mx-auto max-w-3xl text-sm leading-7 tracking-[0.02em] text-[#CFCFCF] sm:text-base">
+            Built for coaches, consultants, and service businesses who want results — not just design.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" asChild className="h-12 bg-blue-600 px-7 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
-              <Link href="/start" target="_blank" rel="noopener noreferrer" className="font-medium !text-white">
-                Get Started
-                <ArrowRight className="ml-2 h-4 w-4" />
+        </section>
+
+        <section id="why" className="reveal-up scroll-mt-28 py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#BFA76A]">
+              Why it fails
+            </p>
+            <h2
+              className="mt-4 text-4xl tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+            >
+              Why most landing pages don&apos;t convert
+            </h2>
+          </div>
+
+          <div className="stagger-reveal mt-10 grid gap-4 md:grid-cols-3">
+            {failurePoints.map((item) => (
+              <div
+                key={item}
+                className="rounded-[26px] border border-white/8 bg-white/[0.03] px-6 py-7 transition duration-300 hover:scale-[1.01] hover:bg-white/[0.05]"
+              >
+                <p className="text-lg leading-8 text-[#F5F5F5]">• {item}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="how" className="reveal-up scroll-mt-28 py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2
+              className="text-4xl tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+            >
+              How it works
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#CFCFCF]">
+              A clean system from brief to launch
+            </p>
+          </div>
+
+          <div className="stagger-reveal mt-10 grid gap-4 md:grid-cols-3">
+            {steps.map((step, index) => (
+              <div
+                key={step.title}
+                className="rounded-[26px] border border-white/8 bg-white/[0.03] px-7 py-8 transition duration-300 hover:scale-[1.01] hover:bg-white/[0.05]"
+              >
+                <div className="text-sm uppercase tracking-[0.22em] text-[#BFA76A]">
+                  0{index + 1}
+                </div>
+                <h3
+                  className="mt-5 text-2xl leading-tight text-white"
+                  style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+                >
+                  {step.title}
+                </h3>
+                <p className="mt-4 text-base leading-7 text-[#CFCFCF]">{step.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="reveal-up py-10 sm:py-12">
+          <div className="mx-auto max-w-[700px] rounded-[30px] border border-white/8 bg-[#111111] px-8 py-11 text-center shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:px-10 sm:py-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#BFA76A]">
+              {testimonial.eyebrow}
+            </p>
+            <blockquote className="mt-5 text-lg italic leading-8 text-[#F3F3F3] sm:text-xl">
+              “{testimonial.quote}”
+            </blockquote>
+            <p className="mt-4 text-base italic leading-7 text-[#CFCFCF]">
+              {testimonial.body}
+            </p>
+            <p className="mt-4 text-base italic leading-7 text-[#E6E6E6]">
+              {testimonial.closing}
+            </p>
+            <p className="mt-6 text-sm font-semibold tracking-[0.04em] text-white">
+              — {testimonial.author}
+            </p>
+          </div>
+        </section>
+
+        <section id="pricing" className="reveal-up scroll-mt-28 py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#BFA76A]">
+              Pricing
+            </p>
+            <h2
+              className="mt-4 text-4xl tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+            >
+              Premium delivery without agency drag
+            </h2>
+          </div>
+
+          <div className="stagger-reveal mt-10 grid gap-5 lg:grid-cols-3">
+            {pricingCards.map((card) => (
+              <div
+                key={card.name}
+                className={`relative rounded-[28px] border px-7 py-8 transition duration-300 hover:scale-[1.015] ${
+                  card.featured
+                    ? "border-[#BFA76A]/35 bg-[linear-gradient(180deg,rgba(191,167,106,0.13),rgba(255,255,255,0.04))] shadow-[0_24px_60px_rgba(191,167,106,0.08)]"
+                    : "border-white/8 bg-white/[0.03]"
+                }`}
+              >
+                <div className="flex min-h-[30px] items-start justify-end gap-3">
+                  {card.featured ? (
+                    <div className="shrink-0 rounded-full border border-[#BFA76A]/30 bg-[#BFA76A]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E9D7A3]">
+                      Most Popular
+                    </div>
+                  ) : null}
+                </div>
+                <h3
+                  className="mt-5 text-3xl text-white"
+                  style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+                >
+                  {card.name} — {card.price}
+                </h3>
+                {card.label ? <p className="mt-3 text-base leading-7 text-[#CFCFCF]">{card.label}</p> : null}
+
+                <ul className="mt-7 space-y-3">
+                  {card.features.map((feature) => (
+                    <li key={feature} className="text-sm leading-7 text-[#D9D9D9]">
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  asChild
+                  className="mt-8 h-12 w-full rounded-full bg-[#127A66] text-base font-semibold text-white shadow-[0_0_28px_rgba(18,122,102,0.24)] transition duration-300 hover:scale-[1.02] hover:bg-[#15907A]"
+                >
+                  <a href={card.href} onClick={() => firePurchaseIntent(card.plan)}>
+                    {card.cta}
+                  </a>
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="reveal-up py-20">
+          <div className="rounded-[30px] border border-white/8 bg-white/[0.03] px-8 py-12 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#BFA76A]">
+              Custom projects
+            </p>
+            <h2
+              className="mt-4 text-4xl tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+            >
+              Need something more advanced?
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-[#CFCFCF]">
+              We build multi-page websites, custom systems, and tailored setups for businesses that need more than a single landing page.
+            </p>
+
+            <Button
+              asChild
+              variant="outline"
+              className="mt-8 h-12 rounded-full border-white/12 bg-transparent px-8 text-base text-white transition duration-300 hover:scale-[1.02] hover:bg-white/[0.05]"
+            >
+              <Link href="/custom-projects">Request Custom Proposal</Link>
+            </Button>
+          </div>
+        </section>
+
+        <section className="reveal-up pb-12 pt-20">
+          <div className="rounded-[32px] border border-[#BFA76A]/18 bg-[linear-gradient(180deg,rgba(191,167,106,0.08),rgba(255,255,255,0.025))] px-8 py-14 text-center shadow-[0_24px_90px_rgba(0,0,0,0.32)]">
+            <h2
+              className="text-4xl tracking-tight text-white sm:text-5xl"
+              style={{ fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif' }}
+            >
+              Stop overthinking your website.
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-[#CFCFCF]">
+              Get a page that actually works — and start getting clients.
+            </p>
+            <Button
+              asChild
+              className="mt-8 h-12 rounded-full bg-[#127A66] px-8 text-base font-semibold text-white shadow-[0_0_28px_rgba(18,122,102,0.24)] transition duration-300 hover:scale-[1.02] hover:bg-[#15907A]"
+            >
+              <Link href="/start" target="_blank" rel="noopener noreferrer">
+                Start My Page
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="h-12 border-gray-300 bg-white/90 px-7 text-base !text-slate-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-slate-900 dark:!text-white dark:hover:bg-slate-800">
-              <a href="#pricing">See Pricing</a>
-            </Button>
           </div>
         </section>
+      </main>
 
-        <section className="mt-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Why landing pages fail</h2>
-          <ul className="mt-5 space-y-3 text-gray-800 dark:text-gray-100">
-            {["No clear message", "No structured offer", "No fast execution"].map((item) => (
-              <li
-                key={item}
-                className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white/90 px-4 py-3 dark:border-gray-700 dark:bg-slate-900/85"
-              >
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-700 dark:text-cyan-300" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section id="how" className="mt-16 scroll-mt-32">
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">How it works</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {["Answer simple questions", "Instant AI draft + human polish", "You launch and collect leads"].map((step, index) => (
-              <Card key={step} className="card-lift reveal-up border-gray-200 bg-white/90 dark:border-gray-700 dark:bg-slate-900/85">
-                <CardContent className="p-5">
-                  <div className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white dark:bg-blue-500">
-                    {index + 1}
-                  </div>
-                  <p className="text-base font-medium text-gray-900 dark:text-gray-100">{step}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section id="pricing" className="mt-16 scroll-mt-32">
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Pricing</h2>
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {packages.map((pkg) => (
-              <Card
-                key={pkg.name}
-                className={[
-                  "card-lift reveal-up relative border-gray-200 bg-white/95 dark:border-gray-700 dark:bg-slate-900/90",
-                  pkg.popular ? "border-blue-600 shadow-md shadow-blue-900/10 dark:border-cyan-400" : "",
-                ].join(" ")}
-              >
-                <CardContent className="p-6">
-                  {pkg.popular ? (
-                    <span className="absolute right-6 top-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white dark:bg-cyan-500 dark:text-slate-950">
-                      Most popular
-                    </span>
-                  ) : null}
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{pkg.name}</h3>
-                  <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{pkg.price}</p>
-                  <ul className="mt-5 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                    {pkg.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-700 dark:text-cyan-300" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button asChild className="mt-6 h-11 w-full bg-blue-600 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
-                    <a
-                      href={STRIPE_LINKS[pkg.href as keyof typeof STRIPE_LINKS]}
-                      onClick={() => {
-                        if (pkg.name === "Launch") firePurchaseIntent("launch");
-                        if (pkg.name === "Growth") firePurchaseIntent("growth");
-                        if (pkg.name === "Hosting & Support") firePurchaseIntent("hosting");
-                      }}
-                      className="font-medium !text-white"
-                    >
-                      {pkg.cta}
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-16 rounded-2xl border border-gray-200 bg-white/90 p-6 sm:p-8 dark:border-gray-700 dark:bg-slate-900/85">
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Custom Projects</h2>
-          <p className="mt-3 max-w-2xl text-gray-700 dark:text-gray-200">
-            Need something more advanced? Multi-page sites, integrations, or custom builds.
-          </p>
-          <Button asChild className="mt-6 h-11 bg-blue-600 px-6 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
-            <Link href="/contact?reason=custom" className="font-medium !text-white">Request a Custom Proposal</Link>
-          </Button>
-        </section>
-
-        <section className="mt-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">FAQ</h2>
-          <div className="mt-6 grid gap-4">
-            {faq.map((item) => (
-              <Card key={item.q} className="card-lift reveal-up border-gray-200 bg-white/90 dark:border-gray-700 dark:bg-slate-900/85">
-                <CardContent className="p-5">
-                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{item.q}</h3>
-                  <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">{item.a}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section id="contact" className="mt-16 scroll-mt-32 rounded-2xl border border-gray-200 bg-white/90 p-6 sm:p-8 dark:border-gray-700 dark:bg-slate-900/85">
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Contact</h2>
-          <p className="mt-3 max-w-2xl text-gray-700 dark:text-gray-200">
-            Need help choosing a package or have a specific question? Start here and continue to the full form only if needed.
-          </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button asChild className="h-11 bg-blue-600 px-6 text-base !text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400">
-              <Link href="/contact" className="font-medium !text-white">Open Contact Form</Link>
-            </Button>
-            <Button asChild variant="outline" className="h-11 border-gray-300 bg-white/90 px-6 text-base !text-slate-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-slate-900 dark:!text-white dark:hover:bg-slate-800">
-              <Link href="mailto:hello@donepage.co" className="font-medium !text-slate-900 dark:!text-white">Email hello@donepage.co</Link>
-            </Button>
-          </div>
-        </section>
-
-        <section className="mt-16 rounded-2xl border border-blue-700 bg-blue-700 p-8 text-white shadow-xl shadow-blue-900/20 dark:border-cyan-500 dark:bg-cyan-500 dark:text-slate-950">
-          <h2 className="text-3xl font-semibold tracking-tight">Ready to launch?</h2>
-          <Button asChild variant="outline" className="mt-5 h-12 border-white bg-white px-7 text-base !text-slate-900 hover:bg-slate-100 dark:border-slate-200 dark:bg-slate-950 dark:!text-white dark:hover:bg-slate-900">
-            <Link href="/start" target="_blank" rel="noopener noreferrer" className="font-medium !text-slate-900 dark:!text-white">Get Started</Link>
-          </Button>
-        </section>
-      </div>
+      <SiteFooter />
     </div>
   );
 }
